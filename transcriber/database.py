@@ -27,4 +27,7 @@ def init_db(sess=None, eng=None):
         password = DEFAULT_USER['password']
         user = transcriber.models.User(name, email, password)
         db_session.add(user)
-        db_session.commit()
+        try:
+            db_session.commit()
+        except IntegrityError:
+            pass

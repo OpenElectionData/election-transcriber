@@ -5,6 +5,13 @@ from sqlalchemy.orm import synonym
 
 bcrypt = Bcrypt()
 
+class TaskMeta(Base):
+    __tablename__ = 'task_meta'
+    id = Column(Integer, primary_key=True)
+
+    def __repr__(self):
+        return '<TaskMeta %r>' % self.id
+
 class User(Base):
     __tablename__ = 'ndi_user'
     id = Column(Integer, primary_key=True)

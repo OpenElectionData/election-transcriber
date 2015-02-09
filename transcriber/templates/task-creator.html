@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Task Creator{% endblock %}
+{% block content %}
+
+<div class="row">
+    <div class='col-md-12'>
+        <h3>Task creator</h3>
+        <form role="form" class="form" method="POST" action="" enctype="multipart/form-data">
+          <div class="form-group">
+            <input type="file" name="input_file" id="input_file" />
+            <p class="help-block">
+                You can upload PDFs.
+            </p>
+          </div>
+          <button type="submit" class="btn btn-success">Next ></button>
+        </form>
+    </div>
+</div>
+
+<div class="row">
+    <div class='col-md-4'>
+        <canvas id="result-image"></canvas>
+    </div>
+    <div class="col-md-9">
+        <div id="form-maker"></div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_javascript %}
+{% if image %}
+<script src="{{ url_for('static', filename='js/spin.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/jquery.spin.js') }}"></script>
+<script src="{{ url_for('static', filename='js/pdf.js') }}"></script>
+<script type="text/javascript">
+  $(document).ready(function(){
+    $('#result-image').spin('large');
+    PDFJS.getDocument("{{image}}").then(function(doc){
+      doc.getPage(1).then(function(page){
+        $('#result-image').spin(false);
+        var scale = 1;
+        var viewport = page.getViewport(scale);
+        console.log(viewport);
+        var canvas = document.getElementById('result-image');
+        var context = canvas.getContext('2d')
+        canvas.height = viewport.height;
+        canvas.width = $('#result-image').parent().width()
+        var renderContext = {
+          canvasContext: context,
+          viewport: viewport
+        }
+        page.render(renderContext);
+      })
+    })
+  })
+</script>
+{% endif %}
+{% endblock %}

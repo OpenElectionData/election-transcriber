@@ -1,4 +1,5 @@
 from pytz import timezone
+import os
 
 TIME_ZONE = timezone('America/Chicago')
 DEFAULT_USER = {
@@ -17,3 +18,4 @@ DB_CONN='postgresql+psycopg2://{0}:{1}@{2}:{3}/{4}'\
         .format(DB_USER, DB_PW, DB_HOST, DB_PORT, DB_NAME)
 
 SECRET_KEY = 'super secret key'
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
