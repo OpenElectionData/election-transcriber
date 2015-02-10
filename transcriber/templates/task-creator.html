@@ -18,37 +18,33 @@
 </div>
 
 <div class="row">
-    <div class='col-md-4'>
-        <canvas id="result-image"></canvas>
+    <div class='col-md-5'>
+        {% if image %}
+            <iframe src="{{ url_for('views.viewer', file=image) }}"
+                    id="result-image"
+                    frameborder="0"
+                    seamless="true"
+                    width="100%"
+                    height="450px"></iframe>
+        {% endif %}
     </div>
-    <div class="col-md-9">
+    <div class="col-md-7">
         <div id="form-maker"></div>
     </div>
 </div>
 {% endblock %}
 {% block extra_javascript %}
 {% if image %}
-<script src="{{ url_for('static', filename='js/spin.min.js') }}"></script>
-<script src="{{ url_for('static', filename='js/jquery.spin.js') }}"></script>
 <script src="{{ url_for('static', filename='js/pdf.js') }}"></script>
 <script type="text/javascript">
   $(document).ready(function(){
-    $('#result-image').spin('large');
     PDFJS.getDocument("{{image}}").then(function(doc){
       doc.getPage(1).then(function(page){
-        $('#result-image').spin(false);
-        var scale = 1;
-        var viewport = page.getViewport(scale);
-        console.log(viewport);
-        var canvas = document.getElementById('result-image');
-        var context = canvas.getContext('2d')
-        canvas.height = viewport.height;
-        canvas.width = $('#result-image').parent().width()
-        var renderContext = {
-          canvasContext: context,
-          viewport: viewport
-        }
-        page.render(renderContext);
+        var width = $('#result-image').width()
+        var viewport = page.getViewport(width / page.getViewport(1.0).width);
+        console.log($('#result-image').height());
+        console.log(viewport)
+        $('#result-image').height(viewport.height);
       })
     })
   })

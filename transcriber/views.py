@@ -38,3 +38,7 @@ def task_creator():
 @views.route('/uploads/<filename>/')
 def uploaded_image(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
+
+@views.route('/viewer/')
+def viewer():
+    return render_template('viewer.html')
