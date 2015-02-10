@@ -20,6 +20,12 @@ DB_CONN='postgresql+psycopg2://{0}:{1}@{2}:{3}/{4}'\
 SECRET_KEY = 'super secret key'
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
 
+MAIL_SERVER = 'smtp.example.com'
+MAIL_PORT = 465
+MAIL_USE_SSL = True
+MAIL_USERNAME = 'username'
+MAIL_PASSWORD = 'password'
+
 SECURITY_PASSWORD_HASH = 'bcrypt'
 SECURITY_PASSWORD_SALT = 'really-really-secret'
 SECURITY_EMAIL_SENDER = 'app@email.address'
