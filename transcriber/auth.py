@@ -2,7 +2,7 @@
 from flask import session as flask_session, redirect, url_for, request, Blueprint, \
     render_template, abort, flash, make_response
 from functools import wraps
-from flask_login import login_user, logout_user, LoginManager
+from flask.ext.security.utils import login_user, logout_user
 from flask_wtf import Form
 from flask_wtf.csrf import CsrfProtect
 from wtforms import TextField, PasswordField
@@ -15,8 +15,6 @@ from uuid import uuid4
 from sqlalchemy import func
 
 auth = Blueprint('auth', __name__)
-
-login_manager = LoginManager()
 
 csrf = CsrfProtect()
 
@@ -50,10 +48,6 @@ class LoginForm(Form):
 class ResetPasswordForm(Form):
     old_password = PasswordField('old_password', validators=[DataRequired()])
     new_password = PasswordField('new_password', validators=[DataRequired()])
-
-@login_manager.user_loader
-def load_user(userid):
-    return db_session.query(User).get(userid)
 
 @auth.route('/login/', methods=['GET', 'POST'])
 def login():

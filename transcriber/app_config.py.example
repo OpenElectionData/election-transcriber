@@ -19,3 +19,23 @@ DB_CONN='postgresql+psycopg2://{0}:{1}@{2}:{3}/{4}'\
 
 SECRET_KEY = 'super secret key'
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), 'uploads')
+
+SECURITY_PASSWORD_HASH = 'bcrypt'
+SECURITY_PASSWORD_SALT = 'really-really-secret'
+SECURITY_EMAIL_SENDER = 'app@email.address'
+SECURITY_LOGIN_URL = '/login/'
+SECURITY_LOGOUT_URL = '/logout/'
+SECURITY_RESET_URL = '/reset-password/'
+SECURITY_CHANGE_URL = '/change-password/'
+SECURITY_CONFIRM_URL = '/confirm/'
+SECURITY_LOGIN_USER_TEMPLATE = 'login.html'
+SECURITY_REGISTER_USER_TEMPLATE = 'register.html'
+SECURITY_RESET_PASSWORD_TEMPLATE = 'reset-password.html'
+SECURITY_CHANGE_PASSWORD_TEMPLATE = 'change-password.html'
+SECURITY_CONFIRMABLE = True
+SECURITY_RECOVERABLE = True
+SECURITY_CHANGEABLE = True
+SECURITY_CONFIRM_SALT = 'also-really-secret'
+SECURITY_RESET_SALT = 'also-really-secret'
+SECURITY_LOGIN_SALT = 'also-really-secret'
+SECURITY_REMEMBER_SALT = 'also-really-really-secret'

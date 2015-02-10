@@ -1,8 +1,9 @@
 from flask import Blueprint, make_response, request, render_template, \
-    url_for, send_from_directory
+    url_for, send_from_directory, session as flask_session
 import json
 import os
-from flask_login import login_required
+from flask_security.decorators import login_required
+from flask_security.core import current_user
 from transcriber.app_config import UPLOAD_FOLDER
 from werkzeug import secure_filename
 
@@ -21,6 +22,20 @@ def index():
 @views.route('/about/')
 def about():
     return render_template('about.html')
+
+@views.route('/upload/',methods=['GET', 'POST'])
+@login_required
+def upload():
+    image = None
+    if request.method == 'POST':
+        uploaded = request.files['input_file']
+        if uploaded and allowed_file(uploaded.filename):
+            image = secure_filename(uploaded.filename)
+            uploaded.save(os.path.join(UPLOAD_FOLDER, image))
+            image = url_for('views.uploaded_image', filename=image)
+            flask_session['image'] = image
+
+    return render_template('upload.html', image=image)
 
 @views.route('/task-creator/', methods=['GET', 'POST'])
 @login_required
