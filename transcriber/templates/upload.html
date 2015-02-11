@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Task Creator - Upload{% endblock %}
+{% block content %}
+<div class="row">
+    <div class='col-md-12'>
+        <h3>Task creator</h3>
+        <form role="form" class="form" method="POST" action="" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+          <div class="form-group">
+            <input type="file" name="input_file" id="input_file" />
+            <p class="help-block">
+                You can upload PDFs.
+            </p>
+          </div>
+          <button type="submit" class="btn btn-success">Next ></button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_javascript %}
+{% endblock %}

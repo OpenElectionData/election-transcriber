@@ -86,6 +86,7 @@ class User(Base, UserMixin):
     name = Column(String, nullable=False, unique=True)
     email = Column(String, nullable=False, unique=True)
     _password = Column('password', String, nullable=False)
+    active = Column(Boolean, default=True)
     roles = relationship('Role', secondary=roles_users, 
                             backref=backref('users', lazy='dynamic')) 
     def __repr__(self): # pragma: no cover
@@ -99,11 +100,6 @@ class User(Base, UserMixin):
 
     password = property(_get_password, _set_password)
     password = synonym('_password', descriptor=password)
-
-    def __init__(self, name, email, password):
-        self.name = name
-        self.password = password
-        self.email = email
 
     @classmethod
     def get_by_username(cls, name):
@@ -120,7 +116,7 @@ class User(Base, UserMixin):
         return True
 
     def is_active(self):
-        return True
+        return self.active
 
     def is_anonymous(self):
         return False

@@ -1,53 +1,104 @@
 {% extends 'base.html' %}
-{% block title %}Task Creator{% endblock %}
+{% block title %}Task Creator - New task{% endblock %}
 {% block content %}
 <div class="row">
-    <div class='col-md-12'>
-        <h3>Task creator</h3>
-        <form role="form" class="form" method="POST" action="" enctype="multipart/form-data">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <div class="form-group">
-            <input type="file" name="input_file" id="input_file" />
-            <p class="help-block">
-                You can upload PDFs.
-            </p>
-          </div>
-          <button type="submit" class="btn btn-success">Next ></button>
-        </form>
-    </div>
-</div>
-
-<div class="row">
     <div class='col-md-5'>
-        {% if image %}
-            <iframe src="{{ url_for('views.viewer', file=image) }}"
-                    id="result-image"
-                    frameborder="0"
-                    seamless="true"
-                    width="100%"
-                    height="450px"></iframe>
-        {% endif %}
+        <iframe src="{{ url_for('views.viewer', file=session.image) }}"
+                id="result-image"
+                frameborder="0"
+                seamless="true"
+                width="100%"
+                height="450px">
+        </iframe>
     </div>
-    <div class="col-md-7">
-        <div id="form-maker"></div>
+    <div class="col-md-7" id="form-wrapper">
+        <form role="form" class="form" method="POST" action="">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="input-group">
+                <input type="text"
+                       class="form-control"
+                       id="id_task_name"
+                       name="task_name"
+                       placeholder="New task"
+                       aria-describedby="section-name-addon" />
+                <span class="input-group-btn" id="section-name-addon">
+                    <button class="btn btn-default"> Save </button>
+                </span>
+            </div>
+            <div class="form-group" id="add-section-container">
+                <h3>
+                    Add Section
+                    <button class="btn btn-link add-section">
+                        <i class="fa fa-plus"> </i>
+                    </button>
+                </h3>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}
 {% block extra_javascript %}
-{% if image %}
-<script src="{{ url_for('static', filename='js/pdf.js') }}"></script>
-<script type="text/javascript">
-  $(document).ready(function(){
-    PDFJS.getDocument("{{image}}").then(function(doc){
-      doc.getPage(1).then(function(page){
-        var width = $('#result-image').width()
-        var viewport = page.getViewport(width / page.getViewport(1.0).width);
-        console.log($('#result-image').height());
-        console.log(viewport)
-        $('#result-image').height(viewport.height);
-      })
-    })
-  })
-</script>
-{% endif %}
+    <script src="{{ url_for('static', filename='js/ejs_production.js') }}"></script>
+    <script type="text/EJS" id="sectionTemplate">
+        <div class="well">
+            <div class="form-group">
+                <input type="text"
+                       class="form-control"
+                       placeholder="Name this section"
+                       name="section_<%= section_id %>"/>
+            </div>
+            <div class="form-group add-field-container">
+                <h3>
+                    Add Field
+                    <button class="btn btn-link add-field">
+                        <i class="fa fa-plus"> </i>
+                    </button>
+                </h3>
+            </div>
+        </div>
+    </script>
+    <script type="text/EJS" id="fieldTemplate">
+        <div class="form-group">
+            <input type="text"
+                   class="form-control"
+                   placeholder="Name this field"
+                   name="section_<%= section_id %>_field_<%= field_id %>"/>
+        </div>
+    </script>
+    <script type="text/javascript">
+        var section_id = 0;
+        var field_ids = {};
+        $(document).ready(function(){
+            $('.add-section').on('click', function(e){
+                e.preventDefault();
+                var tpl = new EJS({'text': $('#sectionTemplate').html()});
+                $('#add-section-container').append(tpl.render({'section_id': section_id}));
+                $('.add-field').off();
+                $('.add-field').on('click', function(e){
+                    e.preventDefault();
+                    var parent = $(this).parent().parent()
+                    var tpl = new EJS({'text': $('#fieldTemplate').html()});
+                    $(parent).append(tpl.render({'section_id': section_id, 'field_id': getFieldID(section_id)}));
+                    resizeImage();
+                })
+                resizeImage();
+                section_id += 1;
+            })
+        })
+        function getFieldID(section_id){
+            if(typeof field_ids[section_id] === 'undefined'){
+                field_ids[section_id] = 0;
+                return 0;
+            } else {
+                field_ids[section_id] = field_ids[section_id] + 1;
+                return field_ids[section_id]
+            }
+        }
+        function resizeImage(){
+            var form_height = $('#form-wrapper').height();
+            if (form_height > $('#result-image').height()){
+                $('#result-image').height(form_height);
+            }
+        }
+    </script>
 {% endblock %}

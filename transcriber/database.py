@@ -3,7 +3,6 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import IntegrityError
-import uuid
 
 from transcriber.app_config import DEFAULT_USER, DB_CONN
 
@@ -22,12 +21,11 @@ def init_db(sess=None, eng=None):
     Base.metadata.create_all(bind=engine)
 
     if DEFAULT_USER:
+        datastore = transcriber.models.SecurityUserDatastore(db_session, 
+                                                             transcriber.models.User,
+                                                             transcriber.models.Role)
         name = DEFAULT_USER['name']
         email = DEFAULT_USER['email']
         password = DEFAULT_USER['password']
-        user = transcriber.models.User(name, email, password)
-        db_session.add(user)
-        try:
-            db_session.commit()
-        except IntegrityError:
-            pass
+        datastore.create_user(email=email, password=password, name=name)
+        datastore.commit()

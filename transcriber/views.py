@@ -1,5 +1,5 @@
 from flask import Blueprint, make_response, request, render_template, \
-    url_for, send_from_directory, session as flask_session
+    url_for, send_from_directory, session as flask_session, redirect
 import json
 import os
 from flask_security.decorators import login_required
@@ -34,21 +34,15 @@ def upload():
             uploaded.save(os.path.join(UPLOAD_FOLDER, image))
             image = url_for('views.uploaded_image', filename=image)
             flask_session['image'] = image
-
+            return redirect(url_for('views.task_creator'))
     return render_template('upload.html', image=image)
 
 @views.route('/task-creator/', methods=['GET', 'POST'])
 @login_required
 def task_creator():
-    image = None
-    if request.method == 'POST':
-        uploaded = request.files['input_file']
-        if uploaded and allowed_file(uploaded.filename):
-            image = secure_filename(uploaded.filename)
-            uploaded.save(os.path.join(UPLOAD_FOLDER, image))
-            image = url_for('views.uploaded_image', filename=image)
-
-    return render_template('task-creator.html', image=image)
+    if not flask_session.get('image'):
+        return redirect(url_for('views.upload'))
+    return render_template('task-creator.html')
 
 @views.route('/uploads/<filename>/')
 def uploaded_image(filename):

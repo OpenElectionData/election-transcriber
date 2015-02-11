@@ -45,10 +45,6 @@ class LoginForm(Form):
         self.user = user
         return True
 
-class ResetPasswordForm(Form):
-    old_password = PasswordField('old_password', validators=[DataRequired()])
-    new_password = PasswordField('new_password', validators=[DataRequired()])
-
 @auth.route('/login/', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
