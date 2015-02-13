@@ -1,12 +1,14 @@
 from transcriber.database import Base, db_session as session
 from flask_bcrypt import Bcrypt
-from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey
+from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
+    DateTime, text
 from sqlalchemy.orm import synonym, backref, relationship
 from flask.ext.security import UserMixin, RoleMixin
 from flask.ext.security.utils import md5
 from flask.ext.security.datastore import Datastore, UserDatastore
 from werkzeug.local import LocalProxy
 from flask import current_app
+from datetime import datetime
 
 _security = LocalProxy(lambda: current_app.extensions['security'])
 
@@ -56,9 +58,35 @@ class SecurityUserDatastore(SecurityDatastore, UserDatastore):
 class TaskMeta(Base):
     __tablename__ = 'task_meta'
     id = Column(Integer, primary_key=True)
+    name = Column(String)
+    date_added = Column(DateTime(timezone=True), 
+            server_default=text('CURRENT_TIMESTAMP'))
+    last_update = Column(DateTime(timezone=True), onupdate=datetime.now)
 
     def __repr__(self):
         return '<TaskMeta %r>' % self.id
+
+class FormSection(Base):
+    __tablename__ = 'form_section'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    index = Column(Integer)
+    form_id = Column(Integer, ForeignKey('task_meta.id'))
+    form = relationship('TaskMeta', backref=backref('form_sections'))
+
+    def __repr__(self):
+        return '<FormSection %r>' % self.name
+
+class FormField(Base):
+    __tablename__ = 'form_field'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    index = Column(Integer)
+    section_id = Column(Integer, ForeignKey('form_section.id'))
+    section = relationship('FormSection', backref=backref('section_fields'))
+
+    def __repr__(self):
+        return '<FormField %r>' % self.name
 
 roles_users = Table('roles_users', Base.metadata,
         Column('user_id', Integer(), ForeignKey('ndi_user.id')),

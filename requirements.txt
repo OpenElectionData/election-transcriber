@@ -5,3 +5,4 @@ Flask-Bcrypt==0.6.0
 Flask-Security==1.7.4
 Flask-WTF==0.11
 pytz==2014.10
+alembic==0.7.4
