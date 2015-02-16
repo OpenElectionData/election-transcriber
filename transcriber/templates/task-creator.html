@@ -25,26 +25,51 @@
         {% endif %}
     </div>
     <div class="col-md-7" id="form-wrapper">
-        <form role="form" class="form" method="POST" action="">
+        <form id="task-form" role="form" class="form" method="POST" action="">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <div class="input-group">
+            <div class="form-group">
                 <input type="text"
                        class="form-control"
                        id="id_task_name"
                        name="task_name"
                        placeholder="New task"
-                       aria-describedby="section-name-addon" />
-                <span class="input-group-btn" id="section-name-addon">
-                    <button class="btn btn-default"> Save </button>
-                </span>
+                       aria-describedby="section-name-addon"
+                       required />
             </div>
             <div class="form-group" id="add-section-container">
                 <h3>
                     Add Section
-                    <button class="btn btn-link add-section">
+                    <button class="btn btn-link add-section cancel">
                         <i class="fa fa-plus"> </i>
                     </button>
                 </h3>
+                <div class="well">
+                    <div class="form-group">
+                        <input type="text"
+                               class="form-control"
+                               placeholder="Name this section"
+                               name="section_<%= section_id %>"
+                               required />
+                    </div>
+                    <div class="form-group add-field-container">
+                        <h3>
+                            Add Field
+                            <button class="btn btn-link add-field cancel">
+                                <i class="fa fa-plus"> </i>
+                            </button>
+                        </h3>
+                        <div class="form-group">
+                            <input type="text"
+                                   class="form-control"
+                                   placeholder="Name this field"
+                                   name="section_<%= section_id %>_field_<%= field_id %>"
+                                   required />
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-group">
+                <input class="btn btn-default" type="submit" name="submit" value="Save">
             </div>
         </form>
     </div>
@@ -53,13 +78,15 @@
 {% block extra_javascript %}
     <script src="{{ url_for('static', filename='js/ejs_production.js') }}"></script>
     <script src="{{ url_for('static', filename='js/jquery.panzoom.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jquery.validate.min.js') }}"></script>
     <script type="text/EJS" id="sectionTemplate">
         <div class="well">
             <div class="form-group">
                 <input type="text"
                        class="form-control"
                        placeholder="Name this section"
-                       name="section_<%= section_id %>"/>
+                       name="section_<%= section_id %>"
+                       required />
             </div>
             <div class="form-group add-field-container">
                 <h3>
@@ -76,13 +103,38 @@
             <input type="text"
                    class="form-control"
                    placeholder="Name this field"
-                   name="section_<%= section_id %>_field_<%= field_id %>"/>
+                   name="section_<%= section_id %>_field_<%= field_id %>"
+                   required />
         </div>
     </script>
     <script type="text/javascript">
         var section_id = 1;
         var field_ids = {};
         $(document).ready(function(){
+            $('#save-form').on('click', function(e){
+                e.preventDefault();
+                $form = $('#task-form');
+                $form.validate({
+                    submitHandler: function(form){
+                        console.log('clicked')
+                    },
+                    highlight: function(element){
+                        $(element).closest('.form-group').addClass('has-error');
+                    },
+                    unhighlight: function(element){
+                        $(element).closest('.form-group').removeClass('has-error');
+                    },
+                    errorElement: 'span',
+                    errorClass: 'help-block',
+                    errorPlacement: function(error, element){
+                        if(element.parent('.input-group').length){
+                            error.insertAfter(element.parent());
+                        } else {
+                            error.insertAfter(element);
+                        }
+                    }
+                })
+            });
             $('.add-section').on('click', function(e){
                 e.preventDefault();
                 var tpl = new EJS({'text': $('#sectionTemplate').html()});
@@ -90,6 +142,7 @@
                 $('.add-field').off();
                 $('.add-field').on('click', function(e){
                     e.preventDefault();
+                    console.log('clicked')
                     var parent = $(this).parent().parent()
                     var tpl = new EJS({'text': $('#fieldTemplate').html()});
                     $(parent).append(tpl.render({'section_id': section_id, 'field_id': getFieldID(section_id)}));
