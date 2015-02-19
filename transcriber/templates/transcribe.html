@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import render_image %}
+{% block title %}Election Transcriber{% endblock %}
+{% block content %}
+<div class="row">
+    <div class='col-md-5'>
+        {{ render_image() }}
+    </div>
+    <div class="col-sm-7">
+        <form id="transcriber" role="form" class="form" method="POST" action="">
+            {% for section in task.sections %}
+                <div class="well">
+                    <h3>{{ section.name }}</h3>
+                    {% for field in section.fields %}
+                        {% set form_field = form|attr(field.slug) %}
+                        {% if form_field.errors %}
+                        <div class="form-group has-error">
+                        {% else %}
+                        <div class="form-group">
+                        {% endif %}
+                            <label for="id_{{ field.slug }}">{{ field.name }}</label>
+                            <input type="text" class="form-control" id="id_{{ field.slug }}" name="{{ field.slug }}" />
+                            {% if form_field.errors %}
+                                {% for error in form_field.errors %}
+                                <span class="help-block"><i class="fa fa-remove"> </i> {{error}}</span>
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block extra_javascript %}
+    <script src="{{ url_for('static', filename='js/jquery.panzoom.min.js') }}"></script>
+    <script type="text/javascript">
+        $(document).ready(function(){
+            $('.panzoom').panzoom({
+                $zoomRange: $('input[type="range"]')
+            });
+        })
+    </script>
+{% endblock %}

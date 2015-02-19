@@ -9,8 +9,8 @@ from werkzeug import secure_filename
 from transcriber.models import FormMeta, FormSection, FormField
 from transcriber.database import engine, db_session
 from transcriber.helpers import slugify
-from flask_wtf import Form
-from wtforms import TextField
+from wtforms.form import Form
+from wtforms.fields import StringField
 from wtforms.validators import DataRequired
 from datetime import datetime
 from transcriber.app_config import TIME_ZONE
@@ -246,47 +246,29 @@ def form_creator():
                            next_section_index=next_section_index,
                            next_field_index=next_field_indexes)
 
-@views.route('/get-next-section/<int:form_id>/')
-def get_next_section(form_id):
-    sel = ''' 
-        SELECT 
-            s.index as section_index
-        FROM form_meta as m
-        JOIN form_section as s
-            ON m.id = s.form_id
-        WHERE m.id = :form_id
-        ORDER BY section_index DESC
-        LIMIT 1
-    '''
-    section_index = engine.execute(text(sel), form_id=form_id).first()
-    r = {'section_index': section_index.section_index + 1}
-    resp = make_response(json.dumps(r))
-    resp.headers['Content-Type'] = 'application/json'
-    return resp
+class TranscribeForm(Form):
+    pass
 
-@views.route('/get-next-field/<int:form_id>/<int:section_index>/')
-def get_next_field(form_id, section_index):
-    sel = '''
-        SELECT 
-            f.index 
-        FROM form_meta AS m 
-        JOIN form_section AS s 
-            ON m.id = s.form_id 
-        JOIN form_field AS f 
-            ON s.id = f.section_id 
-        WHERE m.id = :form_id 
-            AND s.index = :section_index
-        ORDER BY f.index DESC
-        LIMIT 1
-    '''
-    field_index = engine.execute(text(sel), 
-                                 form_id=form_id, 
-                                 section_index=section_index).first()
-    r = {'field_index': field_index.index + 1}
-    resp = make_response(json.dumps(r))
-    resp.headers['Content-Type'] = 'application/json'
-    return resp
-    
+@views.route('/transcribe/')
+def transcriber():
+    if not request.args.get('task_id'):
+        return redirect(url_for('views.index'))
+    task = db_session.query(FormMeta)\
+            .join(FormMeta.sections)\
+            .join(FormMeta.fields)\
+            .filter(FormMeta.id == int(request.args['task_id']))\
+            .order_by(FormSection.index, FormField.index)\
+            .first()
+    task = db_session.query(FormMeta).get(request.args['task_id'])
+    if not task:
+        return redirect(url_for('views.index'))
+    form = Form()
+    for field in task.fields:
+        validators = [DataRequired()]
+        setattr(form, field.slug, StringField(field.name, validators))
+    flask_session['image'] = task.sample_image
+    flask_session['image_type'] = task.sample_image.rsplit('.', 1)[1].lower()
+    return render_template('transcribe.html', form=form, task=task)
 
 @views.route('/uploads/<filename>')
 def uploaded_image(filename):

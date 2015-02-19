@@ -95,8 +95,8 @@ table, label,.control-label,.help-block,.checkbox,.radio { font-size: 14px; }
   -webkit-box-shadow: inset 0px 0px 10px 0px rgba(0,0,0,0.75);
   -moz-box-shadow: inset 0px 0px 10px 0px rgba(0,0,0,0.75);
   box-shadow: inset 0px 0px 10px 0px rgba(0,0,0,0.75);
-  overflow: hidden;
  */
   border: solid 1px;
+  overflow: hidden;
 }
 
