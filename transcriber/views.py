@@ -44,7 +44,8 @@ def allowed_file(filename):
 
 @views.route('/')
 def index():
-    return render_template('index.html')
+    tasks = db_session.query(FormMeta).all()
+    return render_template('index.html', tasks=tasks)
 
 @views.route('/about/')
 def about():
