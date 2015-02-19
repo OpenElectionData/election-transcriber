@@ -33,13 +33,12 @@
                        id="id_task_name"
                        name="task_name"
                        placeholder="New task"
-                       aria-describedby="section-name-addon"
-                       required />
+                       aria-describedby="section-name-addon"/>
             </div>
             <div class="form-group" id="add-section-container">
                 <h3>
                     Add Section
-                    <button class="btn btn-link add-section cancel">
+                    <button class="btn btn-link add-section">
                         <i class="fa fa-plus"> </i>
                     </button>
                 </h3>
@@ -48,28 +47,42 @@
                         <input type="text"
                                class="form-control"
                                placeholder="Name this section"
-                               name="section_<%= section_id %>"
-                               required />
+                               name="section_1" />
                     </div>
                     <div class="form-group add-field-container">
                         <h3>
                             Add Field
-                            <button class="btn btn-link add-field cancel">
+                            <button class="btn btn-link add-field">
                                 <i class="fa fa-plus"> </i>
                             </button>
                         </h3>
                         <div class="form-group">
-                            <input type="text"
-                                   class="form-control"
-                                   placeholder="Name this field"
-                                   name="section_<%= section_id %>_field_<%= field_id %>"
-                                   required />
+                            <div class="row">
+                                <div class="col-sm-9">
+                                    <input type="text"
+                                           class="form-control"
+                                           placeholder="Name this field"
+                                           name="section_1_field_1" />
+                                </div>
+                                <div class="col-sm-3">
+                                    <select class="form-control" name="datatype_section_1_field_1">
+                                        <option value="">Select field type</option>
+                                        <option value="boolean">Yes / No</option>
+                                        <option value="string">Text</option>
+                                        <option value="datetime">Date and time</option>
+                                        <option value="date">Date</option>
+                                        <option value="integer">Number</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="form-group">
-                <input class="btn btn-default" type="submit" name="submit" value="Save">
+                <button class="btn btn-default" id="save-form">
+                    Save
+                </button>
             </div>
         </form>
     </div>
@@ -78,15 +91,13 @@
 {% block extra_javascript %}
     <script src="{{ url_for('static', filename='js/ejs_production.js') }}"></script>
     <script src="{{ url_for('static', filename='js/jquery.panzoom.min.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/jquery.validate.min.js') }}"></script>
     <script type="text/EJS" id="sectionTemplate">
         <div class="well">
             <div class="form-group">
                 <input type="text"
                        class="form-control"
                        placeholder="Name this section"
-                       name="section_<%= section_id %>"
-                       required />
+                       name="section_<%= section_id %>" />
             </div>
             <div class="form-group add-field-container">
                 <h3>
@@ -95,16 +106,49 @@
                         <i class="fa fa-plus"> </i>
                     </button>
                 </h3>
+                <div class="form-group">
+                    <div class="row">
+                        <div class="col-sm-9">
+                            <input type="text"
+                                   class="form-control"
+                                   placeholder="Name this field"
+                                   name="section_<%= section_id %>_field_1" />
+                        </div>
+                        <div class="col-sm-3">
+                            <select class="form-control" name="datatype_section_<%= section_id %>_field_1">
+                                <option value="None">Select field type</option>
+                                <option value="boolean">Yes / No</option>
+                                <option value="string">Text</option>
+                                <option value="datetime">Date and time</option>
+                                <option value="date">Date</option>
+                                <option value="integer">Number</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </script>
     <script type="text/EJS" id="fieldTemplate">
         <div class="form-group">
-            <input type="text"
-                   class="form-control"
-                   placeholder="Name this field"
-                   name="section_<%= section_id %>_field_<%= field_id %>"
-                   required />
+            <div class="row">
+                <div class="col-sm-9">
+                    <input type="text"
+                           class="form-control"
+                           placeholder="Name this field"
+                           name="section_<%= section_id %>_field_<%= field_id %>" />
+                </div>
+                <div class="col-sm-3">
+                    <select class="form-control" name="datatype_section_<%= section_id %>_field_<%= field_id %>">
+                        <option value="None">Select field type</option>
+                        <option value="boolean">Yes / No</option>
+                        <option value="string">Text</option>
+                        <option value="datetime">Date and time</option>
+                        <option value="date">Date</option>
+                        <option value="integer">Number</option>
+                    </select>
+                </div>
+            </div>
         </div>
     </script>
     <script type="text/javascript">
@@ -113,43 +157,43 @@
         $(document).ready(function(){
             $('#save-form').on('click', function(e){
                 e.preventDefault();
-                $form = $('#task-form');
-                $form.validate({
-                    submitHandler: function(form){
-                        console.log('clicked')
-                    },
-                    highlight: function(element){
-                        $(element).closest('.form-group').addClass('has-error');
-                    },
-                    unhighlight: function(element){
-                        $(element).closest('.form-group').removeClass('has-error');
-                    },
-                    errorElement: 'span',
-                    errorClass: 'help-block',
-                    errorPlacement: function(error, element){
-                        if(element.parent('.input-group').length){
-                            error.insertAfter(element.parent());
-                        } else {
-                            error.insertAfter(element);
-                        }
+                var inputs = $('#task-form').find('input');
+                var selects = $('#task-form').find('select');
+                var valid = true;
+                $.each(inputs, function(i, inp){
+                    if ($(inp).val() == ''){
+                        valid = false;
+                        $(inp).parent().addClass('has-error');
+                        $(inp).parent().append('<span class="help-block">This field is required</span>')
+                    } else {
+                        $(inp).parent().removeClass('has-error');
+                        $(inp).parent().find('span').remove();
                     }
-                })
-            });
+                });
+                $.each(selects, function(i, inp){
+                    if ($(inp).val() == ''){
+                        valid = false;
+                        $(inp).parent().addClass('has-error');
+                        $(inp).parent().append('<span class="help-block">Pick a field type</span>')
+                    } else {
+                        $(inp).parent().removeClass('has-error');
+                        $(inp).parent().find('span').remove();
+                    }
+                });
+                if(valid){
+                    $('#task-form').submit();
+                }
+            })
+            $('.add-field').on('click', addField)
             $('.add-section').on('click', function(e){
                 e.preventDefault();
+                section_id += 1;
                 var tpl = new EJS({'text': $('#sectionTemplate').html()});
                 $('#add-section-container').append(tpl.render({'section_id': section_id}));
                 $('.add-field').off();
-                $('.add-field').on('click', function(e){
-                    e.preventDefault();
-                    console.log('clicked')
-                    var parent = $(this).parent().parent()
-                    var tpl = new EJS({'text': $('#fieldTemplate').html()});
-                    $(parent).append(tpl.render({'section_id': section_id, 'field_id': getFieldID(section_id)}));
-                    resizeImage();
-                })
+                $('.add-field').on('click', addField)
                 resizeImage();
-                section_id += 1;
+                return false;
             })
             $('.panzoom').panzoom({
                 $zoomRange: $('input[type="range"]')
@@ -157,8 +201,8 @@
         })
         function getFieldID(section_id){
             if(typeof field_ids[section_id] === 'undefined'){
-                field_ids[section_id] = 1;
-                return 1;
+                field_ids[section_id] = 2;
+                return 2;
             } else {
                 field_ids[section_id] = field_ids[section_id] + 1;
                 return field_ids[section_id]
@@ -169,6 +213,14 @@
             if (form_height > $('#result-image').height()){
                 $('#result-image').height(form_height);
             }
+        }
+        function addField(e){
+            e.preventDefault();
+            var parent = $(e.target).parent().parent()
+            var tpl = new EJS({'text': $('#fieldTemplate').html()});
+            $(parent).append(tpl.render({'section_id': section_id, 'field_id': getFieldID(section_id)}));
+            resizeImage();
+            return false;
         }
     </script>
 {% endblock %}

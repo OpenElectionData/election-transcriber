@@ -55,24 +55,26 @@ class SecurityUserDatastore(SecurityDatastore, UserDatastore):
     def find_role(self, role):
         return self.session.query(self.role_model).filter_by(name=role).first()
 
-class TaskMeta(Base):
-    __tablename__ = 'task_meta'
+class FormMeta(Base):
+    __tablename__ = 'form_meta'
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    slug = Column(String)
     date_added = Column(DateTime(timezone=True), 
             server_default=text('CURRENT_TIMESTAMP'))
     last_update = Column(DateTime(timezone=True), onupdate=datetime.now)
 
     def __repr__(self):
-        return '<TaskMeta %r>' % self.id
+        return '<FormMeta %r>' % self.id
 
 class FormSection(Base):
     __tablename__ = 'form_section'
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    slug = Column(String)
     index = Column(Integer)
-    form_id = Column(Integer, ForeignKey('task_meta.id'))
-    form = relationship('TaskMeta', backref=backref('form_sections'))
+    form_id = Column(Integer, ForeignKey('form_meta.id'))
+    form = relationship('FormMeta', backref=backref('sections'))
 
     def __repr__(self):
         return '<FormSection %r>' % self.name
@@ -81,9 +83,13 @@ class FormField(Base):
     __tablename__ = 'form_field'
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    slug = Column(String)
     index = Column(Integer)
+    data_type = Column(String)
     section_id = Column(Integer, ForeignKey('form_section.id'))
-    section = relationship('FormSection', backref=backref('section_fields'))
+    section = relationship('FormSection', backref=backref('fields'))
+    form_id = Column(Integer, ForeignKey('form_meta.id'))
+    form = relationship('FormMeta', backref=backref('fields'))
 
     def __repr__(self):
         return '<FormField %r>' % self.name
