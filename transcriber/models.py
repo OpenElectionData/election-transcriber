@@ -63,6 +63,8 @@ class FormMeta(Base):
     date_added = Column(DateTime(timezone=True), 
             server_default=text('CURRENT_TIMESTAMP'))
     last_update = Column(DateTime(timezone=True), onupdate=datetime.now)
+    sample_image = Column(String)
+    table_name = Column(String)
 
     def __repr__(self):
         return '<FormMeta %r>' % self.id

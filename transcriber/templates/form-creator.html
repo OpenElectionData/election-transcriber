@@ -1,5 +1,11 @@
 {% extends 'base.html' %}
-{% block title %}Task Creator - New task{% endblock %}
+{% block title %}
+    {% if form_meta.name %}
+    Form Creator - {{form_meta.name}}
+    {% else %}
+    Form Creator - New form
+    {% endif %}
+{% endblock %}
 {% block content %}
 <div class="row">
     <div class='col-md-5'>
@@ -32,7 +38,11 @@
                        class="form-control"
                        id="id_task_name"
                        name="task_name"
+                       {% if form_meta.name %}
+                       value="{{ form_meta.name }}"
+                       {% else %}
                        placeholder="New task"
+                       {% endif %}
                        aria-describedby="section-name-addon"/>
             </div>
             <div class="form-group" id="add-section-container">
@@ -42,6 +52,48 @@
                         <i class="fa fa-plus"> </i>
                     </button>
                 </h3>
+                {% if form_meta.sections %}
+                {% for section in form_meta.sections %}
+                <div class="well">
+                    <div class="form-group">
+                        <input type="text"
+                               class="form-control"
+                               value="{{ section.name }}"
+                               name="section_{{ section.index }}" />
+                    </div>
+                    <div class="form-group add-field-container">
+                        <h3>
+                            Add Field
+                            <button class="btn btn-link add-field">
+                                <i class="fa fa-plus"> </i>
+                            </button>
+                        </h3>
+                        {% for field in section.fields %}
+                        <div class="form-group">
+                            <div class="row">
+                                <div class="col-sm-9">
+                                    <input type="text"
+                                           class="form-control"
+                                           value="{{ field.name }}"
+                                           name="section_{{ section.index }}_field_{{ field.index }}" />
+                                </div>
+                                <div class="col-sm-3">
+                                    <select class="form-control" name="datatype_section_{{ section.index }}_field_{{ field.index }}">
+                                        <option value="">Select field type</option>
+                                        <option value="boolean"{% if field.data_type == 'boolean' %} selected="true"{% endif %}>Yes / No</option>
+                                        <option value="string"{% if field.data_type == 'string' %} selected="true"{% endif %}>Text</option>
+                                        <option value="datetime"{% if field.data_type == 'datetime' %} selected="true"{% endif %}>Date and time</option>
+                                        <option value="date"{% if field.data_type == 'date' %} selected="true"{% endif %}>Date</option>
+                                        <option value="integer"{% if field.data_type == 'integer' %} selected="true"{% endif %}>Number</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
                 <div class="well">
                     <div class="form-group">
                         <input type="text"
@@ -78,6 +130,7 @@
                         </div>
                     </div>
                 </div>
+                {% endif %}
             </div>
             <div class="form-group">
                 <button class="btn btn-default" id="save-form">
@@ -116,7 +169,7 @@
                         </div>
                         <div class="col-sm-3">
                             <select class="form-control" name="datatype_section_<%= section_id %>_field_1">
-                                <option value="None">Select field type</option>
+                                <option value="">Select field type</option>
                                 <option value="boolean">Yes / No</option>
                                 <option value="string">Text</option>
                                 <option value="datetime">Date and time</option>
@@ -140,7 +193,7 @@
                 </div>
                 <div class="col-sm-3">
                     <select class="form-control" name="datatype_section_<%= section_id %>_field_<%= field_id %>">
-                        <option value="None">Select field type</option>
+                        <option value="">Select field type</option>
                         <option value="boolean">Yes / No</option>
                         <option value="string">Text</option>
                         <option value="datetime">Date and time</option>
