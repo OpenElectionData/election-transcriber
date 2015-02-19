@@ -11,6 +11,7 @@
     <!-- Bootstrap core CSS -->
     <link href="{{ url_for('static', filename='css/bootstrap.yeti.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/bootstrap-nav-wizard.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/jquery.dataTables.min.css') }}" rel="stylesheet">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
 
     <!-- Custom styles for this template -->
@@ -41,8 +42,8 @@
               <a href='{{ url_for('views.index') }}'>Home</a>
             </li>
             {% if current_user.is_authenticated() %}
-              <li class="{% if request.path == url_for('views.form_creator') %}active{% endif %}">
-                <a href='{{ url_for('views.form_creator') }}'>New task</a>
+              <li class="{% if request.path == url_for('views.upload') %}active{% endif %}">
+                <a href='{{ url_for('views.upload') }}'>New task</a>
               </li>
               <li><a href='{{ url_for('auth.logout') }}'>Logout</a></li>
             {% else %}

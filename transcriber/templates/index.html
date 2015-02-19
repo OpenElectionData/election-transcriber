@@ -11,7 +11,7 @@
                 <a href="{{ url_for('views.upload') }}" class="btn btn-default">New transcription task > </a>
             </p>
 
-            <table class='table'>
+            <table class='table' id='transcription_tasks'>
                 <thead>
                     <tr>
                         <th>Transcription task</th>
@@ -22,7 +22,11 @@
                     {% for t in tasks %}
                         <tr>
                             <td><a href='/form-creator/?form_id={{t.id}}'>{{t.name}}</a></td>
-                            <td>{{t.date_added}}</td>
+                            <td>
+                                <span datetime='{{t.date_added | format_date_sort}}'>
+                                    {{t.date_added}}
+                                </span>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -37,4 +41,23 @@
 </div>
 
 
+{% endblock %}
+
+{% block extra_javascript %}
+    <script src="{{ url_for('static', filename='js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jquery.dataTables.sorting.js') }}"></script>
+    <script type='text/javascript'>
+        $(document).ready(function(){
+            $('#transcription_tasks').DataTable( {
+                "aaSorting": [ [1,'desc'] ],
+                "aoColumns": [
+                    null,
+                    { "sType": "datetime" }
+                ],
+                "paging": false,
+                "searching": false,
+                "info": false
+            } ); 
+        });
+    </script>
 {% endblock %}
