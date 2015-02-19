@@ -22,5 +22,18 @@ def create_app():
     csrf.init_app(app)
     # login_manager.init_app(app)
     # bcrypt.init_app(app)
+
+    @app.template_filter('format_number')
+    def format_number(s): # pragma: no cover
+        if s:
+            return '{:,}'.format(s)
+        return s
+    
+    @app.template_filter('format_date_sort')
+    def format_date(s, fmt='%Y%m%d%H%M'): # pragma: no cover
+        if s:
+            return s.strftime(fmt)
+        else:
+            return '0'
     
     return app

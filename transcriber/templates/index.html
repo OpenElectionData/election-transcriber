@@ -1,18 +1,38 @@
 {% extends 'base.html' %}
-{% block title %}Election Transcriber{% endblock %}
+{% block title %}Home{% endblock %}
 {% block content %}
 <div class="row">
     <div class="col-sm-12">
-        <div class='jumbotron'>
-        {% if current_user.is_authenticated() %}
-          <h3>Hi there {{ current_user.name }}</h3>
+        <h1>Election Transcriber</h1>
+
+        {% if tasks %}
+
+            <p>
+                <a href="{{ url_for('views.upload') }}" class="btn btn-default">New transcription task > </a>
+            </p>
+
+            <table class='table'>
+                <thead>
+                    <tr>
+                        <th>Transcription task</th>
+                        <th>Created</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in tasks %}
+                        <tr>
+                            <td><a href='/form-creator/?form_id={{t.id}}'>{{t.name}}</a></td>
+                            <td>{{t.date_added}}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        {% else %}
+            <p>
+                <a href="{{ url_for('views.upload') }}" class="btn btn-primary">Create your first transcription task > </a>
+            </p>
         {% endif %}
-        </div>
-
-        <p class='text-center'>
-          <a href="{{ url_for('views.upload') }}" class="btn btn-default">Get started > </a>
-        </p>
-
     </div>
 </div>
 

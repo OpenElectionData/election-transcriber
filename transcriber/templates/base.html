@@ -6,7 +6,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>{% block title %}{% endblock %}</title>
+    <title>{% block title %}{% endblock %} - Election Transcriber</title>
 
     <!-- Bootstrap core CSS -->
     <link href="{{ url_for('static', filename='css/bootstrap.yeti.min.css') }}" rel="stylesheet">
@@ -37,12 +37,14 @@
         </div>
         <div class="navbar-collapse collapse pull-right">
           <ul class="nav navbar-nav">
-            <li class="{% if request.path == url_for('views.about') %}active{% endif %}"><a href='{{ url_for('views.about') }}'>About</a></li>
-            {% if current_user.is_authenticated() %}
-            <li><a href='{{ url_for('auth.logout') }}'>Logout</a></li>
-            <li class="{% if request.path == url_for('views.form_creator') %}active{% endif %}">
-              <a href='{{ url_for('views.form_creator') }}'>Form Creator</a>
+            <li class="{% if request.path == url_for('views.index') %}active{% endif %}">
+              <a href='{{ url_for('views.index') }}'>Home</a>
             </li>
+            {% if current_user.is_authenticated() %}
+              <li class="{% if request.path == url_for('views.form_creator') %}active{% endif %}">
+                <a href='{{ url_for('views.form_creator') }}'>New task</a>
+              </li>
+              <li><a href='{{ url_for('auth.logout') }}'>Logout</a></li>
             {% else %}
             <li><a href='{{ url_for('auth.login') }}'>Login</a></li>
             {% endif %}
