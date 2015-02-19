@@ -91,7 +91,6 @@ def form_creator():
         for k,v in request.form.items():
             parts = k.split('_')
             if 'section' in parts:
-                field = None
                 if len(parts) == 2:
                     # You've got yourself a section
                     section_idx = k.split('_')[-1]
@@ -120,18 +119,21 @@ def form_creator():
                     # You've got yourself a field
                     field_idx = k.split('_')[-1]
                     section_idx = k.split('_')[1]
-                    if section:
-                        field = db_session.query(FormField)\
-                                .filter(FormField.index == field_idx)\
-                                .filter(FormSection.index == section_idx)\
-                                .filter(FormField.form == form_meta)\
-                                .first()
-                    print field
+                    field = db_session.query(FormField)\
+                            .filter(FormField.index == field_idx)\
+                            .filter(FormSection.index == section_idx)\
+                            .filter(FormField.form == form_meta)\
+                            .first()
                     if not field:
+                        section = db_session.query(FormSection)\
+                                .filter(FormSection.index == section_idx)\
+                                .filter(FormSection.form == form_meta)\
+                                .first()
                         field = FormField(name=v,
                                           slug=slugify(v),
                                           index=field_idx,
-                                          form=form_meta)
+                                          form=form_meta,
+                                          section=section)
                     else:
                         field.name = v
                         field.slug = slugify(v)
@@ -144,13 +146,12 @@ def form_creator():
             section.fields = section_fields[section_id]
             for field in section.fields:
                 field.data_type = field_datatypes[section_id][unicode(field.index)]
+                field.section = section
                 db_session.add(field)
             db_session.add(section)
         db_session.commit()
         db_session.refresh(form_meta, ['fields', 'table_name'])
         
-        # TODO: what happens when you edit this thing? We don't want to drop the table
-        # because we'd lose all the data. Need to figure a way of migrating.
         metadata = MetaData()
         if form_meta.table_name:
             table = Table(form_meta.table_name, metadata, 
@@ -159,7 +160,6 @@ def form_creator():
             existing_columns = set([c.name for c in table.columns \
                     if c.name not in ['id', 'user', 'date_added']])
             add_columns = new_columns - existing_columns
-            print add_columns
             for column in add_columns:
                 field = [f for f in form_meta.fields if f.slug == unicode(column)][0]
                 sql_type = SQL_DATA_TYPE[field.data_type]
@@ -167,28 +167,31 @@ def form_creator():
                         .format(form_meta.table_name, field.slug, sql_type)
                 with engine.begin() as conn:
                     conn.execute(alt)
-            for column in existing_columns:
-                field = [f for f in form_meta.fields if f.slug == unicode(column)][0]
-                col = getattr(table.c, column)
-                dt = DATA_TYPE[field.data_type]
-                if col.type != dt:
-                    sql_type = SQL_DATA_TYPE[field.data_type]
-                    alt = 'ALTER TABLE "{0}" ALTER COLUMN {1} TYPE {2}'\
-                            .format(form_meta.table_name, field.slug, sql_type)
-                    conn = engine.connect()
-                    trans = conn.begin()
-                    try:
-                        conn.execute(alt)
-                        conn.commit()
-                    except Exception:
-                        trans.rollback()
-                        uu = unicode(uuid4()).rsplit('-', 1)[1]
-                        column_name = '{0}_{1}'.format(field.slug, uu)
-                        alt = 'ALTER TABLE "{0}" ADD COLUMN "{1}" {2}'\
-                                .format(form_meta.table_name, column_name, sql_type)
-                        conn.execute(alt)
-                        field.slug = column_name
-                        db_session.add(field)
+           
+            # Commenting this for now since switching data types is tricky
+
+            #for column in existing_columns:
+            #    field = [f for f in form_meta.fields if f.slug == unicode(column)][0]
+            #    col = getattr(table.c, column)
+            #    dt = DATA_TYPE[field.data_type]
+            #    if col.type != dt:
+            #        sql_type = SQL_DATA_TYPE[field.data_type]
+            #        alt = 'ALTER TABLE "{0}" ALTER COLUMN {1} TYPE {2}'\
+            #                .format(form_meta.table_name, field.slug, sql_type)
+            #        conn = engine.connect()
+            #        trans = conn.begin()
+            #        try:
+            #            conn.execute(alt)
+            #            conn.commit()
+            #        except Exception:
+            #            trans.rollback()
+            #            uu = unicode(uuid4()).rsplit('-', 1)[1]
+            #            column_name = '{0}_{1}'.format(field.slug, uu)
+            #            alt = 'ALTER TABLE "{0}" ADD COLUMN "{1}" {2}'\
+            #                    .format(form_meta.table_name, column_name, sql_type)
+            #            conn.execute(alt)
+            #            field.slug = column_name
+            #            db_session.add(field)
         else:
             form_meta.table_name = '{0}_{1}'.format(
                     unicode(uuid4()).rsplit('-', 1)[1], 
@@ -201,15 +204,88 @@ def form_creator():
             ]
             for field in form_meta.fields:
                 dt = DATA_TYPE.get(field.data_type, String)
-                if dt == 'datetime':
+                if field.data_type  == 'datetime':
                     dt = DateTime(timezone=True)
                 cols.append(Column(field.slug, dt))
             table = Table(form_meta.table_name, metadata, *cols)
             table.create(bind=engine)
             db_session.add(form_meta)
             db_session.commit()
-        return redirect(url_for('views.form_creator', form_id=form_meta.id))
-    return render_template('form-creator.html', form_meta=form_meta)
+    next_section_index = 2
+    next_field_indexes = {1: 2}
+    if form_meta.id:
+        sel = ''' 
+            SELECT 
+                s.index + 1 as section_index
+            FROM form_meta as m
+            JOIN form_section as s
+                ON m.id = s.form_id
+            WHERE m.id = :form_id
+            ORDER BY section_index DESC
+            LIMIT 1
+        '''
+        next_section_index = engine.execute(text(sel), 
+                                form_id=form_meta.id).first()[0]
+        sel = ''' 
+            SELECT 
+                s.index as section_index,
+                MAX(f.index) AS field_index
+            FROM form_meta as m
+            JOIN form_section as s
+                ON m.id = s.form_id
+            JOIN form_field as f
+                ON s.id = f.section_id
+            WHERE m.id = :form_id
+            GROUP BY s.id
+        '''
+        next_field_indexes = {f[0]: f[1] for f in \
+                engine.execute(text(sel), form_id=form_meta.id)}
+    return render_template('form-creator.html', 
+                           form_meta=form_meta,
+                           next_section_index=next_section_index,
+                           next_field_index=next_field_indexes)
+
+@views.route('/get-next-section/<int:form_id>/')
+def get_next_section(form_id):
+    sel = ''' 
+        SELECT 
+            s.index as section_index
+        FROM form_meta as m
+        JOIN form_section as s
+            ON m.id = s.form_id
+        WHERE m.id = :form_id
+        ORDER BY section_index DESC
+        LIMIT 1
+    '''
+    section_index = engine.execute(text(sel), form_id=form_id).first()
+    r = {'section_index': section_index.section_index + 1}
+    resp = make_response(json.dumps(r))
+    resp.headers['Content-Type'] = 'application/json'
+    return resp
+
+@views.route('/get-next-field/<int:form_id>/<int:section_index>/')
+def get_next_field(form_id, section_index):
+    sel = '''
+        SELECT 
+            f.index 
+        FROM form_meta AS m 
+        JOIN form_section AS s 
+            ON m.id = s.form_id 
+        JOIN form_field AS f 
+            ON s.id = f.section_id 
+        WHERE m.id = :form_id 
+            AND s.index = :section_index
+        ORDER BY f.index DESC
+        LIMIT 1
+    '''
+    field_index = engine.execute(text(sel), 
+                                 form_id=form_id, 
+                                 section_index=section_index).first()
+    r = {'field_index': field_index.index + 1}
+    resp = make_response(json.dumps(r))
+    resp.headers['Content-Type'] = 'application/json'
+    return resp
+    
 
 @views.route('/uploads/<filename>')
 def uploaded_image(filename):

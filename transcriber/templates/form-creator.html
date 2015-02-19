@@ -205,8 +205,8 @@
         </div>
     </script>
     <script type="text/javascript">
-        var section_id = 1;
-        var field_ids = {};
+        var section_id = {{ next_section_index|tojson|safe }}
+        var field_ids = {{ next_field_index|tojson|safe }}
         $(document).ready(function(){
             $('#save-form').on('click', function(e){
                 e.preventDefault();
@@ -240,11 +240,11 @@
             $('.add-field').on('click', addField)
             $('.add-section').on('click', function(e){
                 e.preventDefault();
-                section_id += 1;
                 var tpl = new EJS({'text': $('#sectionTemplate').html()});
                 $('#add-section-container').append(tpl.render({'section_id': section_id}));
                 $('.add-field').off();
                 $('.add-field').on('click', addField)
+                section_id += 1;
                 resizeImage();
                 return false;
             })
@@ -269,7 +269,9 @@
         }
         function addField(e){
             e.preventDefault();
-            var parent = $(e.target).parent().parent()
+            var parent = $(e.target).parent().parent();
+            var section = $(parent).parent().find('input[name^="section"]');
+            var section_id = $(section).attr('name').split('_')[1];
             var tpl = new EJS({'text': $('#fieldTemplate').html()});
             $(parent).append(tpl.render({'section_id': section_id, 'field_id': getFieldID(section_id)}));
             resizeImage();
