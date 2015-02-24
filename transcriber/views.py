@@ -10,8 +10,8 @@ from transcriber.models import FormMeta, FormSection, FormField
 from transcriber.database import engine, db_session
 from transcriber.helpers import slugify
 from flask_wtf import Form
-from wtforms.fields import StringField, BooleanField, DateField, IntegerField
-from wtforms.ext.dateutil.fields import DateTimeField
+from wtforms.fields import StringField, BooleanField, IntegerField
+from wtforms.ext.dateutil.fields import DateTimeField, DateField
 from wtforms.validators import DataRequired
 from datetime import datetime
 from transcriber.app_config import TIME_ZONE
@@ -269,11 +269,16 @@ def transcriber():
     task = task.first()
     form = Form
     task_dict = {'sections': []}
+    bools = []
     for section in sorted(task.sections, key=attrgetter('index')):
         section_dict = {'name': section.name, 'fields': []}
         for field in sorted(section.fields, key=attrgetter('index')):
             validators = [DataRequired()]
-            ft = FORM_TYPE[field.data_type](validators=validators)
+            if field.data_type == 'boolean':
+                bools.append(field.slug)
+                ft = FORM_TYPE[field.data_type]()
+            else:
+                ft = FORM_TYPE[field.data_type](validators=validators)
             setattr(form, field.slug, ft)
             section_dict['fields'].append(field)
         task_dict['sections'].append(section_dict)
@@ -284,6 +289,9 @@ def transcriber():
             for k,v in request.form.items():
                 if k != 'csrf_token':
                     ins_args[k] = v
+            if not set(bools).intersection(set(ins_args.keys())):
+                for f in bools:
+                    ins_args[f] = False
             ins = ''' 
                 INSERT INTO "{0}" ({1}) VALUES ({2})
             '''.format(task.table_name, 
