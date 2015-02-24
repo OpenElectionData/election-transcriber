@@ -9,7 +9,7 @@
     <title>{% block title %}{% endblock %} - Election Transcriber</title>
 
     <!-- Bootstrap core CSS -->
-    <link href="{{ url_for('static', filename='css/bootstrap.yeti.min.css') }}" rel="stylesheet">
+    <link href="{{ url_for('static', filename='css/bootstrap.simplex.min.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/bootstrap-nav-wizard.css') }}" rel="stylesheet">
     <link href="{{ url_for('static', filename='css/jquery.dataTables.min.css') }}" rel="stylesheet">
     <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
@@ -52,7 +52,7 @@
           </ul>
         </div><!--/.nav-collapse -->
       </div>
-      <div class="container">
+      <div class="container-fluid">
         {% block content %}{% endblock %}
 
         <br />
