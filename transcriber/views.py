@@ -9,14 +9,17 @@ from werkzeug import secure_filename
 from transcriber.models import FormMeta, FormSection, FormField
 from transcriber.database import engine, db_session
 from transcriber.helpers import slugify
-from wtforms.form import Form
-from wtforms.fields import StringField
+from flask_wtf import Form
+from wtforms.fields import StringField, BooleanField, DateField, \
+        DateTimeField, IntegerField
 from wtforms.validators import DataRequired
 from datetime import datetime
 from transcriber.app_config import TIME_ZONE
 from sqlalchemy import Table, Column, MetaData, String, Boolean, \
         Integer, DateTime, Date, text
+from sqlalchemy.orm import joinedload
 from uuid import uuid4
+from operator import attrgetter
 
 views = Blueprint('views', __name__)
 
@@ -36,6 +39,14 @@ SQL_DATA_TYPE = {
     'integer': 'INTEGER',
     'datetime': 'TIMESTAMP WITH TIME ZONE',
     'date': 'DATE'
+}
+
+FORM_TYPE = {
+    'boolean': BooleanField,
+    'string': StringField,
+    'integer': IntegerField,
+    'datetime': DateTimeField,
+    'date': DateField
 }
 
 def allowed_file(filename):
@@ -200,7 +211,7 @@ def form_creator():
             cols = [
                 Column('date_added', DateTime(timezone=True), 
                     server_default=text('CURRENT_TIMESTAMP')),
-                Column('user', String),
+                Column('transcriber', String),
                 Column('id', Integer, primary_key=True)
             ]
             for field in form_meta.fields:
@@ -246,29 +257,49 @@ def form_creator():
                            next_section_index=next_section_index,
                            next_field_index=next_field_indexes)
 
-class TranscribeForm(Form):
-    pass
-
-@views.route('/transcribe/')
+@views.route('/transcribe/', methods=['GET', 'POST'])
 def transcriber():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
     task = db_session.query(FormMeta)\
-            .join(FormMeta.sections)\
-            .join(FormMeta.fields)\
+            .options(joinedload('sections'))\
+            .options(joinedload('fields'))\
             .filter(FormMeta.id == int(request.args['task_id']))\
-            .order_by(FormSection.index, FormField.index)\
-            .first()
-    task = db_session.query(FormMeta).get(request.args['task_id'])
-    if not task:
-        return redirect(url_for('views.index'))
-    form = Form()
-    for field in task.fields:
-        validators = [DataRequired()]
-        setattr(form, field.slug, StringField(field.name, validators))
+            .order_by(FormSection.index, FormField.index)
+    task = task.first()
+    form = Form
+    task_dict = {'sections': []}
+    for section in sorted(task.sections, key=attrgetter('index')):
+        section_dict = {'name': section.name, 'fields': []}
+        for field in sorted(section.fields, key=attrgetter('index')):
+            validators = [DataRequired()]
+            ft = FORM_TYPE[field.data_type](validators=validators)
+            setattr(form, field.slug, ft)
+            section_dict['fields'].append(field)
+        task_dict['sections'].append(section_dict)
+    if request.method == 'POST':
+        form = form(request.form)
+        if form.validate():
+            ins_args = {'transcriber': current_user.name}
+            for k,v in request.form.items():
+                if k != 'csrf_token':
+                    ins_args[k] = v
+            ins = ''' 
+                INSERT INTO "{0}" ({1}) VALUES ({2})
+            '''.format(task.table_name, 
+                       ','.join([f for f in ins_args.keys()]),
+                       ','.join([':{0}'.format(f) for f in ins_args.keys()]))
+            engine = db_session.bind
+            with engine.begin() as conn:
+                conn.execute(text(ins), **ins_args)
+    else:
+        form = form(meta={})
+
+    # This is where we put in the image. 
+    # Right now it's just always loading the example image
     flask_session['image'] = task.sample_image
     flask_session['image_type'] = task.sample_image.rsplit('.', 1)[1].lower()
-    return render_template('transcribe.html', form=form, task=task)
+    return render_template('transcribe.html', form=form, task=task_dict)
 
 @views.route('/uploads/<filename>')
 def uploaded_image(filename):

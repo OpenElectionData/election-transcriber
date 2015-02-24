@@ -8,6 +8,7 @@
     </div>
     <div class="col-sm-7">
         <form id="transcriber" role="form" class="form" method="POST" action="">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             {% for section in task.sections %}
                 <div class="well">
                     <h3>{{ section.name }}</h3>
@@ -18,8 +19,16 @@
                         {% else %}
                         <div class="form-group">
                         {% endif %}
+                            {% if form_field.widget.input_type == 'text' %}
                             <label for="id_{{ field.slug }}">{{ field.name }}</label>
-                            <input type="text" class="form-control" id="id_{{ field.slug }}" name="{{ field.slug }}" />
+                            {{ form_field(class_='form-control') }}
+                            {% elif form_field.widget.input_type == 'checkbox' %}
+                            <div class="checkbox">
+                                <label>
+                                    {{ form_field }} {{ field.name }}
+                                </label>
+                            </div>
+                            {% endif %}
                             {% if form_field.errors %}
                                 {% for error in form_field.errors %}
                                 <span class="help-block"><i class="fa fa-remove"> </i> {{error}}</span>
@@ -29,6 +38,11 @@
                     {% endfor %}
                 </div>
             {% endfor %}
+            <div class="form-group">
+                <button class="btn btn-default" id="save-form">
+                    Save
+                </button>
+            </div>
         </form>
     </div>
 </div>
