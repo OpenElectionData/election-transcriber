@@ -29,3 +29,8 @@ def init_db(sess=None, eng=None):
         password = DEFAULT_USER['password']
         datastore.create_user(email=email, password=password, name=name)
         datastore.commit()
+    from alembic.config import Config
+    from alembic import command
+    path = os.path.join(os.path.dirname(__file__), '..', 'alembic.ini')
+    alembic_cfg = Config(path)
+    command.stamp(alembic_cfg, 'head')

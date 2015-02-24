@@ -4,13 +4,6 @@ from wtforms.form import Form
 from wtforms.fields import StringField
 from wtforms.validators import DataRequired
 
-def makeFormFromTask(task):
-    form = Form()
-    for field in task.fields:
-        validators = [DataRequired()]
-        setattr(form, field.slug, StringField(field.name, validators))
-    return form
-
 def slugify(text, delim=u'_'):
     if text:
         text = unicode(text)

@@ -10,8 +10,8 @@ from transcriber.models import FormMeta, FormSection, FormField
 from transcriber.database import engine, db_session
 from transcriber.helpers import slugify
 from flask_wtf import Form
-from wtforms.fields import StringField, BooleanField, DateField, \
-        DateTimeField, IntegerField
+from wtforms.fields import StringField, BooleanField, DateField, IntegerField
+from wtforms.ext.dateutil.fields import DateTimeField
 from wtforms.validators import DataRequired
 from datetime import datetime
 from transcriber.app_config import TIME_ZONE

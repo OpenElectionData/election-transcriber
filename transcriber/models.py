@@ -55,6 +55,18 @@ class SecurityUserDatastore(SecurityDatastore, UserDatastore):
     def find_role(self, role):
         return self.session.query(self.role_model).filter_by(name=role).first()
 
+class Image(Base):
+    __tablename__ = 'image'
+    id = Column(Integer, primary_key=True)
+    view_count = Column(Integer)
+    image_type = Column(String)
+    fetch_url = Column(String)
+    form_id = Column(Integer, ForeignKey('form_meta.id'))
+    form = relationship('FormMeta', backref=backref('images'))
+
+    def __repr__(self):
+        return '<Image %r>' % self.fetch_url
+
 class FormMeta(Base):
     __tablename__ = 'form_meta'
     id = Column(Integer, primary_key=True)
@@ -65,6 +77,7 @@ class FormMeta(Base):
     last_update = Column(DateTime(timezone=True), onupdate=datetime.now)
     sample_image = Column(String)
     table_name = Column(String)
+    image_view_count = Column(Integer)
 
     def __repr__(self):
         return '<FormMeta %r>' % self.id
