@@ -6,9 +6,9 @@ from flask_security.decorators import login_required
 from flask_security.core import current_user
 from transcriber.app_config import UPLOAD_FOLDER
 from werkzeug import secure_filename
-from transcriber.models import FormMeta, FormSection, FormField
+from transcriber.models import FormMeta, FormSection, FormField, Image
 from transcriber.database import engine, db_session
-from transcriber.helpers import slugify
+from transcriber.helpers import slugify, add_images
 from flask_wtf import Form
 from wtforms.fields import StringField, BooleanField, IntegerField
 from wtforms.ext.dateutil.fields import DateTimeField, DateField
@@ -212,7 +212,8 @@ def form_creator():
                 Column('date_added', DateTime(timezone=True), 
                     server_default=text('CURRENT_TIMESTAMP')),
                 Column('transcriber', String),
-                Column('id', Integer, primary_key=True)
+                Column('id', Integer, primary_key=True),
+                Column('image_id', Integer)
             ]
             for field in form_meta.fields:
                 dt = DATA_TYPE.get(field.data_type, String)
@@ -223,6 +224,7 @@ def form_creator():
             table.create(bind=engine)
             db_session.add(form_meta)
             db_session.commit()
+            add_images(form_meta.id)
     next_section_index = 2
     next_field_indexes = {1: 2}
     if form_meta.id:
@@ -285,7 +287,10 @@ def transcriber():
     if request.method == 'POST':
         form = form(request.form)
         if form.validate():
-            ins_args = {'transcriber': current_user.name}
+            ins_args = {
+                'transcriber': current_user.name,
+                'image_id': flask_session['image_id'],
+            }
             for k,v in request.form.items():
                 if k != 'csrf_token':
                     ins_args[k] = v
@@ -300,13 +305,24 @@ def transcriber():
             engine = db_session.bind
             with engine.begin() as conn:
                 conn.execute(text(ins), **ins_args)
+            image = db_session.query(Image).get(flask_session['image_id'])
+            image.view_count += 1
+            db_session.add(image)
+            db_session.commit()
     else:
         form = form(meta={})
 
     # This is where we put in the image. 
     # Right now it's just always loading the example image
-    flask_session['image'] = task.sample_image
-    flask_session['image_type'] = task.sample_image.rsplit('.', 1)[1].lower()
+    # flask_session['image'] = task.sample_image
+    # flask_session['image_type'] = task.sample_image.rsplit('.', 1)[1].lower()
+    image = db_session.query(Image)\
+            .filter(Image.form_id == task.id)\
+            .order_by(Image.view_count)\
+            .first()
+    flask_session['image'] = image.fetch_url
+    flask_session['image_type'] = image.image_type
+    flask_session['image_id'] = image.id
     return render_template('transcribe.html', form=form, task=task_dict)
 
 @views.route('/uploads/<filename>')

@@ -58,7 +58,7 @@ class SecurityUserDatastore(SecurityDatastore, UserDatastore):
 class Image(Base):
     __tablename__ = 'image'
     id = Column(Integer, primary_key=True)
-    view_count = Column(Integer)
+    view_count = Column(Integer, default=0)
     image_type = Column(String)
     fetch_url = Column(String)
     form_id = Column(Integer, ForeignKey('form_meta.id'))
