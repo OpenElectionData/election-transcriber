@@ -16,6 +16,7 @@
                     <tr>
                         <th>Transcription task</th>
                         <th>Created</th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -27,6 +28,7 @@
                                     {{t.date_added}}
                                 </span>
                             </td>
+                            <td><a href='/transcribe/?task_id={{t.id}}'>Start transcribing &raquo;</a></td>
                         </tr>
                     {% endfor %}
                 </tbody>
