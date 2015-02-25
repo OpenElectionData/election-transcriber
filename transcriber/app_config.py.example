@@ -26,6 +26,9 @@ MAIL_USE_SSL = True
 MAIL_USERNAME = 'username'
 MAIL_PASSWORD = 'password'
 
+AWS_KEY = ''
+AWS_SECRET = ''
+
 SECURITY_PASSWORD_HASH = 'bcrypt'
 SECURITY_PASSWORD_SALT = 'really-really-secret'
 SECURITY_EMAIL_SENDER = 'app@email.address'
