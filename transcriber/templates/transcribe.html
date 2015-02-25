@@ -2,12 +2,13 @@
 {% from 'macros.html' import render_image %}
 {% block title %}Election Transcriber{% endblock %}
 {% block content %}
+<h1>{{task.name}}</h1>
 <div class="row">
-    <div class='col-md-5'>
+    <div class='col-md-6'>
         {{ render_image() }}
     </div>
-    <div class="col-sm-7">
-        <form id="transcriber" role="form" class="form" method="POST" action="">
+    <div class="col-sm-6">
+        <form id="transcriber" role="form" class="form-horizontal" method="POST" action="">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             {% for section in task.sections %}
                 <div class="well">
@@ -20,14 +21,16 @@
                         <div class="form-group">
                         {% endif %}
                             {% if form_field.widget.input_type == 'text' %}
-                            <label for="id_{{ field.slug }}">{{ field.name }}</label>
-                            {{ form_field(class_='form-control') }}
+                                <label for="id_{{ field.slug }}" class="col-sm-2 control-label">{{ field.name }}</label>
+                                <div class='col-sm-10'>
+                                    {{ form_field(class_='form-control') }}
+                                </div>
                             {% elif form_field.widget.input_type == 'checkbox' %}
-                            <div class="checkbox">
-                                <label>
-                                    {{ form_field }} {{ field.name }}
-                                </label>
-                            </div>
+                                <div class="checkbox col-sm-offset-2">
+                                    <label>
+                                        {{ form_field }} {{ field.name }}
+                                    </label>
+                                </div>
                             {% endif %}
                             {% if form_field.errors %}
                                 {% for error in form_field.errors %}
@@ -39,9 +42,12 @@
                 </div>
             {% endfor %}
             <div class="form-group">
-                <button class="btn btn-default" id="save-form">
-                    Save
-                </button>
+                <div class="col-sm-12">
+                    <button class="btn btn-success" id="save-form">
+                        <i class='fa fa-save'></i>
+                        Submit
+                    </button>
+                </div>
             </div>
         </form>
     </div>

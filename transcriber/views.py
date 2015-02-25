@@ -225,6 +225,9 @@ def form_creator():
             db_session.add(form_meta)
             db_session.commit()
             add_images(form_meta.id)
+
+            return redirect(url_for('views.index'))
+            
     next_section_index = 2
     next_field_indexes = {1: 2}
     if form_meta.id:
@@ -270,7 +273,7 @@ def transcriber():
             .order_by(FormSection.index, FormField.index)
     task = task.first()
     form = Form
-    task_dict = {'sections': []}
+    task_dict = {'name': task.name, 'sections': []}
     bools = []
     for section in sorted(task.sections, key=attrgetter('index')):
         section_dict = {'name': section.name, 'fields': []}
