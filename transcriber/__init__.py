@@ -28,9 +28,16 @@ def create_app():
         if s:
             return '{:,}'.format(s)
         return s
+
+    @app.template_filter('format_date')
+    def format_date(s, fmt='%H:%M%p %b %d, %Y'): # pragma: no cover
+        if s:
+            return s.strftime(fmt)
+        else:
+            return '0'
     
     @app.template_filter('format_date_sort')
-    def format_date(s, fmt='%Y%m%d%H%M'): # pragma: no cover
+    def format_date_sort(s, fmt='%Y%m%d%H%M'): # pragma: no cover
         if s:
             return s.strftime(fmt)
         else:

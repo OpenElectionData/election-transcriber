@@ -8,7 +8,7 @@
         {% if tasks %}
 
             <p>
-                <a href="{{ url_for('views.upload') }}" class="btn btn-default">New transcription task > </a>
+                <a href="{{ url_for('views.upload') }}" class="btn btn-success">New transcription task &raquo; </a>
             </p>
 
             <table class='table' id='transcription_tasks'>
@@ -22,10 +22,10 @@
                 <tbody>
                     {% for t in tasks %}
                         <tr>
-                            <td><a href='/form-creator/?form_id={{t.id}}'>{{t.name}}</a></td>
+                            <td>Edit <a href='/form-creator/?form_id={{t.id}}'>{{t.name}}</a></td>
                             <td>
-                                <span datetime='{{t.date_added | format_date_sort}}'>
-                                    {{t.date_added}}
+                                <span class='date-created' datetime='{{t.date_added | format_date_sort}}'>
+                                    {{t.date_added | format_date }}
                                 </span>
                             </td>
                             <td><a href='/transcribe/?task_id={{t.id}}'>Start transcribing &raquo;</a></td>
@@ -50,11 +50,20 @@
     <script src="{{ url_for('static', filename='js/jquery.dataTables.sorting.js') }}"></script>
     <script type='text/javascript'>
         $(document).ready(function(){
+
+            // $.each($('.date-created'), function(i, el) {
+            //     var date = $(this)
+            //     console.log(moment(date.html(), "YYYY-MM-DD HH:mm:ss.S Z"))
+            //     console.log(moment.utc().utcOffset('-06:00'))
+            //     date.html(moment(date.html(),"YYYY-MM-DD HH:mm:ss.S Z").from(moment().utcOffset('-06:00')))
+            // })
+
             $('#transcription_tasks').DataTable( {
                 "aaSorting": [ [1,'desc'] ],
                 "aoColumns": [
                     null,
-                    { "sType": "datetime" }
+                    { "sType": "datetime" },
+                    null
                 ],
                 "paging": false,
                 "searching": false,
