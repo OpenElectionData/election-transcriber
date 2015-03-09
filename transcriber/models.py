@@ -82,6 +82,9 @@ class FormMeta(Base):
     def __repr__(self):
         return '<FormMeta %r>' % self.id
 
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
 class FormSection(Base):
     __tablename__ = 'form_section'
     id = Column(Integer, primary_key=True)

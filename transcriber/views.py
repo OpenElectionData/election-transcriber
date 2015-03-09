@@ -10,9 +10,10 @@ from transcriber.models import FormMeta, FormSection, FormField, Image
 from transcriber.database import engine, db_session
 from transcriber.helpers import slugify, add_images
 from flask_wtf import Form
-from wtforms.fields import StringField, BooleanField, IntegerField
-from wtforms.ext.dateutil.fields import DateTimeField, DateField
-from wtforms.validators import DataRequired
+from transcriber.dynamic_form import TranscriberIntegerField as IntegerField, \
+    TranscriberDateTimeField as DateTimeField, TranscriberDateField as DateField, \
+    BlankValidator
+from wtforms.fields import BooleanField, StringField
 from datetime import datetime
 from transcriber.app_config import TIME_ZONE
 from sqlalchemy import Table, Column, MetaData, String, Boolean, \
@@ -177,8 +178,16 @@ def form_creator():
                 sql_type = SQL_DATA_TYPE[field.data_type]
                 alt = 'ALTER TABLE "{0}" ADD COLUMN {1} {2}'\
                         .format(form_meta.table_name, field.slug, sql_type)
+                blank = 'ALTER TABLE "{0}" ADD COLUMN {1}_blank boolean'\
+                        .format(form_meta.table_name, field.slug)
+                not_legible = '''
+                    ALTER TABLE "{0}" 
+                    ADD COLUMN {1}_not_legible boolean
+                    '''.format(form_meta.table_name, field.slug)
                 with engine.begin() as conn:
                     conn.execute(alt)
+                    conn.execute(blank)
+                    conn.execute(not_legible)
            
             # Commenting this for now since switching data types is tricky
 
@@ -220,14 +229,14 @@ def form_creator():
                 if field.data_type  == 'datetime':
                     dt = DateTime(timezone=True)
                 cols.append(Column(field.slug, dt))
+                cols.append(Column('{0}_blank'.format(field.slug), Boolean))
+                cols.append(Column('{0}_not_legible'.format(field.slug), Boolean))
             table = Table(form_meta.table_name, metadata, *cols)
             table.create(bind=engine)
             db_session.add(form_meta)
             db_session.commit()
             add_images(form_meta.id)
-
-            return redirect(url_for('views.index'))
-            
+        return redirect(url_for('views.index'))
     next_section_index = 2
     next_field_indexes = {1: 2}
     if form_meta.id:
@@ -273,18 +282,29 @@ def transcriber():
             .order_by(FormSection.index, FormField.index)
     task = task.first()
     form = Form
-    task_dict = {'name': task.name, 'sections': []}
+    task_dict = task.as_dict()
+    task_dict['sections'] = []
     bools = []
     for section in sorted(task.sections, key=attrgetter('index')):
         section_dict = {'name': section.name, 'fields': []}
         for field in sorted(section.fields, key=attrgetter('index')):
-            validators = [DataRequired()]
+            message = u'If the "{0}" field is either blank or not legible, \
+                    please mark the appropriate checkbox'.format(field.name)
+            validators = [BlankValidator(message=message)]
             if field.data_type == 'boolean':
                 bools.append(field.slug)
                 ft = FORM_TYPE[field.data_type]()
             else:
-                ft = FORM_TYPE[field.data_type](validators=validators)
+                if field.data_type == 'string':
+                    ft = FORM_TYPE[field.data_type](validators=validators)
+                else:
+                    ft = FORM_TYPE[field.data_type]()
             setattr(form, field.slug, ft)
+            blank = '{0}_blank'.format(field.slug)
+            not_legible = '{0}_not_legible'.format(field.slug)
+            setattr(form, blank, BooleanField())
+            setattr(form, not_legible, BooleanField())
+            bools.extend([blank, not_legible])
             section_dict['fields'].append(field)
         task_dict['sections'].append(section_dict)
     if request.method == 'POST':

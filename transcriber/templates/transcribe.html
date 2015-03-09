@@ -15,29 +15,58 @@
                     <h3>{{ section.name }}</h3>
                     {% for field in section.fields %}
                         {% set form_field = form|attr(field.slug) %}
+                        {% set form_blank = form|attr(field.slug + '_blank') %}
+                        {% set form_not_legible = form|attr(field.slug + '_not_legible') %}
                         {% if form_field.errors %}
                         <div class="form-group has-error">
                         {% else %}
                         <div class="form-group">
                         {% endif %}
-                            {% if form_field.widget.input_type == 'text' %}
-                                <label for="id_{{ field.slug }}" class="col-sm-2 control-label">{{ field.name }}</label>
-                                <div class='col-sm-10'>
-                                    {{ form_field(class_='form-control') }}
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    {% if form_field.widget.input_type == 'text' %}
+                                        <label for="id_{{ field.slug }}" class="col-sm-2 control-label">{{ field.name }}</label>
+                                        <div class='col-sm-10'>
+                                            {{ form_field(class_='form-control') }}
+                                        </div>
+                                    {% elif form_field.widget.input_type == 'checkbox' %}
+                                        <div class="checkbox col-sm-offset-2">
+                                            <label>
+                                                {{ form_field }} {{ field.name }}
+                                            </label>
+                                        </div>
+                                    {% endif %}
                                 </div>
-                            {% elif form_field.widget.input_type == 'checkbox' %}
-                                <div class="checkbox col-sm-offset-2">
-                                    <label>
-                                        {{ form_field }} {{ field.name }}
-                                    </label>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-6">
+                                    <div class="checkbox col-sm-offset-2">
+                                        <label>
+                                            {{ form_blank }} Field is blank
+                                        </label>
+                                    </div>
                                 </div>
-                            {% endif %}
-                            {% if form_field.errors %}
-                                {% for error in form_field.errors %}
-                                <span class="help-block"><i class="fa fa-remove"> </i> {{error}}</span>
-                                {% endfor %}
-                            {% endif %}
+                                <div class="col-sm-6">
+                                    <div class="checkbox col-sm-offset-2">
+                                        <label>
+                                            {{ form_blank }} Field is not legible
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    {% if form_field.errors %}
+                                        {% for error in form_field.errors %}
+                                        <span class="help-block"><i class="fa fa-remove"> </i> {{error}}</span>
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
+                        {% if not loop.last %}
+                            <hr />
+                        {% endif %}
                     {% endfor %}
                 </div>
             {% endfor %}
