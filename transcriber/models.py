@@ -62,7 +62,8 @@ class Image(Base):
     image_type = Column(String)
     fetch_url = Column(String)
     form_id = Column(Integer, ForeignKey('form_meta.id'))
-    form = relationship('FormMeta', backref=backref('images'))
+    form = relationship('FormMeta', 
+                backref=backref('images', cascade="all, delete-orphan"))
 
     def __repr__(self):
         return '<Image %r>' % self.fetch_url
@@ -92,7 +93,8 @@ class FormSection(Base):
     slug = Column(String)
     index = Column(Integer)
     form_id = Column(Integer, ForeignKey('form_meta.id'))
-    form = relationship('FormMeta', backref=backref('sections'))
+    form = relationship('FormMeta', backref=backref('sections', 
+                cascade="all, delete-orphan"))
 
     def __repr__(self):
         return '<FormSection %r>' % self.name
@@ -105,9 +107,11 @@ class FormField(Base):
     index = Column(Integer)
     data_type = Column(String)
     section_id = Column(Integer, ForeignKey('form_section.id'))
-    section = relationship('FormSection', backref=backref('fields'))
+    section = relationship('FormSection', backref=backref('fields', 
+                cascade="all, delete-orphan"))
     form_id = Column(Integer, ForeignKey('form_meta.id'))
-    form = relationship('FormMeta', backref=backref('fields'))
+    form = relationship('FormMeta', backref=backref('fields', 
+                cascade="all, delete-orphan"))
 
     def __repr__(self):
         return '<FormField %r>' % self.name

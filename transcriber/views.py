@@ -78,6 +78,31 @@ def upload():
             return redirect(url_for('views.form_creator'))
     return render_template('upload.html', image=image)
 
+@views.route('/delete-task/', methods=['DELETE'])
+@login_required
+def delete_task():
+    task_id = request.form.get('task_id')
+    r = {
+        'status': 'ok',
+        'message': ''
+    }
+    status_code = 200
+    if not task_id:
+        r['status'] = 'error'
+        r['message'] = 'Need the ID of the form to remove'
+        status_code = 400
+    else:
+        form = db_session.query(FormMeta).get(task_id)
+        meta = MetaData()
+        table = Table(form.table_name, meta, 
+                autoload=True, autoload_with=engine)
+        table.drop(engine, checkfirst=True)
+        db_session.delete(form)
+        db_session.commit()
+    response = make_response(json.dumps(r), status_code)
+    response.headers['Content-Type'] = 'application/json'
+    return response
+
 @views.route('/form-creator/', methods=['GET', 'POST'])
 @login_required
 def form_creator():
@@ -188,31 +213,6 @@ def form_creator():
                     conn.execute(alt)
                     conn.execute(blank)
                     conn.execute(not_legible)
-           
-            # Commenting this for now since switching data types is tricky
-
-            #for column in existing_columns:
-            #    field = [f for f in form_meta.fields if f.slug == unicode(column)][0]
-            #    col = getattr(table.c, column)
-            #    dt = DATA_TYPE[field.data_type]
-            #    if col.type != dt:
-            #        sql_type = SQL_DATA_TYPE[field.data_type]
-            #        alt = 'ALTER TABLE "{0}" ALTER COLUMN {1} TYPE {2}'\
-            #                .format(form_meta.table_name, field.slug, sql_type)
-            #        conn = engine.connect()
-            #        trans = conn.begin()
-            #        try:
-            #            conn.execute(alt)
-            #            conn.commit()
-            #        except Exception:
-            #            trans.rollback()
-            #            uu = unicode(uuid4()).rsplit('-', 1)[1]
-            #            column_name = '{0}_{1}'.format(field.slug, uu)
-            #            alt = 'ALTER TABLE "{0}" ADD COLUMN "{1}" {2}'\
-            #                    .format(form_meta.table_name, column_name, sql_type)
-            #            conn.execute(alt)
-            #            field.slug = column_name
-            #            db_session.add(field)
         else:
             form_meta.table_name = '{0}_{1}'.format(
                     unicode(uuid4()).rsplit('-', 1)[1], 
@@ -238,7 +238,7 @@ def form_creator():
             add_images(form_meta.id)
         return redirect(url_for('views.index'))
     next_section_index = 2
-    next_field_indexes = {1: 2}
+    next_field_indicies = {1: 2}
     if form_meta.id:
         sel = ''' 
             SELECT 
@@ -264,12 +264,12 @@ def form_creator():
             WHERE m.id = :form_id
             GROUP BY s.id
         '''
-        next_field_indexes = {f[0]: f[1] for f in \
+        next_field_indicies = {f[0]: f[1] for f in \
                 engine.execute(text(sel), form_id=form_meta.id)}
     return render_template('form-creator.html', 
                            form_meta=form_meta,
                            next_section_index=next_section_index,
-                           next_field_index=next_field_indexes)
+                           next_field_index=next_field_indicies)
 
 @views.route('/transcribe/', methods=['GET', 'POST'])
 def transcriber():

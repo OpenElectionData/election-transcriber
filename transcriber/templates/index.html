@@ -17,6 +17,7 @@
                         <th>Transcription task</th>
                         <th>Created</th>
                         <th></th>
+                        <th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -29,6 +30,7 @@
                                 </span>
                             </td>
                             <td><a href='/transcribe/?task_id={{t.id}}'>Start transcribing &raquo;</a></td>
+                            <td><a class="delete-task" href="javascript://" data-task_id="{{t.id}}">Delete</a></td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -57,7 +59,14 @@
             //     console.log(moment.utc().utcOffset('-06:00'))
             //     date.html(moment(date.html(),"YYYY-MM-DD HH:mm:ss.S Z").from(moment().utcOffset('-06:00')))
             // })
-
+            $('.delete-task').on('click', function(e){
+                var task_id = $(this).data('task_id');
+                var self = $(this)
+                $.when(deleteTask(task_id)).then(function(resp){
+                    console.log(resp);
+                    self.parent().parent().remove()
+                })
+            })
             $('#transcription_tasks').DataTable( {
                 "aaSorting": [ [1,'desc'] ],
                 "aoColumns": [
@@ -68,7 +77,15 @@
                 "paging": false,
                 "searching": false,
                 "info": false
-            } ); 
+            } );
         });
+        function deleteTask(task_id){
+            return $.ajax({
+                url: '/delete-task/',
+                data: {'task_id': task_id},
+                dataType: 'json',
+                type: 'DELETE'
+            })
+        }
     </script>
 {% endblock %}
