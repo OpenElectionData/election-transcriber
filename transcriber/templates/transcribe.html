@@ -1,8 +1,18 @@
 {% extends 'base.html' %}
 {% from 'macros.html' import render_image %}
-{% block title %}Election Transcriber{% endblock %}
+{% block title %}{{task.name}}{% endblock %}
 {% block content %}
-<h1>{{task.name}}</h1>
+
+<p class='pull-right'>
+    <button type="button" data-toggle="modal" data-target="#help-modal" class="btn btn-link"><i class='fa fa-question-circle'></i> Help</button>
+</p>
+
+<p>
+    <strong>{{task.name}}</strong> 
+    {% if task.description %}
+        {{task.description}}
+    {% endif %}
+</p>
 <div class="row">
     <div class='col-md-6'>
         {{ render_image() }}
@@ -25,32 +35,26 @@
                             <div class="row">
                                 <div class="col-sm-12">
                                     {% if form_field.widget.input_type == 'text' %}
-                                        <label for="id_{{ field.slug }}" class="col-sm-2 control-label">{{ field.name }}</label>
-                                        <div class='col-sm-10'>
+                                        <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }}</label>
+                                        <div class='col-sm-6'>
                                             {{ form_field(class_='form-control') }}
                                         </div>
                                     {% elif form_field.widget.input_type == 'checkbox' %}
-                                        <div class="checkbox col-sm-offset-2">
+                                        <div class="checkbox col-sm-offset-3">
                                             <label>
                                                 {{ form_field }} {{ field.name }}
                                             </label>
                                         </div>
                                     {% endif %}
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-sm-6">
-                                    <div class="checkbox col-sm-offset-2">
-                                        <label>
-                                            {{ form_blank }} Field is blank
-                                        </label>
-                                    </div>
-                                </div>
-                                <div class="col-sm-6">
-                                    <div class="checkbox col-sm-offset-2">
-                                        <label>
-                                            {{ form_blank }} Field is not legible
-                                        </label>
+                                    <div class="col-sm-offset-3">
+                                        <div class="checkbox field-checks">
+                                            <label>
+                                                {{ form_blank }} Blank?
+                                            </label>
+                                            <label>
+                                                {{ form_not_legible }} Not legible?
+                                            </label>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -64,16 +68,13 @@
                                 </div>
                             </div>
                         </div>
-                        {% if not loop.last %}
-                            <hr />
-                        {% endif %}
                     {% endfor %}
                 </div>
             {% endfor %}
             <div class="form-group">
                 <div class="col-sm-12">
                     <button class="btn btn-success" id="save-form">
-                        <i class='fa fa-save'></i>
+                        <i class='fa fa-check'></i>
                         Submit
                     </button>
                 </div>
@@ -81,6 +82,25 @@
         </form>
     </div>
 </div>
+
+<div id="help-modal" class="modal fade">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <p class="modal-title">Help with transcribing</p>
+            </div>
+            <div class="modal-body">
+                <p>Some helpful text</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-link" data-dismiss="modal">Close</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
 {% endblock %}
 {% block extra_javascript %}
     <script src="{{ url_for('static', filename='js/jquery.panzoom.min.js') }}"></script>
@@ -90,5 +110,13 @@
                 $zoomRange: $('input[type="range"]')
             });
         })
+
+        //dynamically set the size of the image iframe
+        $(window).resize(function () {
+          var h = $(window).height(),
+            offsetTop = 95; // Calculate the top offset
+        
+          $('#result-image').css('height', (h - offsetTop));
+        }).resize();
     </script>
 {% endblock %}

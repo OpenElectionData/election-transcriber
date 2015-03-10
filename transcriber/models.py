@@ -1,6 +1,6 @@
 from transcriber.database import Base, db_session as session
 from flask_bcrypt import Bcrypt
-from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
+from sqlalchemy import Integer, String, Text, Boolean, Column, Table, ForeignKey, \
     DateTime, text
 from sqlalchemy.orm import synonym, backref, relationship
 from flask.ext.security import UserMixin, RoleMixin
@@ -72,6 +72,7 @@ class FormMeta(Base):
     __tablename__ = 'form_meta'
     id = Column(Integer, primary_key=True)
     name = Column(String)
+    description = Column(Text)
     slug = Column(String)
     status = Column(String)
     date_added = Column(DateTime(timezone=True), 
