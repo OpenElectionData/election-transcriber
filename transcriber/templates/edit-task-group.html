@@ -1,0 +1,42 @@
+{% extends 'base.html' %}
+{% block title %}Edit task | {{ task_group.name }}{% endblock %}
+{% block extra_styles %}
+    <link href="{{ url_for('static', filename='css/jquery-ui.min.css') }}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<div id="task-sorter">
+    {% for task in task_group.tasks %}
+        <div class="row">
+            <div class="col-sm-12">
+                <h3 data-task_index="{{ loop.index }}"
+                    data-task_id="{{ task.id }}">
+                    <span class="label label-primary">
+                        {{ task.name }}
+                    </span>
+                </h3>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+
+{% endblock %}
+
+{% block extra_javascript %}
+    <script src="{{ url_for('static', filename='js/jquery-ui.min.js') }}"></script>
+    <script type='text/javascript'>
+        $(document).ready(function(){
+            $('#task-sorter').sortable({
+                update: function(event, ui){
+                    console.log(ui.item.find('h3').data('task_index'));
+                }
+            })
+            $('h3 .label').on('mouseover', function(e){
+                $(this).css('cursor', 'pointer');
+            })
+            $('h3 .label').on('mouseout', function(e){
+                $(this).css('cursor', 'inherit');
+            })
+        });
+    </script>
+{% endblock %}

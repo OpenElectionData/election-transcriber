@@ -7,6 +7,9 @@
     Transcription task - New form
     {% endif %}
 {% endblock %}
+{% block extra_styles %}
+    <link href="{{ url_for('static', filename='css/jquery-ui.min.css') }}" rel="stylesheet">
+{% endblock %}
 {% block content %}
 <div class="row">
     <div class='col-md-6'>
@@ -37,6 +40,27 @@
                            placeholder="Task description and instructions"></textarea>
                     </div>
                 </div>
+                <div class="form-group">
+                    <label for="id_task_group" class="col-sm-3 control-label">Task Group</label>
+                    <div class="col-sm-9">
+                        <input type="text"
+                               class="form-control"
+                               id="id_task_group"
+                               name="task_group"
+                               placeholder="A new task group"
+                               aria-describedby="section-name-addon"/>
+                        </div>
+                </div>
+                <div class="form-group">
+                    <label for="id_task_description" class="col-sm-3 control-label">Instructions</label>
+                    <div class="col-sm-9">
+                        <textarea
+                           class="form-control"
+                           id="id_task_group_description"
+                           name="task_group_description"
+                           placeholder="Task group description"></textarea>
+                    </div>
+                </div>
             </div>
             <div id="add-section-container"></div>
             <h4>
@@ -61,6 +85,7 @@
 {% block extra_javascript %}
     <script src="{{ url_for('static', filename='js/ejs_production.js') }}"></script>
     <script src="{{ url_for('static', filename='js/jquery.panzoom.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jquery-ui.min.js') }}"></script>
     <script type="text/EJS" id="sectionTemplate">
         <div class="well">
             <div class="form-group">
@@ -164,6 +189,10 @@
         $(document).ready(function(){
             if (form_meta.sections.length > 0){
                 $('#id_task_name').val(form_meta.name);
+                $('#id_task_description').val(form_meta.description);
+                $('#id_task_group').val(form_meta.task_group.name);
+                $('#id_task_group').data('groupid', form_meta.task_group.id);
+                $('#id_task_group_description').val(form_meta.task_group.description);
                 $.each(form_meta.sections, function(i, section){
                     if (section.status != 'deleted'){
                         var tpl = new EJS({'text': $('#sectionTemplate').html()});
@@ -201,6 +230,10 @@
                     }
                 });
                 if(valid){
+                    if($('#id_task_group').data('groupid')){
+                        var groupid = $('#id_task_group').data('groupid');
+                        $('#task-form').append('<input type="hidden" name="task_group_id" value="' + groupid + '" />');
+                    }
                     $('#task-form').submit();
                 }
             })
@@ -222,6 +255,26 @@
             $('.panzoom').panzoom({
                 $zoomRange: $('input[type="range"]')
             });
+            $('#id_task_group').autocomplete({
+                source: '/get-task-group/',
+                minLength: 2,
+                select: function(event, ui){
+                    $('#id_task_group').val(ui.item.name);
+                    $('#id_task_group_description').val(ui.item.description);
+                    $('#id_task_group').data('groupid', ui.item.id);
+                    return false;
+                },
+                focus: function(event, ui){
+                    $('#id_task_group').val(ui.item.name);
+                    $('#id_task_group_description').val(ui.item.description);
+                    return false;
+                }
+            })
+            .data('ui-autocomplete')._renderItem = function(ul, item){
+                return $('<li>')
+                    .append('<a data-groupid="' + item.id + '">' + item.name + '</a>')
+                    .appendTo(ul);
+            };
         })
         function getFieldID(section_id){
             if(typeof field_ids[section_id] === 'undefined'){

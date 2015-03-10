@@ -37,12 +37,12 @@ def include_tables_from_config(config_):
 
 include_tables = include_tables_from_config(config.get_section('alembic:include'))
 
-def include_object(object, name, type_, reflected, compare_to):
-    if type_ == 'table' and name in include_tables:
+def include_object(obj, name, type_, reflected, compare_to):
+    parts = unicode(obj).split('.')
+    if parts[0] in include_tables and type_ in ['table', 'column']:
         return True
     else:
         return False
-
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
@@ -72,7 +72,6 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
-    print config.get_section(config.config_ini_section)
     engine = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix='sqlalchemy.',
