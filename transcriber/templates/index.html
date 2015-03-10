@@ -81,8 +81,8 @@
         });
         function deleteTask(task_id){
             return $.ajax({
-                url: '/delete-task/',
-                data: {'task_id': task_id},
+                url: '/delete-part/',
+                data: {'part_id': task_id, 'part_type': 'form'},
                 dataType: 'json',
                 type: 'DELETE'
             })

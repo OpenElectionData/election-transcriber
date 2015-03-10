@@ -67,32 +67,48 @@
                        id="id_section_<%= section.index %>" />
                 </div>
             </div>
+            <div class="form-group">
+                <div class="col-sm-4 col-sm-offset-8">
+                    <button class="delete section btn btn-default" data-part_id="<%= section.id %>" data-part_type="section">
+                        Delete Section
+                    </button>
+                </div>
+            </div>
             <div class="add-field-container">
                 <% $.each(section.fields, function(i, field){ %>
-                    <div class="form-group">
-                        <label for="id_section_<%= section.index %>_<%= field.index %>" class="col-sm-2 control-label">Field</label>
-                        <div class="col-sm-6">
-                            <input type="text"
-                                   class="form-control"
-                                   <% if (typeof field.name !== 'undefined'){ %>
-                                   value="<%= field.name %>"
-                                   <% } else { %>
-                                   placeholder="Name of a field to transcribe"
-                                   <% } %>
-                                   name="section_<%= section.index %>_field_<%= field.index %>"
-                                   id="id_section_<%= section.index %>_field_<%= field.index %>" />
+                    <% if (field.status != 'deleted'){ %>
+                        <div class="form-group">
+                            <label for="id_section_<%= section.index %>_<%= field.index %>" class="col-sm-2 control-label">Field</label>
+                            <div class="col-sm-6">
+                                <input type="text"
+                                       class="form-control"
+                                       <% if (typeof field.name !== 'undefined'){ %>
+                                       value="<%= field.name %>"
+                                       <% } else { %>
+                                       placeholder="Name of a field to transcribe"
+                                       <% } %>
+                                       name="section_<%= section.index %>_field_<%= field.index %>"
+                                       id="id_section_<%= section.index %>_field_<%= field.index %>" />
+                            </div>
+                            <div class="col-sm-4">
+                                <select class="form-control" name="datatype_section_<%= section.index %>_field_<%= field.index %>">
+                                    <option value="">Select field type</option>
+                                    <option value="boolean" <% if(field.data_type == 'boolean'){ %>selected="true"<% } %>>Yes / No</option>
+                                    <option value="string" <% if(field.data_type == 'string'){ %>selected="true"<% } %>>Text</option>
+                                    <option value="datetime" <% if(field.data_type == 'datetime'){ %>selected="true"<% } %>>Date and time</option>
+                                    <option value="date" <% if(field.data_type == 'date'){ %>selected="true"<% } %>>Date</option>
+                                    <option value="integer" <% if(field.data_type == 'integer'){ %>selected="true"<% } %>>Number</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="col-sm-4">
-                            <select class="form-control" name="datatype_section_<%= section.index %>_field_<%= field.index %>">
-                                <option value="">Select field type</option>
-                                <option value="boolean" <% if(field.data_type == 'boolean'){ %>selected="true"<% } %>>Yes / No</option>
-                                <option value="string" <% if(field.data_type == 'string'){ %>selected="true"<% } %>>Text</option>
-                                <option value="datetime" <% if(field.data_type == 'datetime'){ %>selected="true"<% } %>>Date and time</option>
-                                <option value="date" <% if(field.data_type == 'date'){ %>selected="true"<% } %>>Date</option>
-                                <option value="integer" <% if(field.data_type == 'integer'){ %>selected="true"<% } %>>Number</option>
-                            </select>
+                        <div class="form-group">
+                            <div class="col-sm-4 col-sm-offset-8">
+                                <button class="delete btn btn-default" data-part_id="<%= field.id %>" data-part_type="field">
+                                    Delete Field
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    <% } %>
                 <% }) %>
             </div>
             <div class="form-group">
@@ -126,6 +142,13 @@
                 </select>
             </div>
         </div>
+        <div class="form-group">
+            <div class="col-sm-4 col-sm-offset-8">
+                <button class="delete btn btn-default" data-part_id="<%= field_id %>" data-part_type="field">
+                    Delete Field
+                </button>
+            </div>
+        </div>
     </script>
     <script type="text/javascript">
         $(window).resize(function () {
@@ -141,8 +164,10 @@
             if (form_meta.sections.length > 0){
                 $('#id_task_name').val(form_meta.name);
                 $.each(form_meta.sections, function(i, section){
-                    var tpl = new EJS({'text': $('#sectionTemplate').html()});
-                    $('#add-section-container').append(tpl.render({'section': section}))
+                    if (section.status != 'deleted'){
+                        var tpl = new EJS({'text': $('#sectionTemplate').html()});
+                        $('#add-section-container').append(tpl.render({'section': section}))
+                    }
                 })
             } else {
                 var tpl = new EJS({'text': $('#sectionTemplate').html()});
@@ -186,10 +211,13 @@
                 $('#add-section-container').append(tpl.render(blob));
                 $('.add-field').off();
                 $('.add-field').on('click', addField)
+                $('.delete').off();
+                $('.delete').on('click', deleteStuff)
                 section_id += 1;
                 resizeImage();
                 return false;
-            })
+            });
+            $('.delete').on('click', deleteStuff)
             $('.panzoom').panzoom({
                 $zoomRange: $('input[type="range"]')
             });
@@ -217,7 +245,46 @@
             var tpl = new EJS({'text': $('#fieldTemplate').html()});
             $(parent).append(tpl.render({'section_id': section_id, 'field_id': getFieldID(section_id)}));
             resizeImage();
+            $('.delete').off();
+            $('.delete').on('click', deleteStuff)
             return false;
+        }
+        function deleteStuff(e){
+            e.preventDefault();
+            var part_id = $(this).data('part_id');
+            var part_type = $(this).data('part_type');
+            var self = $(this)
+            if (part_id && part_type){
+                $.ajax({
+                    url: '/delete-part/',
+                    data: {'part_id': part_id, 'part_type': part_type},
+                    dataType: 'json',
+                    type: 'DELETE',
+                    success: function(resp){
+                        if (part_type == 'section'){
+                            $(self).parent().parent().parent().remove();
+                        } else {
+                            $(self).parent().parent().prev().remove();
+                            $(self).parent().parent().remove();
+                        }
+                    },
+                    error: function(resp){
+                        if (part_type == 'section'){
+                            $(self).parent().parent().parent().remove();
+                        } else {
+                            $(self).parent().parent().prev().remove();
+                            $(self).parent().parent().remove();
+                        }
+                    }
+                })
+            } else {
+                if (part_type == 'section'){
+                    $(self).parent().parent().parent().remove();
+                } else {
+                    $(self).parent().parent().prev().remove();
+                    $(self).parent().parent().remove();
+                }
+            }
         }
     </script>
 {% endblock %}

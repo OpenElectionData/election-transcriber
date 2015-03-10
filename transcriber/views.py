@@ -19,7 +19,7 @@ from transcriber.app_config import TIME_ZONE
 from sqlalchemy import Table, Column, MetaData, String, Boolean, \
         Integer, DateTime, Date, text, and_, or_
 from sqlalchemy.exc import NoSuchTableError
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import aliased
 from uuid import uuid4
 from operator import attrgetter, itemgetter
 from itertools import groupby
@@ -82,24 +82,46 @@ def upload():
             return redirect(url_for('views.form_creator'))
     return render_template('upload.html', image=image)
 
-@views.route('/delete-task/', methods=['DELETE'])
+@views.route('/delete-part/', methods=['DELETE'])
 @login_required
-def delete_task():
-    task_id = request.form.get('task_id')
+def delete_part():
+    part_id = request.form.get('part_id')
+    part_type = request.form.get('part_type')
     r = {
         'status': 'ok',
         'message': ''
     }
     status_code = 200
-    if not task_id:
+    if not part_id:
         r['status'] = 'error'
-        r['message'] = 'Need the ID of the form to remove'
+        r['message'] = 'Need the ID of the component to remove'
+        status_code = 400
+    elif not part_type:
+        r['status'] = 'error'
+        r['message'] = 'Need the type of component to remove'
         status_code = 400
     else:
-        form = db_session.query(FormMeta).get(task_id)
-        form.status = 'deleted'
-        db_session.add(form)
-        db_session.commit()
+        thing = None
+        if part_type == 'section':
+            thing = FormSection
+        elif part_type == 'field':
+            thing = FormField
+        elif part_type == 'form':
+            thing = FormMeta
+        if thing:
+            it = db_session.query(thing).get(part_id)
+            if it:
+                it.status = 'deleted'
+                db_session.add(it)
+                db_session.commit()
+            else:
+                r['status'] = 'error'
+                r['message'] = '"{0}" is not a valid component ID'.format(part_id)
+                status_code = 400
+        else:
+            r['status'] = 'error'
+            r['message'] = '"{0}" is not a valid component type'.format(part_type)
+            status_code = 400
     response = make_response(json.dumps(r), status_code)
     response.headers['Content-Type'] = 'application/json'
     return response
@@ -196,8 +218,7 @@ def form_creator():
             table = Table(form_meta.table_name, metadata, 
                           autoload=True, autoload_with=engine)
             new_columns = set([f.slug for f in form_meta.fields])
-            existing_columns = set([c.name for c in table.columns \
-                    if c.name not in ['id', 'user', 'date_added']])
+            existing_columns = set([c.name for c in table.columns])
             add_columns = new_columns - existing_columns
             for column in add_columns:
                 field = [f for f in form_meta.fields if f.slug == unicode(column)][0]
