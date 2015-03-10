@@ -17,10 +17,12 @@ from wtforms.fields import BooleanField, StringField
 from datetime import datetime
 from transcriber.app_config import TIME_ZONE
 from sqlalchemy import Table, Column, MetaData, String, Boolean, \
-        Integer, DateTime, Date, text
+        Integer, DateTime, Date, text, and_, or_
+from sqlalchemy.exc import NoSuchTableError
 from sqlalchemy.orm import joinedload
 from uuid import uuid4
-from operator import attrgetter
+from operator import attrgetter, itemgetter
+from itertools import groupby
 
 views = Blueprint('views', __name__)
 
@@ -56,7 +58,9 @@ def allowed_file(filename):
 
 @views.route('/')
 def index():
-    tasks = db_session.query(FormMeta).all()
+    tasks = db_session.query(FormMeta)\
+            .filter(or_(FormMeta.status != 'deleted', 
+                        FormMeta.status == None)).all()
     return render_template('index.html', tasks=tasks)
 
 @views.route('/about/')
@@ -93,11 +97,8 @@ def delete_task():
         status_code = 400
     else:
         form = db_session.query(FormMeta).get(task_id)
-        meta = MetaData()
-        table = Table(form.table_name, meta, 
-                autoload=True, autoload_with=engine)
-        table.drop(engine, checkfirst=True)
-        db_session.delete(form)
+        form.status = 'deleted'
+        db_session.add(form)
         db_session.commit()
     response = make_response(json.dumps(r), status_code)
     response.headers['Content-Type'] = 'application/json'
@@ -266,6 +267,11 @@ def form_creator():
         '''
         next_field_indicies = {f[0]: f[1] for f in \
                 engine.execute(text(sel), form_id=form_meta.id)}
+    form_meta = form_meta.as_dict()
+    if form_meta['sections']:
+        for section in form_meta['sections']:
+            section['fields'] = sorted(section['fields'], key=itemgetter('index'))
+        form_meta['sections'] = sorted(form_meta['sections'], key=itemgetter('index'))
     return render_template('form-creator.html', 
                            form_meta=form_meta,
                            next_section_index=next_section_index,
@@ -275,12 +281,21 @@ def form_creator():
 def transcriber():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
+    section_sq = db_session.query(FormSection)\
+            .filter(or_(FormSection.status != 'deleted', 
+                        FormSection.status == None))\
+            .order_by(FormSection.index)\
+            .subquery()
+    field_sq = db_session.query(FormField)\
+            .filter(or_(FormField.status != 'deleted', 
+                        FormField.status == None))\
+            .order_by(FormField.index)\
+            .subquery()
     task = db_session.query(FormMeta)\
-            .options(joinedload('sections'))\
-            .options(joinedload('fields'))\
-            .filter(FormMeta.id == int(request.args['task_id']))\
-            .order_by(FormSection.index, FormField.index)
-    task = task.first()
+            .join(section_sq)\
+            .join(field_sq)\
+            .filter(FormMeta.id == request.args['task_id'])\
+            .first()
     form = Form
     task_dict = task.as_dict()
     task_dict['sections'] = []
@@ -325,7 +340,6 @@ def transcriber():
             '''.format(task.table_name, 
                        ','.join([f for f in ins_args.keys()]),
                        ','.join([':{0}'.format(f) for f in ins_args.keys()]))
-            engine = db_session.bind
             with engine.begin() as conn:
                 conn.execute(text(ins), **ins_args)
             image = db_session.query(Image).get(flask_session['image_id'])

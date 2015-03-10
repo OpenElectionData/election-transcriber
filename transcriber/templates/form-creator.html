@@ -23,108 +23,12 @@
                            class="form-control"
                            id="id_task_name"
                            name="task_name"
-                           {% if form_meta.name %}
-                           value="{{ form_meta.name }}"
-                           {% else %}
                            placeholder="A new transcription task"
-                           {% endif %}
                            aria-describedby="section-name-addon"/>
                     </div>
                 </div>
             </div>
-            <div id="add-section-container">
-                {% if form_meta.sections %}
-                {% for section in form_meta.sections %}
-                <div class="well">
-                    <div class="form-group">
-                        <label for="id_section_{{ section.index }}" class="col-sm-2 control-label">Section</label>
-                        <div class="col-sm-10">
-                            <input type="text"
-                               class="form-control"
-                               value="{{ section.name }}"
-                               name="section_{{ section.index }}" 
-                               id="id_section_{{ section.index }}"/>
-                        </div>
-                    </div>
-                    <hr />
-                    <div class="add-field-container">
-                        {% for field in section.fields %}
-                        <div class="form-group">
-                            <label for="id_section_{{ section.index }}_field_{{ field.index }}" class="col-sm-2 control-label">Field</label>
-                            <div class="col-sm-6">
-                                <input type="text"
-                                       class="form-control"
-                                       value="{{ field.name }}"
-                                       name="section_{{ section.index }}_field_{{ field.index }}"
-                                       id="id_section_{{ section.index }}_field_{{ field.index }}" />
-                            </div>
-                            <div class="col-sm-4">
-                                <select class="form-control" name="datatype_section_{{ section.index }}_field_{{ field.index }}">
-                                    <option value="">Select field type</option>
-                                    <option value="boolean"{% if field.data_type == 'boolean' %} selected="true"{% endif %}>Yes / No</option>
-                                    <option value="string"{% if field.data_type == 'string' %} selected="true"{% endif %}>Text</option>
-                                    <option value="datetime"{% if field.data_type == 'datetime' %} selected="true"{% endif %}>Date and time</option>
-                                    <option value="date"{% if field.data_type == 'date' %} selected="true"{% endif %}>Date</option>
-                                    <option value="integer"{% if field.data_type == 'integer' %} selected="true"{% endif %}>Number</option>
-                                </select>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <div class="form-group">
-                        <div class="col-sm-6 col-sm-offset-2">
-                            <a href='#' class="add-field btn btn-sm btn-info">
-                                <i class="fa fa-plus"></i>
-                                Add field
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-                {% else %}
-                <div class="well">
-                    <div class="form-group">
-                        <label for="id_section_1" class="col-sm-2 control-label">Section</label>
-                        <div class="col-sm-10">
-                            <input type="text"
-                               class="form-control"
-                               placeholder="Section name"
-                               name="section_1"
-                               id="id_section_1" />
-                        </div>
-                    </div>
-                    <div class="add-field-container">
-                        <div class="form-group">
-                            <label for="section_1_field_1" class="col-sm-2 control-label">Field</label>
-                            <div class="col-sm-6">
-                                <input type="text"
-                                       class="form-control"
-                                       placeholder="Name of a field to transcribe"
-                                       name="section_1_field_1" />
-                            </div>
-                            <div class="col-sm-4">
-                                <select class="form-control" name="datatype_section_1_field_1">
-                                    <option value="">Select field type</option>
-                                    <option value="boolean">Yes / No</option>
-                                    <option value="string">Text</option>
-                                    <option value="datetime">Date and time</option>
-                                    <option value="date">Date</option>
-                                    <option value="integer">Number</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <div class="col-sm-6 col-sm-offset-2">
-                            <a href='#' class="add-field btn btn-sm btn-info">
-                                <i class="fa fa-plus"></i>
-                                Add field
-                            </a>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
-            </div>
+            <div id="add-section-container"></div>
             <h4>
                 <a href='#' class="add-section btn btn-info">
                     <i class="fa fa-plus"></i>
@@ -150,36 +54,46 @@
     <script type="text/EJS" id="sectionTemplate">
         <div class="well">
             <div class="form-group">
-                <label for="id_section_<%= section_id %>" class="col-sm-2 control-label">Section</label>
+                <label for="id_section_<%= section.index %>" class="col-sm-2 control-label">Section</label>
                 <div class='col-sm-10'>
                     <input type="text"
                        class="form-control"
+                       <% if (typeof section.name !== 'undefined'){ %>
+                       value="<%= section.name %>"
+                       <% } else { %>
                        placeholder="Section name"
-                       name="section_<%= section_id %>"
-                       id="id_section_<%= section_id %>" />
+                       <% } %>
+                       name="section_<%= section.index %>"
+                       id="id_section_<%= section.index %>" />
                 </div>
             </div>
             <div class="add-field-container">
-                <div class="form-group">
-                    <label for="id_section_<%= section_id %>_field_1" class="col-sm-2 control-label">Field</label>
-                    <div class="col-sm-6">
-                        <input type="text"
-                               class="form-control"
-                               placeholder="Name of a field to transcribe"
-                               name="section_<%= section_id %>_field_1"
-                               id="id_section_<%= section_id %>_field_1" />
+                <% $.each(section.fields, function(i, field){ %>
+                    <div class="form-group">
+                        <label for="id_section_<%= section.index %>_<%= field.index %>" class="col-sm-2 control-label">Field</label>
+                        <div class="col-sm-6">
+                            <input type="text"
+                                   class="form-control"
+                                   <% if (typeof field.name !== 'undefined'){ %>
+                                   value="<%= field.name %>"
+                                   <% } else { %>
+                                   placeholder="Name of a field to transcribe"
+                                   <% } %>
+                                   name="section_<%= section.index %>_field_<%= field.index %>"
+                                   id="id_section_<%= section.index %>_field_<%= field.index %>" />
+                        </div>
+                        <div class="col-sm-4">
+                            <select class="form-control" name="datatype_section_<%= section.index %>_field_<%= field.index %>">
+                                <option value="">Select field type</option>
+                                <option value="boolean" <% if(field.data_type == 'boolean'){ %>selected="true"<% } %>>Yes / No</option>
+                                <option value="string" <% if(field.data_type == 'string'){ %>selected="true"<% } %>>Text</option>
+                                <option value="datetime" <% if(field.data_type == 'datetime'){ %>selected="true"<% } %>>Date and time</option>
+                                <option value="date" <% if(field.data_type == 'date'){ %>selected="true"<% } %>>Date</option>
+                                <option value="integer" <% if(field.data_type == 'integer'){ %>selected="true"<% } %>>Number</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="col-sm-4">
-                        <select class="form-control" name="datatype_section_<%= section_id %>_field_1">
-                            <option value="">Select field type</option>
-                            <option value="boolean">Yes / No</option>
-                            <option value="string">Text</option>
-                            <option value="datetime">Date and time</option>
-                            <option value="date">Date</option>
-                            <option value="integer">Number</option>
-                        </select>
-                    </div>
-                </div>
+                <% }) %>
             </div>
             <div class="form-group">
                 <div class="col-sm-6 col-sm-offset-2">
@@ -222,7 +136,19 @@
 
         var section_id = {{ next_section_index|tojson|safe }}
         var field_ids = {{ next_field_index|tojson|safe }}
+        var form_meta = {{ form_meta|tojson|safe }}
         $(document).ready(function(){
+            if (form_meta.sections.length > 0){
+                $('#id_task_name').val(form_meta.name);
+                $.each(form_meta.sections, function(i, section){
+                    var tpl = new EJS({'text': $('#sectionTemplate').html()});
+                    $('#add-section-container').append(tpl.render({'section': section}))
+                })
+            } else {
+                var tpl = new EJS({'text': $('#sectionTemplate').html()});
+                var blob = {'section': {'index': 1, 'fields': [{'index': 1}]}}
+                $('#add-section-container').append(tpl.render(blob))
+            }
             $('#save-form').on('click', function(e){
                 e.preventDefault();
                 var inputs = $('#task-form').find('input');
@@ -256,7 +182,8 @@
             $('.add-section').on('click', function(e){
                 e.preventDefault();
                 var tpl = new EJS({'text': $('#sectionTemplate').html()});
-                $('#add-section-container').append(tpl.render({'section_id': section_id}));
+                var blob = {'section': {'index': section_id, 'fields': [{'index': 1}]}}
+                $('#add-section-container').append(tpl.render(blob));
                 $('.add-field').off();
                 $('.add-field').on('click', addField)
                 section_id += 1;

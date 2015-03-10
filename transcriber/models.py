@@ -73,6 +73,7 @@ class FormMeta(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     slug = Column(String)
+    status = Column(String)
     date_added = Column(DateTime(timezone=True), 
             server_default=text('CURRENT_TIMESTAMP'))
     last_update = Column(DateTime(timezone=True), onupdate=datetime.now)
@@ -84,7 +85,11 @@ class FormMeta(Base):
         return '<FormMeta %r>' % self.id
 
     def as_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        base_d = {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        base_d['sections'] = []
+        for section in self.sections:
+            base_d['sections'].append(section.as_dict())
+        return base_d
 
 class FormSection(Base):
     __tablename__ = 'form_section'
@@ -92,12 +97,20 @@ class FormSection(Base):
     name = Column(String)
     slug = Column(String)
     index = Column(Integer)
+    status = Column(String)
     form_id = Column(Integer, ForeignKey('form_meta.id'))
     form = relationship('FormMeta', backref=backref('sections', 
                 cascade="all, delete-orphan"))
 
     def __repr__(self):
         return '<FormSection %r>' % self.name
+    
+    def as_dict(self):
+        base_d = {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        base_d['fields'] = []
+        for field in self.fields:
+            base_d['fields'].append(field.as_dict())
+        return base_d
 
 class FormField(Base):
     __tablename__ = 'form_field'
@@ -105,6 +118,7 @@ class FormField(Base):
     name = Column(String)
     slug = Column(String)
     index = Column(Integer)
+    status = Column(String)
     data_type = Column(String)
     section_id = Column(Integer, ForeignKey('form_section.id'))
     section = relationship('FormSection', backref=backref('fields', 
@@ -115,6 +129,9 @@ class FormField(Base):
 
     def __repr__(self):
         return '<FormField %r>' % self.name
+
+    def as_dict(self):
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
 roles_users = Table('roles_users', Base.metadata,
         Column('user_id', Integer(), ForeignKey('ndi_user.id')),
