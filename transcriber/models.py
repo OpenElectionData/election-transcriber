@@ -1,7 +1,7 @@
 from transcriber.database import Base, db_session as session
 from flask_bcrypt import Bcrypt
-from sqlalchemy import Integer, String, Text, Boolean, Column, Table, ForeignKey, \
-    DateTime, text
+from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
+    DateTime, text, Text
 from sqlalchemy.orm import synonym, backref, relationship
 from flask.ext.security import UserMixin, RoleMixin
 from flask.ext.security.utils import md5
@@ -68,6 +68,25 @@ class Image(Base):
     def __repr__(self):
         return '<Image %r>' % self.fetch_url
 
+class TaskGroup(Base):
+    __tablename__ = 'task_group'
+    id = Column(Integer, primary_key=True)
+    name = Column(String)
+    description = Column(Text)
+    date_added = Column(DateTime(timezone=True), 
+            server_default=text('CURRENT_TIMESTAMP'))
+    last_update = Column(DateTime(timezone=True), onupdate=datetime.now)
+    
+    def __repr__(self):
+        return '<FormMeta %r>' % self.id
+
+    def as_dict(self):
+        base_d = {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        base_d['tasks'] = []
+        for section in self.tasks:
+            base_d['sections'].append(section.as_dict())
+        return base_d
+
 class FormMeta(Base):
     __tablename__ = 'form_meta'
     id = Column(Integer, primary_key=True)
@@ -81,6 +100,9 @@ class FormMeta(Base):
     sample_image = Column(String)
     table_name = Column(String)
     image_view_count = Column(Integer)
+    task_group_id = Column(Integer, ForeignKey('task_group.id'))
+    task_group = relationship('TaskGroup', backref=backref('tasks', 
+                cascade="all, delete-orphan"))
 
     def __repr__(self):
         return '<FormMeta %r>' % self.id
