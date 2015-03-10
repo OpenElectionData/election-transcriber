@@ -2,18 +2,21 @@
 {% block title %}Task Creator - Upload{% endblock %}
 {% block content %}
 <div class="row">
-    <div class='col-md-12'>
-        <h3>New transcription task</h3>
-        <form role="form" class="form" method="POST" action="" enctype="multipart/form-data">
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <div class="form-group">
-            <input type="file" name="input_file" id="input_file" />
-            <p class="help-block">
-                You can upload PDFs.
-            </p>
-          </div>
-          <button type="submit" class="btn btn-success">Next ></button>
-        </form>
+    <div class='col-md-8'>
+        <h3>Start a new transcription task</h3>
+        <p>To get started, we'll need a sample image or PDF of the kind of document you want transcribed.</p>
+        <div class='well'>
+          <form role="form" class="form" method="POST" action="" enctype="multipart/form-data">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <div class="form-group">
+              <input type="file" name="input_file" id="input_file" />
+              <p class="help-block">
+                  You can upload images (.jpg or .png) and portable document  files (.pdf) up to 100mb in size. 
+              </p>
+            </div>
+            <button type="submit" class="btn btn-success">Next ></button>
+          </form>
+        </div>
     </div>
 </div>
 {% endblock %}

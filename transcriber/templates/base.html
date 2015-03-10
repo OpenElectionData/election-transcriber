@@ -6,7 +6,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>{% block title %}{% endblock %} - Election Transcriber</title>
+    <title>{% block title %}{% endblock %} - Election Results Transcriber</title>
 
     <!-- Bootstrap core CSS -->
     <link href="{{ url_for('static', filename='css/bootstrap.simplex.min.css') }}" rel="stylesheet">
@@ -34,7 +34,7 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="/">Election Transcriber</a>
+          <a class="navbar-brand" href="/">Election Results Transcriber</a>
         </div>
         <div class="navbar-collapse collapse pull-right">
           <ul class="nav navbar-nav">
@@ -42,9 +42,6 @@
               <a href='{{ url_for('views.index') }}'>Home</a>
             </li>
             {% if current_user.is_authenticated() %}
-              <li class="{% if request.path == url_for('views.upload') %}active{% endif %}">
-                <a href='{{ url_for('views.upload') }}'>New task</a>
-              </li>
               <li><a href='{{ url_for('auth.logout') }}'>Logout</a></li>
             {% else %}
             <li><a href='{{ url_for('auth.login') }}'>Login</a></li>
@@ -60,6 +57,7 @@
 
         <div class="footer">
           <p class='pull-right'>
+            &copy; 2015 <a href='https://www.ndi.org/'>National Democratic Institute</a>
           </p>
         </div>
       </div>
