@@ -29,6 +29,20 @@ target_metadata = Base.metadata
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
 
+def include_tables_from_config(config_):
+    tables_ = config_.get('tables', None)
+    if tables_ is not None:
+        tables = tables_.split(',')
+    return tables
+
+include_tables = include_tables_from_config(config.get_section('alembic:include'))
+
+def include_object(object, name, type_, reflected, compare_to):
+    if type_ == 'table' and name in include_tables:
+        return True
+    else:
+        return False
+
 
 def run_migrations_offline():
     """Run migrations in 'offline' mode.
@@ -43,7 +57,9 @@ def run_migrations_offline():
 
     """
     url = config.get_main_option("sqlalchemy.url")
-    context.configure(url=url, target_metadata=target_metadata)
+    context.configure(url=url, 
+                      target_metadata=target_metadata, 
+                      include_object=include_object)
 
     with context.begin_transaction():
         context.run_migrations()
@@ -56,6 +72,7 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
+    print config.get_section(config.config_ini_section)
     engine = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix='sqlalchemy.',
@@ -64,7 +81,8 @@ def run_migrations_online():
     connection = engine.connect()
     context.configure(
         connection=connection,
-        target_metadata=target_metadata
+        target_metadata=target_metadata,
+        include_object=include_object
     )
 
     try:
