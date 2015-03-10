@@ -141,6 +141,7 @@ def form_creator():
     if request.method == 'POST':
         name = request.form['task_name']
         form_meta.name = name
+        form_meta.description = request.form['task_description']
         form_meta.slug = slugify(name)
         form_meta.last_update = datetime.now().replace(tzinfo=TIME_ZONE)
         form_meta.sample_image = flask_session['image']

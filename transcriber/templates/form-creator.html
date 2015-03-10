@@ -17,14 +17,24 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <div class='well'>
                 <div class="form-group">
-                    <label for="id_task_name" class="col-sm-2 control-label">Task name</label>
-                    <div class="col-sm-10">
+                    <label for="id_task_name" class="col-sm-3 control-label">Task name</label>
+                    <div class="col-sm-9">
                         <input type="text"
                            class="form-control"
                            id="id_task_name"
                            name="task_name"
                            placeholder="A new transcription task"
                            aria-describedby="section-name-addon"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="id_task_description" class="col-sm-3 control-label">Instructions</label>
+                    <div class="col-sm-9">
+                        <textarea
+                           class="form-control"
+                           id="id_task_description"
+                           name="task_description"
+                           placeholder="Task description and instructions"></textarea>
                     </div>
                 </div>
             </div>
@@ -67,19 +77,12 @@
                        id="id_section_<%= section.index %>" />
                 </div>
             </div>
-            <div class="form-group">
-                <div class="col-sm-4 col-sm-offset-8">
-                    <button class="delete section btn btn-default" data-part_id="<%= section.id %>" data-part_type="section">
-                        Delete Section
-                    </button>
-                </div>
-            </div>
             <div class="add-field-container">
                 <% $.each(section.fields, function(i, field){ %>
                     <% if (field.status != 'deleted'){ %>
                         <div class="form-group">
                             <label for="id_section_<%= section.index %>_<%= field.index %>" class="col-sm-2 control-label">Field</label>
-                            <div class="col-sm-6">
+                            <div class="col-sm-5">
                                 <input type="text"
                                        class="form-control"
                                        <% if (typeof field.name !== 'undefined'){ %>
@@ -92,19 +95,16 @@
                             </div>
                             <div class="col-sm-4">
                                 <select class="form-control" name="datatype_section_<%= section.index %>_field_<%= field.index %>">
-                                    <option value="">Select field type</option>
-                                    <option value="boolean" <% if(field.data_type == 'boolean'){ %>selected="true"<% } %>>Yes / No</option>
                                     <option value="string" <% if(field.data_type == 'string'){ %>selected="true"<% } %>>Text</option>
-                                    <option value="datetime" <% if(field.data_type == 'datetime'){ %>selected="true"<% } %>>Date and time</option>
-                                    <option value="date" <% if(field.data_type == 'date'){ %>selected="true"<% } %>>Date</option>
                                     <option value="integer" <% if(field.data_type == 'integer'){ %>selected="true"<% } %>>Number</option>
+                                    <option value="boolean" <% if(field.data_type == 'boolean'){ %>selected="true"<% } %>>Yes / No</option>
+                                    <option value="date" <% if(field.data_type == 'date'){ %>selected="true"<% } %>>Date</option>
+                                    <option value="datetime" <% if(field.data_type == 'datetime'){ %>selected="true"<% } %>>Date with time</option>
                                 </select>
                             </div>
-                        </div>
-                        <div class="form-group">
-                            <div class="col-sm-4 col-sm-offset-8">
-                                <button class="delete btn btn-default" data-part_id="<%= field.id %>" data-part_type="field">
-                                    Delete Field
+                            <div class="col-sm-1">
+                                <button class="delete btn btn-link" data-part_id="<%= field.id %>" data-part_type="field">
+                                    <i class='fa fa-times'></i>
                                 </button>
                             </div>
                         </div>
@@ -112,11 +112,15 @@
                 <% }) %>
             </div>
             <div class="form-group">
-                <div class="col-sm-6 col-sm-offset-2">
+                <div class="col-sm-10 col-sm-offset-2">
                     <a href='#' class="add-field btn btn-sm btn-info">
                         <i class="fa fa-plus"></i>
                         Add field
                     </a>
+                    <button class="delete section btn btn-sm btn-link pull-right" data-part_id="<%= section.id %>" data-part_type="section">
+                        <i class='fa fa-times'></i>
+                        Delete section
+                    </button>
                 </div>
             </div>
         </div>
@@ -124,7 +128,7 @@
     <script type="text/EJS" id="fieldTemplate">
         <div class="form-group">
             <label for="id_section_<%= section_id %>_field_<%= field_id %>" class="col-sm-2 control-label">Field</label>
-            <div class="col-sm-6">
+            <div class="col-sm-5">
                 <input type="text"
                        class="form-control"
                        placeholder="Name of a field to transcribe"
@@ -133,19 +137,16 @@
             </div>
             <div class="col-sm-4">
                 <select class="form-control" name="datatype_section_<%= section_id %>_field_<%= field_id %>">
-                    <option value="">Select field type</option>
-                    <option value="boolean">Yes / No</option>
                     <option value="string">Text</option>
-                    <option value="datetime">Date and time</option>
-                    <option value="date">Date</option>
                     <option value="integer">Number</option>
+                    <option value="boolean">Yes / No</option>
+                    <option value="date">Date</option>
+                    <option value="datetime">Date with time</option>
                 </select>
             </div>
-        </div>
-        <div class="form-group">
-            <div class="col-sm-4 col-sm-offset-8">
-                <button class="delete btn btn-default" data-part_id="<%= field_id %>" data-part_type="field">
-                    Delete Field
+            <div class="col-sm-1">
+                <button class="delete btn btn-link" data-part_id="<%= field_id %>" data-part_type="field">
+                    <i class='fa fa-times'></i>
                 </button>
             </div>
         </div>
