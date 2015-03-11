@@ -78,13 +78,18 @@ class TaskGroup(Base):
     last_update = Column(DateTime(timezone=True), onupdate=datetime.now)
     
     def __repr__(self):
-        return '<FormMeta %r>' % self.id
+        return '<TaskGroup %r>' % self.id
 
+    def simple_dict(self):
+        d = {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        d['task_count'] = len(self.tasks)
+        return d
+    
     def as_dict(self):
         base_d = {c.name: getattr(self, c.name) for c in self.__table__.columns}
         base_d['tasks'] = []
-        for section in self.tasks:
-            base_d['sections'].append(section.as_dict())
+        for task in self.tasks:
+            base_d['tasks'].append(task.as_dict())
         return base_d
 
 class FormMeta(Base):
@@ -94,6 +99,7 @@ class FormMeta(Base):
     description = Column(Text)
     slug = Column(String)
     status = Column(String)
+    index = Column(Integer)
     date_added = Column(DateTime(timezone=True), 
             server_default=text('CURRENT_TIMESTAMP'))
     last_update = Column(DateTime(timezone=True), onupdate=datetime.now)
@@ -112,6 +118,9 @@ class FormMeta(Base):
         base_d['sections'] = []
         for section in self.sections:
             base_d['sections'].append(section.as_dict())
+        base_d['task_group'] = None
+        if self.task_group:
+            base_d['task_group'] = self.task_group.simple_dict()
         return base_d
 
 class FormSection(Base):

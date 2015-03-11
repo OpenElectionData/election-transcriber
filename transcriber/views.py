@@ -6,7 +6,8 @@ from flask_security.decorators import login_required
 from flask_security.core import current_user
 from transcriber.app_config import UPLOAD_FOLDER
 from werkzeug import secure_filename
-from transcriber.models import FormMeta, FormSection, FormField, Image
+from transcriber.models import FormMeta, FormSection, FormField, \
+    Image, TaskGroup
 from transcriber.database import engine, db_session
 from transcriber.helpers import slugify, add_images
 from flask_wtf import Form
@@ -145,6 +146,13 @@ def form_creator():
         form_meta.slug = slugify(name)
         form_meta.last_update = datetime.now().replace(tzinfo=TIME_ZONE)
         form_meta.sample_image = flask_session['image']
+        if request.form.get('task_group_id'):
+            task_group = db_session.query(TaskGroup)\
+                    .get(request.form['task_group_id'])
+        else:
+            task_group = TaskGroup(name=request.form['task_group'],
+                    description=request.form.get('task_group_description'))
+        form_meta.task_group = task_group
         db_session.add(form_meta)
         db_session.commit()
         section_fields = {}
@@ -299,8 +307,29 @@ def form_creator():
                            next_section_index=next_section_index,
                            next_field_index=next_field_indicies)
 
+@views.route('/get-task-group/')
+@login_required
+def get_task_group():
+    term = request.args.get('term')
+    where = TaskGroup.name.ilike('%%%s%%' % term)
+    base_query = db_session.query(TaskGroup).filter(where)
+    names = [{'name': t.name, 'id': str(t.id), 'description': t.description} \
+            for t in base_query.all()]
+    resp = make_response(json.dumps(names))
+    resp.headers['Content-Type'] = 'application/json'
+    return resp
+
+@views.route('/edit-task-group/')
+@login_required
+def edit_task_group():
+    if not request.args.get('group_id'):
+        flash('Group ID is required')
+        return redirect(url_for('views.index'))
+    task_group = db_session.query(TaskGroup).get(request.args['group_id'])
+    return render_template('edit-task-group.html',task_group=task_group)
+
 @views.route('/transcribe/', methods=['GET', 'POST'])
-def transcriber():
+def transcribe():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
     section_sq = db_session.query(FormSection)\
