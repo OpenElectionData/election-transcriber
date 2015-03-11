@@ -15,24 +15,24 @@
                 <thead>
                     <tr>
                         <th>Transcription task</th>
+                        <th>Task group</th>
                         <th>Created</th>
                         <th></th>
-                        <th>Task group</th>
-                        <th></th>
+                        <!-- <th></th> -->
                     </tr>
                 </thead>
                 <tbody>
                     {% for t in tasks %}
                         <tr>
-                          <td>Edit <a href="{{ url_for('views.form_creator', form_id=t.id) }}">{{t.name}}</a></td>
+                            <td>Edit <a href="{{ url_for('views.form_creator', form_id=t.id) }}">{{t.name}}</a></td>
+                            <td><a href="{{ url_for('views.edit_task_group', group_id=t.task_group.id) }}">{{ t.task_group.name }}</a></td>
                             <td>
                                 <span class='date-created' datetime='{{t.date_added | format_date_sort}}'>
                                     {{t.date_added | format_date }}
                                 </span>
                             </td>
                             <td><a href='{{ url_for('views.transcribe', task_id=t.id )}}'>Start transcribing &raquo;</a></td>
-                            <td><a href="{{ url_for('views.edit_task_group', group_id=t.task_group.id) }}">{{ t.task_group.name }}</a></td>
-                            <td><a class="delete-task" href="javascript://" data-task_id="{{t.id}}"><i class='fa fa-times'></i> Delete</a></td>
+                            <!-- <td><a class="delete-task" href="javascript://" data-task_id="{{t.id}}"><i class='fa fa-times'></i> Delete</a></td> -->
                         </tr>
                     {% endfor %}
                 </tbody>
