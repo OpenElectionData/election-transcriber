@@ -20,15 +20,18 @@ def init_db(sess=None, eng=None):
     import transcriber.models
     Base.metadata.create_all(bind=engine)
 
-    if DEFAULT_USER:
-        datastore = transcriber.models.SecurityUserDatastore(db_session, 
-                                                             transcriber.models.User,
-                                                             transcriber.models.Role)
-        name = DEFAULT_USER['name']
-        email = DEFAULT_USER['email']
-        password = DEFAULT_USER['password']
-        datastore.create_user(email=email, password=password, name=name)
-        datastore.commit()
+    try:
+        if DEFAULT_USER:
+            datastore = transcriber.models.SecurityUserDatastore(db_session, 
+                                                                 transcriber.models.User,
+                                                                 transcriber.models.Role)
+            name = DEFAULT_USER['name']
+            email = DEFAULT_USER['email']
+            password = DEFAULT_USER['password']
+            datastore.create_user(email=email, password=password, name=name)
+            datastore.commit()
+    except IntegrityError, e:
+        print "Default user already exists"
     from alembic.config import Config
     from alembic import command
     path = os.path.join(os.path.dirname(__file__), '..', 'alembic.ini')
