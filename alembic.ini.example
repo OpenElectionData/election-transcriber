@@ -3,7 +3,7 @@
 [alembic]
 # path to migration scripts
 script_location = alembic
-sqlalchemy.url = driver://user:pass@localhost/dbname
+sqlalchemy.url = postgres://user:pass@localhost/election_transcriber
 
 [alembic:include]
 tables = image,task_group,form_meta,form_section,form_field,ndi_role,roles_users,ndi_user
