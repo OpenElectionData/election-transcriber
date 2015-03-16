@@ -20,7 +20,7 @@
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <div class='well'>
                 <div class="form-group">
-                    <label for="id_task_name" class="col-sm-3 control-label">Task name</label>
+                    <label for="id_task_name" class="col-sm-3 control-label">Task Name</label>
                     <div class="col-sm-9">
                         <input type="text"
                            class="form-control"
@@ -28,16 +28,6 @@
                            name="task_name"
                            placeholder="A new transcription task"
                            aria-describedby="section-name-addon"/>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label for="id_task_description" class="col-sm-3 control-label">Instructions</label>
-                    <div class="col-sm-9">
-                        <textarea
-                           class="form-control"
-                           id="id_task_description"
-                           name="task_description"
-                           placeholder="Task description and instructions"></textarea>
                     </div>
                 </div>
                 <div class="form-group">
@@ -51,6 +41,38 @@
                                aria-describedby="section-name-addon"/>
                         </div>
                 </div>
+                <div class="form-group">
+                    <label for="id_deadline" class="col-sm-3 control-label">Deadline</label>
+                    <div class="col-sm-3">
+                        <!-- what should input type be?? -->
+                        <input type="text" 
+                           class="form-control"
+                           id="id_deadline"
+                           name="deadline"
+                           placeholder="1/1/2016"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="id_reviewer_count" class="col-sm-3 control-label">Reviewers</label>
+                    <div class="col-sm-2">
+                        <input type="text"
+                           class="form-control"
+                           id="id_reviewer_count"
+                           name="reviewer_count"
+                           placeholder="2"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="id_task_description" class="col-sm-3 control-label">Instructions</label>
+                    <div class="col-sm-9">
+                        <textarea
+                           class="form-control"
+                           id="id_task_description"
+                           name="task_description"
+                           placeholder="Task description and instructions"></textarea>
+                    </div>
+                </div>
+
                 <!-- <div class="form-group">
                     <label for="id_task_description" class="col-sm-3 control-label">Instructions</label>
                     <div class="col-sm-9">

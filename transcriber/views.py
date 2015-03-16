@@ -153,6 +153,8 @@ def form_creator():
             task_group = TaskGroup(name=request.form['task_group'],
                     description=request.form.get('task_group_description'))
         form_meta.task_group = task_group
+        form_meta.deadline = request.form['deadline']
+        form_meta.reviewer_count = request.form['reviewer_count']
         db_session.add(form_meta)
         db_session.commit()
         section_fields = {}
@@ -404,10 +406,14 @@ def transcribe():
     # Right now it's just always loading the example image
     # flask_session['image'] = task.sample_image
     # flask_session['image_type'] = task.sample_image.rsplit('.', 1)[1].lower()
-    image = db_session.query(Image)\
-            .filter(Image.form_id == task.id)\
-            .order_by(Image.view_count)\
-            .first()
+    image_id = request.args.get('image_id')
+    if image_id:
+        image = db_session.query(Image).get(int(image_id))
+    else:
+        image = db_session.query(Image)\
+                .filter(Image.form_id == task.id)\
+                .order_by(Image.view_count)\
+                .first()
     flask_session['image'] = image.fetch_url
     flask_session['image_type'] = image.image_type
     flask_session['image_id'] = image.id

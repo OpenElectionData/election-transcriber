@@ -109,6 +109,9 @@ class FormMeta(Base):
     task_group_id = Column(Integer, ForeignKey('task_group.id'))
     task_group = relationship('TaskGroup', backref=backref('tasks', 
                 cascade="all, delete-orphan"))
+    reviewer_count = Column(Integer)
+    deadline = Column(DateTime(timezone=True), onupdate=datetime.now)
+    image_location = Column(String)
 
     def __repr__(self):
         return '<FormMeta %r>' % self.id
