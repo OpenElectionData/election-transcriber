@@ -412,6 +412,11 @@ def transcribe():
     if image_id:
         image = db_session.query(Image).get(int(image_id))
     else:
+        # add in a filter so that one user does not review the same image multiple times
+        task_dict['images_left'] = db_session.query(Image)\
+                .filter(Image.form_id == task.id)\
+                .filter(Image.view_count < task_dict['reviewer_count'])\
+                .count()
         image = db_session.query(Image)\
                 .filter(Image.form_id == task.id)\
                 .filter(Image.view_count < task_dict['reviewer_count'])\

@@ -13,6 +13,11 @@
         {{task.description}}
     {% endif %}
 </p>
+<p>
+    {% if task.images_left %}
+        <strong>{{task.images_left}}</strong> documents remaining
+    {% endif %}
+</p>
 <div class="row">
     <div class='col-md-6'>
         {{ render_image() }}
