@@ -38,7 +38,7 @@ class TranscriberDateTimeField(DateTimeField):
                 raise ValidationError(self.gettext(message))
 
             try:
-                self.data = parser.parse(date_str, **parse_kwargs)
+                self.data = parser.parse(date_str)
             except ValueError:
                 self.data = None
                 raise ValidationError(self.gettext(message))
@@ -49,9 +49,9 @@ class TranscriberDateField(TranscriberDateTimeField):
     """
     def __init__(self, label=None, validators=None, parse_kwargs=None,
                  display_format='%Y-%m-%d', **kwargs):
-        super(DateField, self).__init__(label, validators, parse_kwargs=parse_kwargs, display_format=display_format, **kwargs)
+        super(TranscriberDateField, self).__init__(label, validators, parse_kwargs=parse_kwargs, display_format=display_format, **kwargs)
 
     def process_formdata(self, valuelist):
-        super(DateField, self).process_formdata(valuelist)
+        super(TranscriberDateField, self).process_formdata(valuelist)
         if self.data is not None and hasattr(self.data, 'date'):
             self.data = self.data.date()
