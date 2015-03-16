@@ -141,3 +141,11 @@ table, label,.control-label,.help-block,.checkbox,.radio { font-size: 16px; }
 * html .ui-autocomplete {
     height: 250px;
 }
+
+
+/* Task finish alert banner */
+.task-finish-alert{
+  margin-bottom: 0px;/*
+  padding-left: 15px;
+  padding-right: 15px;*/
+}

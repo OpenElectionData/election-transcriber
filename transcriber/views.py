@@ -1,5 +1,5 @@
 from flask import Blueprint, make_response, request, render_template, \
-    url_for, send_from_directory, session as flask_session, redirect
+    url_for, send_from_directory, session as flask_session, redirect, flash
 import json
 import os
 from flask_security.decorators import login_required
@@ -407,17 +407,25 @@ def transcribe():
     # flask_session['image'] = task.sample_image
     # flask_session['image_type'] = task.sample_image.rsplit('.', 1)[1].lower()
     image_id = request.args.get('image_id')
+
+    image = None
     if image_id:
         image = db_session.query(Image).get(int(image_id))
     else:
         image = db_session.query(Image)\
                 .filter(Image.form_id == task.id)\
+                .filter(Image.view_count < task_dict['reviewer_count'])\
                 .order_by(Image.view_count)\
                 .first()
-    flask_session['image'] = image.fetch_url
-    flask_session['image_type'] = image.image_type
-    flask_session['image_id'] = image.id
-    return render_template('transcribe.html', form=form, task=task_dict)
+
+    if image == None:
+        flash('No more documents left to transcribe for %s!' %task_dict['name'])
+        return redirect(url_for('views.index'))
+    else:
+        flask_session['image'] = image.fetch_url
+        flask_session['image_type'] = image.image_type
+        flask_session['image_id'] = image.id
+        return render_template('transcribe.html', form=form, task=task_dict)
 
 @views.route('/uploads/<filename>')
 def uploaded_image(filename):

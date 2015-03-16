@@ -26,6 +26,26 @@
   </head>
 
   <body style="height: 100%">
+      <div>
+          {% with messages = get_flashed_messages() %}
+              {% if messages %}
+                  <div class="row">
+                    <div class="col-sm-12">
+                      {% for message in messages %}
+                          <div class="alert alert-success alert-dismissible task-finish-alert" role="alert">
+                          <button type="button" class="close" data-dismiss="alert">
+                          <span aria-hidden="true">&times;</span>
+                          <span class="sr-only">Close</span>
+                          </button>
+                          {{ message|safe }}
+                          </div>
+                      {% endfor %}
+                    </div>
+                  </div>
+              {% endif %}
+          {% endwith %}
+      <div>
+
       <div class="navbar navbar-default navbar-static-top" role="navigation">
         <div class="navbar-header">
           <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
