@@ -3,28 +3,9 @@
 {% block title %}{{task.name}}{% endblock %}
 {% block content %}
 
-<div class="panel panel-default">
-  <div class="panel-heading">
+<div>
     <strong>{{task.name}}</strong>
-    <p class='pull-right'>
-        <button type="button" data-toggle="modal" data-target="#help-modal" class="btn btn-link"><i class='fa fa-question-circle'></i> Help</button>
-    </p>
-  </div>
-  <div class="panel-body">
-    <div class="col-sm-6">
-        {% if task.description %}
-            {{task.description}}
-        {% endif %}
-    </div>
-    <div class="col-sm-6">
-        {% if task.reviewer_count %}
-            <i class="fa fa-user fa-fw"></i> <strong>{{task.reviewer_count}}</strong> reviewers per document<br>
-        {% endif %}
-        {% if task.deadline %}
-            <i class="fa fa-calendar fa-fw"></i> due {{task.deadline}}<br>
-        {% endif %}
-    </div>
-  </div>
+    <button type="button" data-toggle="modal" data-target="#help-modal" class="btn btn-link"><i class='fa fa-info-circle fa-lg'></i></button>
 </div>
 
 <div class="row">
@@ -107,13 +88,20 @@
         <div class="modal-content">
             <div class="modal-header">
                 <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                <p class="modal-title">Help with transcribing</p>
+                <p class="modal-title"><strong>{{task.name}} - Info</strong></p>
             </div>
             <div class="modal-body">
-                <p>Some helpful text</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-link" data-dismiss="modal">Close</button>
+                {% if task.description %}
+                    <p>{{task.description}}</p><br>
+                {% endif %}
+                <p>
+                {% if task.reviewer_count %}
+                    <i class="fa fa-user fa-fw"></i> <strong>{{task.reviewer_count}}</strong> reviewers per document<br>
+                {% endif %}
+                {% if task.deadline %}
+                    <i class="fa fa-calendar fa-fw"></i> due {{task.deadline}}<br>
+                {% endif %}
+                </p>
             </div>
         </div><!-- /.modal-content -->
     </div><!-- /.modal-dialog -->
