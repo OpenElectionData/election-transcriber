@@ -14,8 +14,8 @@
             <table class='table' id='transcription_tasks'>
                 <thead>
                     <tr>
-                        <th>Transcription task</th>
                         <th>Task group</th>
+                        <th>Transcription task</th>
                         <th>Created</th>
                         <th>Progress</th>
                         <th>Actions</th>
@@ -24,8 +24,8 @@
                 <tbody>
                     {% for t in tasks %}
                         <tr>
-                            <td>{{t[0].name}}</td>
                             <td><a href="{{ url_for('views.edit_task_group', group_id=t[0].task_group.id) }}">{{ t[0].task_group.name }}</a></td>
+                            <td>{{t[0].name}}</td>
                             <td>
                                 <span class='date-created' datetime='{{t.date_added | format_date_sort}}'>
                                     <small>{{t[0].date_added | format_date }}</small>
@@ -79,11 +79,13 @@
                 })
             })
             $('#transcription_tasks').DataTable( {
-                "aaSorting": [ [1,'desc'] ],
+                "aaSorting": [ [0,'desc'], [1,'desc'] ],
                 "aoColumns": [
                     null,
+                    null,
                     { "sType": "datetime" },
-                    null
+                    { "bSortable": false },
+                    { "bSortable": false }
                 ],
                 "paging": false,
                 "searching": false,
