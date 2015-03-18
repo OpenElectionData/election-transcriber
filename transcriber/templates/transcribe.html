@@ -99,7 +99,7 @@
                     <i class="fa fa-user fa-fw"></i> <strong>{{task.reviewer_count}}</strong> reviewers per document<br>
                 {% endif %}
                 {% if task.deadline %}
-                    <i class="fa fa-calendar fa-fw"></i> due {{task.deadline}}<br>
+                    <i class="fa fa-calendar fa-fw"></i> due {{task.deadline | format_date}}<br>
                 {% endif %}
                 </p>
             </div>

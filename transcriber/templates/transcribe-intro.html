@@ -2,12 +2,31 @@
 {% block title %}{{task.name}}{% endblock %}
 {% block content %}
 <div class="row">
-    <div class="col-sm-12">
+    <div class="col-sm-8 col-sm-offset-2">
         <h1>{{task.name}}</h1>
-        <p>
-            INSTRUCTIONS AND METADATA HERE
-        </p>
-        <a href='{{ url_for('views.transcribe', task_id=task.id )}}'><i class="fa fa-check fa-fw"></i> OK</a>
+        <hr>
+
+        {% if task.reviewer_count %}
+            <i class="fa fa-user fa-fw"></i> <strong>{{task.reviewer_count}}</strong> reviewers per document<br>
+        {% endif %}
+        {% if task.deadline %}
+            <i class="fa fa-calendar fa-fw"></i> due {{task.deadline | format_date}}<br>
+        {% endif %}
+
+        <!--
+        add task creation date?
+        add total # documents?
+        -->
+
+        {% if task.description %}
+            <h3>{{task.description}}</h3><br>
+        {% endif %}
+
+        <a href='{{ url_for('views.transcribe', task_id=task.id )}}'>
+            <button class="btn btn-success btn-lg" id="save-form">
+                OK
+            </button>
+        </a>
     </div>
 </div>
 
