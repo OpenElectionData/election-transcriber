@@ -62,7 +62,37 @@ def index():
     tasks = db_session.query(FormMeta)\
             .filter(or_(FormMeta.status != 'deleted', 
                         FormMeta.status == None)).all()
-    return render_template('index.html', tasks=tasks)
+            # order by due date here
+    t = []
+    for task in tasks:
+        # make the progress bar depend on reviews (#docs * #reviewers) instead of documents?
+        task_dict = task.as_dict()
+        reviewer_count = task_dict['reviewer_count']
+        task_id = task_dict['id']
+        if reviewer_count == None: # clean this up
+            reviewer_count = 1
+
+        docs_left = db_session.query(Image)\
+                .filter(Image.form_id == task_id)\
+                .filter(Image.view_count < reviewer_count)\
+                .count()
+        docs_total = db_session.query(Image)\
+                .filter(Image.form_id == task.id)\
+                .count()
+        docs_complete = docs_total - docs_left
+
+        if docs_total > 0: # clean this up
+            percent = int(float(docs_complete)/float(docs_total)*100)
+        else:
+            percent = None
+
+        progress_dict = {}
+        progress_dict['percent'] = percent
+        progress_dict['docs_complete'] = docs_complete
+        progress_dict['docs_total'] = docs_total 
+        t.append([task, progress_dict])
+        
+    return render_template('index.html', tasks=t)
 
 @views.route('/about/')
 def about():
@@ -413,9 +443,13 @@ def transcribe():
         image = db_session.query(Image).get(int(image_id))
     else:
         # add in a filter so that one user does not review the same image multiple times
+        # images left & images total (for progress bar) should be specific to the user
         task_dict['images_left'] = db_session.query(Image)\
                 .filter(Image.form_id == task.id)\
                 .filter(Image.view_count < task_dict['reviewer_count'])\
+                .count()
+        task_dict['images_total'] = db_session.query(Image)\
+                .filter(Image.form_id == task.id)\
                 .count()
         image = db_session.query(Image)\
                 .filter(Image.form_id == task.id)\
