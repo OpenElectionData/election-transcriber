@@ -18,14 +18,13 @@
                         <th>Task group</th>
                         <th>Created</th>
                         <th>Progress</th>
-                        <th></th>
-                        <!-- <th></th> -->
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for t in tasks %}
                         <tr>
-                            <td><a href="{{ url_for('views.form_creator', form_id=t[0].id) }}"><i class="fa fa-pencil"></i></a> {{t[0].name}}</td>
+                            <td>{{t[0].name}}</td>
                             <td><a href="{{ url_for('views.edit_task_group', group_id=t[0].task_group.id) }}">{{ t[0].task_group.name }}</a></td>
                             <td>
                                 <span class='date-created' datetime='{{t.date_added | format_date_sort}}'>
@@ -39,8 +38,10 @@
                                     </div>
                                 </div>
                             </td>
-                            <td><a href='{{ url_for('views.transcribe', task_id=t[0].id )}}'>Start transcribing &raquo;</a></td>
-                            <!-- <td><a class="delete-task" href="javascript://" data-task_id="{{t.id}}"><i class='fa fa-times'></i> Delete</a></td> -->
+                            <td>
+                                <a href="{{ url_for('views.form_creator', form_id=t[0].id) }}"><i class="fa fa-pencil fa-fw"></i> Edit task</a><br />
+                                <a href='{{ url_for('views.transcribe', task_id=t[0].id )}}'><i class="fa fa-file-text-o fa-fw"></i> Start transcribing</a>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
