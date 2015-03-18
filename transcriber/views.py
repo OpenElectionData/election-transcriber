@@ -360,6 +360,16 @@ def edit_task_group():
     task_group = db_session.query(TaskGroup).get(request.args['group_id'])
     return render_template('edit-task-group.html',task_group=task_group)
 
+@views.route('/transcribe-intro/', methods=['GET', 'POST'])
+def transcribe_intro():
+    if not request.args.get('task_id'):
+        return redirect(url_for('views.index'))
+    task = db_session.query(FormMeta)\
+            .filter(FormMeta.id == request.args['task_id'])\
+            .first()
+    task_dict = task.as_dict()
+    return render_template('transcribe-intro.html', task=task_dict)
+
 @views.route('/transcribe/', methods=['GET', 'POST'])
 def transcribe():
     if not request.args.get('task_id'):
