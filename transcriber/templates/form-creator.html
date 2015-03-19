@@ -43,13 +43,12 @@
                 </div>
                 <div class="form-group">
                     <label for="id_deadline" class="col-sm-3 control-label">Deadline</label>
-                    <div class="col-sm-6">
-                        <!-- what should input type be?? -->
-                        <input type="text" 
-                           class="form-control"
-                           id="id_deadline"
-                           name="deadline"
-                           placeholder="1/1/2016"/>
+                    <div class="col-sm-9">
+                        <div class='input-group date' id='id_deadline'>
+                            <input type='text' name="deadline" class="form-control" />
+                            <span class="input-group-addon"><span class="fa fa-calendar"></span>
+                            </span>
+                        </div>
                     </div>
                 </div>
                 <div class="form-group">
@@ -129,6 +128,7 @@
     <script src="{{ url_for('static', filename='js/ejs_production.js') }}"></script>
     <script src="{{ url_for('static', filename='js/jquery.panzoom.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/jquery-ui.min.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datetimepicker/4.7.14/js/bootstrap-datetimepicker.min.js"></script>
     <script type="text/EJS" id="sectionTemplate">
         <div class="well">
             <div class="form-group">
@@ -229,12 +229,15 @@
         var section_id = {{ next_section_index|tojson|safe }}
         var field_ids = {{ next_field_index|tojson|safe }}
         var form_meta = {{ form_meta|tojson|safe }}
+
         $(document).ready(function(){
+            $('#id_deadline').datetimepicker();
+
             if (form_meta.sections.length > 0){ // if editing instead of creating
                 $('#id_task_name').val(form_meta.name);
                 $('#id_task_description').val(form_meta.description);
                 $('#id_task_group').val(form_meta.task_group.name);
-                $('#id_deadline').val(form_meta.deadline);
+                $('#id_deadline > input').val(form_meta.deadline);
                 $('#id_reviewer_count').val(form_meta.reviewer_count);
                 $('#id_task_group').data('groupid', form_meta.task_group.id);
                 $('#id_task_group_description').val(form_meta.task_group.description);
