@@ -153,6 +153,8 @@ def delete_part():
             r['status'] = 'error'
             r['message'] = '"{0}" is not a valid component type'.format(part_type)
             status_code = 400
+    if part_type == 'form':
+        flash("Task deleted")
     response = make_response(json.dumps(r), status_code)
     response.headers['Content-Type'] = 'application/json'
     return response

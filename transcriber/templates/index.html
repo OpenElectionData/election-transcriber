@@ -70,14 +70,6 @@
             //     console.log(moment.utc().utcOffset('-06:00'))
             //     date.html(moment(date.html(),"YYYY-MM-DD HH:mm:ss.S Z").from(moment().utcOffset('-06:00')))
             // })
-            $('.delete-task').on('click', function(e){
-                var task_id = $(this).data('task_id');
-                var self = $(this)
-                $.when(deleteTask(task_id)).then(function(resp){
-                    console.log(resp);
-                    self.parent().parent().remove()
-                })
-            })
             $('#transcription_tasks').DataTable( {
                 "aaSorting": [ [0,'desc'], [1,'desc'] ],
                 "aoColumns": [
@@ -92,13 +84,5 @@
                 "info": false
             } );
         });
-        function deleteTask(task_id){
-            return $.ajax({
-                url: '/delete-part/',
-                data: {'part_id': task_id, 'part_type': 'form'},
-                dataType: 'json',
-                type: 'DELETE'
-            })
-        }
     </script>
 {% endblock %}

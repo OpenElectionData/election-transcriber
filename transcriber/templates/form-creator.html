@@ -95,14 +95,35 @@
             <div class="form-group">
                 <div class="col-sm-12">
                     <button class="btn btn-success" id="save-form">
-                        <i class='fa fa-save'></i>
-                        Save
+                        <i class='fa fa-save fa-fw'></i>
+                        Save Task
+                    </button>
+                    <button type="button" class="btn btn-primary pull-right" data-toggle="modal" data-target="#delete-warning" id="prompt-delete">
+                        <i class='fa fa-trash-o fa-fw'></i>
+                        Delete Task
                     </button>
                 </div>
             </div>
         </form>
     </div>
 </div>
+
+<div id="delete-warning" class="modal fade">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-body">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h3>Are you sure?</h3><br>
+                <button class="btn btn-primary btn-lg" id="delete-task">
+                    Yes, delete this task
+                </button>
+                <!-- </a> -->
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
 {% endblock %}
 {% block extra_javascript %}
     <script src="{{ url_for('static', filename='js/ejs_production.js') }}"></script>
@@ -209,7 +230,7 @@
         var field_ids = {{ next_field_index|tojson|safe }}
         var form_meta = {{ form_meta|tojson|safe }}
         $(document).ready(function(){
-            if (form_meta.sections.length > 0){
+            if (form_meta.sections.length > 0){ // if editing instead of creating
                 $('#id_task_name').val(form_meta.name);
                 $('#id_task_description').val(form_meta.description);
                 $('#id_task_group').val(form_meta.task_group.name);
@@ -223,10 +244,12 @@
                         $('#add-section-container').append(tpl.render({'section': section}))
                     }
                 })
-            } else {
+
+            } else { // if creating a new task
                 var tpl = new EJS({'text': $('#sectionTemplate').html()});
                 var blob = {'section': {'index': 1, 'fields': [{'index': 1}]}}
                 $('#add-section-container').append(tpl.render(blob))
+                $('#prompt-delete').hide() // hide delete button if just creating task
             }
             $('#save-form').on('click', function(e){
                 e.preventDefault();
@@ -276,6 +299,13 @@
                 return false;
             });
             $('.delete').on('click', deleteStuff)
+            $('#delete-task').on('click', function(e){
+                var task_id = form_meta.id;
+                $.when(deleteTask(task_id)).then(function(resp){
+                    console.log("RESP", resp);
+                    window.location = '/'
+                })
+            })
             $('.panzoom').panzoom({
                 $zoomRange: $('input[type="range"]')
             });
@@ -363,6 +393,14 @@
                     $(self).parent().parent().remove();
                 }
             }
+        }
+        function deleteTask(task_id){
+            return $.ajax({
+                url: '/delete-part/',
+                data: {'part_id': task_id, 'part_type': 'form'},
+                dataType: 'json',
+                type: 'DELETE'
+            })
         }
     </script>
 {% endblock %}
