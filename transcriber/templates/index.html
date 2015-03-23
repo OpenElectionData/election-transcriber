@@ -16,7 +16,7 @@
                     <tr>
                         <th>Task group</th>
                         <th>Transcription task</th>
-                        <th>Created</th>
+                        <th>Deadline</th>
                         <th>Progress</th>
                         <th>Actions</th>
                     </tr>
@@ -27,8 +27,8 @@
                             <td><a href="{{ url_for('views.edit_task_group', group_id=t[0].task_group.id) }}">{{ t[0].task_group.name }}</a></td>
                             <td>{{t[0].name}}</td>
                             <td>
-                                <span class='date-created' datetime='{{t.date_added | format_date_sort}}'>
-                                    <small>{{t[0].date_added | format_date }}</small>
+                                <span datetime='{{t[0].deadline | format_date_sort}}'>
+                                    <small>{{t[0].deadline | format_date }}</small>
                                 </span>
                             </td>
                             <td>
