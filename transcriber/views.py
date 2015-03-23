@@ -24,6 +24,7 @@ from sqlalchemy.orm import aliased
 from uuid import uuid4
 from operator import attrgetter, itemgetter
 from itertools import groupby
+from io import StringIO
 
 views = Blueprint('views', __name__)
 
@@ -477,6 +478,35 @@ def transcribe():
         flask_session['image_type'] = image.image_type
         flask_session['image_id'] = image.id
         return render_template('transcribe.html', form=form, task=task_dict)
+
+@views.route('/download-transcriptions/', methods=['GET', 'POST'])
+def download_transcriptions():
+    if not request.args.get('task_id'):
+        return redirect(url_for('views.index'))
+
+    task = db_session.query(FormMeta)\
+            .filter(FormMeta.id == request.args['task_id'])\
+            .first()
+    task_dict = task.as_dict()
+    table_name = task_dict['table_name']
+
+    copy = '''
+        COPY (
+          SELECT * from "{0}"
+        ) TO STDOUT WITH CSV HEADER DELIMITER ','
+    '''.format(table_name)
+
+    engine = db_session.bind
+    conn = engine.raw_connection()
+    curs = conn.cursor()
+    outp = StringIO()
+    curs.copy_expert(copy, outp)
+    outp.seek(0)
+    resp = make_response(outp.getvalue())
+    resp.headers['Content-Type'] = 'text/csv'
+    filedate = datetime.now().strftime('%Y-%m-%d')
+    resp.headers['Content-Disposition'] = 'attachment; filename=transcriptions_{0}_{1}.csv'.format(task_dict['slug'], filedate)
+    return resp
 
 @views.route('/transcriptions/', methods=['GET', 'POST'])
 def transcriptions():

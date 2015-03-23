@@ -14,7 +14,8 @@
             <h2>Transcriptions</h2>
             <div>
                 <i class="fa fa-times fa-fw"></i> Blank <br>
-                <i class="fa fa-question fa-fw"></i> Not legible
+                <i class="fa fa-question fa-fw"></i> Not legible <br>
+                <a href="{{ url_for('views.download_transcriptions', task_id=task.id) }}"><i class="fa fa-download fa-fw"></i> Download CSV</a>
             </div>
             <table class="table">
                 <tr>
