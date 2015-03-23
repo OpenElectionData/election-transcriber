@@ -478,6 +478,61 @@ def transcribe():
         flask_session['image_id'] = image.id
         return render_template('transcribe.html', form=form, task=task_dict)
 
+@views.route('/transcriptions/', methods=['GET', 'POST'])
+def transcriptions():
+    if not request.args.get('task_id'):
+        return redirect(url_for('views.index'))
+    transcriptions = []
+
+    task = db_session.query(FormMeta)\
+            .filter(FormMeta.id == request.args['task_id'])\
+            .first()
+    task_dict = task.as_dict()
+
+    table_name = task_dict['table_name']
+
+    q = ''' 
+            SELECT * from "{0}"
+        '''.format(table_name)
+    h = ''' 
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = '{0}'
+        '''.format(table_name)
+
+    with engine.begin() as conn:
+        t_header = conn.execute(text(h)).fetchall()
+        rows_all = conn.execute(text(q)).fetchall()
+
+    if len(rows_all) > 0:
+        num_cols = len(rows_all[0])
+
+        # this code assumes that first 4 cols are meta info abt transcription
+        # & remaining cols are for fields
+        # w/ 3 cols per field: fieldname/fieldname_blank/fieldname_not_legible
+        meta_h = []
+        field_h = []
+        for h in t_header[:4]:
+            meta_h.append(h[0])
+        for h in t_header[4::3]:
+            field_h.append(h[0])
+        header = meta_h+field_h
+
+        for row in rows_all:
+            row = list(row)
+            row_pretty = row[0:4] # transcription metadata
+            row_transcribed = [row[i:i + 3] for i in range(4, num_cols, 3)] # transcribed fields
+            for field in row_transcribed:
+                field_pretty = str(field[0])
+                if field[1]:
+                    field_pretty = field_pretty+'<i class="fa fa-times"></i>'
+                if field[2]:
+                    field_pretty = field_pretty+'<i class="fa fa-question"></i>'
+                row_pretty.append(field_pretty)
+            transcriptions.append(row_pretty)
+
+    return render_template('transcriptions.html', task=task_dict, transcriptions = transcriptions, header = header)
+
 @views.route('/uploads/<filename>')
 def uploaded_image(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
