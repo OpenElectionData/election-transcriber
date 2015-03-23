@@ -10,25 +10,29 @@
 
 <div class="row">
     <div class="col-sm-12">
-        <h2>Transcriptions</h2>
-        <div>
-            <i class="fa fa-times fa-fw"></i> Blank <br>
-            <i class="fa fa-question fa-fw"></i> Not legible
-        </div>
-        <table class="table">
-            <tr>
-                {% for h in header %}
-                    <th> {{h}} </th>
-                {% endfor %}
-            </tr>
-            {% for transcription in transcriptions %}
+        {% if transcriptions %}
+            <h2>Transcriptions</h2>
+            <div>
+                <i class="fa fa-times fa-fw"></i> Blank <br>
+                <i class="fa fa-question fa-fw"></i> Not legible
+            </div>
+            <table class="table">
                 <tr>
-                    {% for col in transcription %}
-                        <td><small> {{col|safe}} </small></td>
+                    {% for h in header %}
+                        <th> {{h}} </th>
                     {% endfor %}
                 </tr>
-            {% endfor %}
-        </table>
+                {% for transcription in transcriptions %}
+                    <tr>
+                        {% for col in transcription %}
+                            <td><small> {{col|safe}} </small></td>
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </table>
+        {% else %}
+            <h2>No transcriptions yet</h2>
+        {% endif %}
     </div>
 </div>
 

@@ -482,7 +482,8 @@ def transcribe():
 def transcriptions():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
-    transcriptions = []
+    transcriptions = None
+    header = None
 
     task = db_session.query(FormMeta)\
             .filter(FormMeta.id == request.args['task_id'])\
@@ -518,6 +519,7 @@ def transcriptions():
             field_h.append(h[0])
         header = meta_h+field_h
 
+        transcriptions = []
         for row in rows_all:
             row = list(row)
             row_pretty = row[0:4] # transcription metadata
