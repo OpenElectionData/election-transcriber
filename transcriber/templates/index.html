@@ -31,8 +31,10 @@
                                     <small>{{t[0].deadline | format_date }}</small>
                                 </span>
                             </td>
-                            <td>
-                                <small>{{t[1]['reviews_complete']}} / {{t[1]['reviews_total']}} complete</small>
+                            <td class='progress-info' data-container="body" data-toggle="popover" data-placement="top" data-content="
+                            {{t[1]['reviews_complete']}} / {{t[1]['reviews_total']}} transcriptions complete<br>
+                            {{t[1]['docs_total']}} documents x {{t[0]['reviewer_count']}} reviewers">
+
                                 <div class="progress">
                                     <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{{t[1]['review_percent']}}" aria-valuemin="0" aria-valuemax="100" style="width: {{t[1]['review_percent']}}%;">
                                     </div>
@@ -71,6 +73,8 @@
             //     console.log(moment.utc().utcOffset('-06:00'))
             //     date.html(moment(date.html(),"YYYY-MM-DD HH:mm:ss.S Z").from(moment().utcOffset('-06:00')))
             // })
+            $('.progress-info').popover({trigger: 'hover', html: true});
+
             $('#transcription_tasks').DataTable( {
                 "aaSorting": [ [0,'desc'], [1,'desc'] ],
                 "aoColumns": [
