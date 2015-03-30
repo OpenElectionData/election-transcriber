@@ -453,6 +453,12 @@ def transcribe():
             image.view_count += 1
             db_session.add(image)
             db_session.commit()
+
+            # clear form fields once transcription is saved
+            for field in form:
+                if field.type != 'CSRFTokenField':
+                    field.data = None
+
     else:
         form = form(meta={})
 

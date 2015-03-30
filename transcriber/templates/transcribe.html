@@ -9,7 +9,7 @@
     <div class='col-md-6'>
         {{ render_image() }}
     </div>
-    <div class="col-sm-6">
+    <div class="col-sm-6" id="form-area">
         <form id="transcriber" role="form" class="form-horizontal" method="POST" action="">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             {% for section in task.sections %}
@@ -112,6 +112,8 @@
             $('.panzoom').panzoom({
                 $zoomRange: $('input[type="range"]')
             });
+
+            $('#form-area').hide().delay(1000).fadeIn(800);
         })
 
         //dynamically set the size of the image iframe
