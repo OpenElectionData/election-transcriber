@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% from 'macros.html' import render_image %}
+{% from 'macros.html' import render_image, render_header %}
 {% block title %}
     {% if form_meta.name %}
     Transcription task - {{form_meta.name}}
@@ -11,6 +11,13 @@
     <link href="{{ url_for('static', filename='css/jquery-ui.min.css') }}" rel="stylesheet">
 {% endblock %}
 {% block content %}
+
+{% if form_meta.name %}
+    {{ render_header(form_meta.name, None, form_meta.id, 'form-creator') }}
+{% else %}
+    {{ render_header('New Transcription Task', None, None, 'form-creator') }}
+{% endif %}
+
 <div class="row">
     <div class='col-md-6'>
         {{ render_image() }}

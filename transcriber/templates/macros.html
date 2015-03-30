@@ -20,3 +20,50 @@
     </div>
     {% endif %}
 {%- endmacro %}
+
+{% macro render_header(task_name, task_dict, task_id, current_tab) -%}
+    <div class='row'>
+        <div class='col-sm-12'>
+            <ul class="nav nav-tabs">
+                {% if task_name %}
+                    <li role="presentation"><strong>{{task_name}}</strong></li>
+                {% endif %}
+
+                {% if task_id %}
+
+                    {% if current_tab == 'form-creator' %}
+                        <li role="presentation" class="pull-right">
+                            <a href='{{ url_for('views.transcribe', task_id=task_id )}}'><i class="fa fa-pencil fa-fw"></i> Transcribe documents</a>
+                        </li>
+                        <li role="presentation" class="pull-right">
+                            <a href="{{ url_for('views.transcriptions', task_id=task_id )}}"><i class="fa fa-eye fa-fw"></i> View transcriptions</a>
+                        </li>
+                        <li role="presentation" class="active pull-right">
+                            <a href=""><i class="fa fa-cog fa-fw"></i> Task Settings</a>
+                        </li>
+                    {% elif current_tab == 'transcriptions' %}
+                        <li role="presentation" class="pull-right">
+                            <a href='{{ url_for('views.transcribe', task_id=task_id )}}'><i class="fa fa-pencil fa-fw"></i> Transcribe documents</a>
+                        </li>
+                        <li role="presentation" class="active pull-right">
+                            <a href=""><i class="fa fa-eye fa-fw"></i> View transcriptions</a>
+                        </li>
+                        <li role="presentation" class="pull-right">
+                            <a href="{{ url_for('views.form_creator', form_id=task_id) }}"><i class="fa fa-cog fa-fw"></i> Task Settings</a>
+                        </li>
+                    {% elif current_tab == 'transcribe' %}
+                        <li role="presentation" class="active pull-right">
+                            <a href=""><i class="fa fa-pencil fa-fw"></i> Transcribe documents</a>
+                        </li>
+                        <li role="presentation" class="pull-right">
+                            <a href="{{ url_for('views.transcriptions', task_id=task_id )}}"><i class="fa fa-eye fa-fw"></i> View transcriptions</a>
+                        </li>
+                        <li role="presentation" class="active pull-right">
+                            <a href="{{ url_for('views.form_creator', form_id=task_id) }}"><i class="fa fa-cog fa-fw"></i> Task Settings</a>
+                        </li>
+                    {% endif %}
+                {% endif %}
+            </ul><br>
+        </div>
+    </div>
+{%- endmacro %}
