@@ -1,17 +1,14 @@
 {% extends 'base.html' %}
-{% from 'macros.html' import render_image %}
+{% from 'macros.html' import render_image, render_header %}
 {% block title %}{{task.name}}{% endblock %}
 {% block content %}
 
-<div>
-    <strong>{{task.name}}</strong>
-    <button type="button" data-toggle="modal" data-target="#help-modal" class="btn btn-link"><i class='fa fa-info-circle fa-lg'></i></button>
-</div>
+{{ render_header(task.name, task, task.id, 'transcriptions') }}
 
 <div class="row">
     <div class="col-sm-12">
         {% if transcriptions %}
-            <h2>Transcriptions <a href="{{ url_for('views.download_transcriptions', task_id=task.id) }}" class="btn btn-default pull-right"><i class="fa fa-download fa-fw"></i> Download CSV</a></h2> 
+            <a href="{{ url_for('views.download_transcriptions', task_id=task.id) }}" class="btn btn-default pull-right"><i class="fa fa-download fa-fw"></i> Download CSV</a>
             <div>
                 <i class="fa fa-times fa-fw"></i> Blank <br>
                 <i class="fa fa-question fa-fw"></i> Not legible <br>
@@ -35,31 +32,6 @@
         {% endif %}
     </div>
 </div>
-
-<div id="help-modal" class="modal fade">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                <p class="modal-title"><strong>{{task.name}} - Info</strong></p>
-            </div>
-            <div class="modal-body">
-                {% if task.description %}
-                    <p>{{task.description}}</p><br>
-                {% endif %}
-                <p>
-                {% if task.reviewer_count %}
-                    <i class="fa fa-user fa-fw"></i> <strong>{{task.reviewer_count}}</strong> reviewers per document<br>
-                {% endif %}
-                {% if task.deadline %}
-                    <i class="fa fa-calendar fa-fw"></i> due {{task.deadline | format_date}}<br>
-                {% endif %}
-                </p>
-            </div>
-        </div><!-- /.modal-content -->
-    </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
-
 
 {% endblock %}
 {% block extra_javascript %}
