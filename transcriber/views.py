@@ -534,7 +534,9 @@ def transcriptions():
     table_name = task_dict['table_name']
 
     q = ''' 
-            SELECT * from "{0}"
+            SELECT * from (SELECT id, fetch_url from image) i
+            JOIN "{0}" t 
+            ON (i.id = t.image_id)
         '''.format(table_name)
     h = ''' 
             SELECT column_name
@@ -549,7 +551,8 @@ def transcriptions():
     if len(rows_all) > 0:
         num_cols = len(rows_all[0])
 
-        # this code assumes that first 4 cols are meta info abt transcription
+        # this code assumes that first 2 cols are info from joined image table,
+        # next 4 cols are meta info abt transcription
         # & remaining cols are for fields
         # w/ 3 cols per field: fieldname/fieldname_blank/fieldname_not_legible
         meta_h = []
@@ -563,8 +566,14 @@ def transcriptions():
         transcriptions = []
         for row in rows_all:
             row = list(row)
-            row_pretty = row[0:4] # transcription metadata
-            row_transcribed = [row[i:i + 3] for i in range(4, num_cols, 3)] # transcribed fields
+            row_pretty = row[2:5] # transcription metadata
+            # assumes image_id is the 4th metadata col
+            image_id = row[5]
+            image_url = row[1]
+            image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
+            row_pretty.append(image_link)
+
+            row_transcribed = [row[i:i + 3] for i in range(6, num_cols, 3)] # transcribed fields
             for field in row_transcribed:
                 field_pretty = str(field[0])
                 if field[1]:
