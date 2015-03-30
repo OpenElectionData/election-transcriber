@@ -29,25 +29,46 @@
                         {% endif %}
                             <div class="row">
                                 <div class="col-sm-12">
-                                    {% if form_field.widget.input_type == 'text' %}
+                                    {% if form_field.type == 'StringField' %}
                                         <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }}</label>
                                         <div class='col-sm-6'>
                                             {{ form_field(class_='form-control') }}
                                         </div>
-                                    {% elif form_field.widget.input_type == 'checkbox' %}
+
+                                    {% elif form_field.type == 'TranscriberIntegerField' %}
+                                        <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }}</label>
+                                        <div class='col-sm-6'>
+                                            {{ form_field(class_='form-control') }}
+                                        </div>
+
+                                    {% elif form_field.type == 'BooleanField' %}
                                         <div class="checkbox col-sm-offset-3">
                                             <label>
                                                 {{ form_field }} {{ field.name }}
                                             </label>
                                         </div>
+
+                                    {% elif form_field.type == 'TranscriberDateField' %}
+                                        <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }}</label>
+                                        <div class='col-sm-6'>
+                                            {{ form_field(class_='form-control') }}
+                                        </div>
+
+                                    {% elif form_field.type == 'TranscriberDateTimeField' %}
+                                        <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }}</label>
+                                            <div class='col-sm-6 input-group date datetimepicker'>
+                                            {{ form_field(class_='form-control') }}
+                                            <span class="input-group-addon"><span class="fa fa-calendar"></span></span>
+                                            </div>
+
                                     {% endif %}
                                     <div class="col-sm-offset-6">
                                         <div class="checkbox field-checks">
                                             <label>
-                                                {{ form_blank }} Blank?
+                                                {{ form_blank }} <small>Blank?</small>
                                             </label>
                                             <label>
-                                                {{ form_not_legible }} Not legible?
+                                                {{ form_not_legible }} <small>Not legible?</small>
                                             </label>
                                         </div>
                                     </div>
@@ -111,8 +132,11 @@
 {% endblock %}
 {% block extra_javascript %}
     <script src="{{ url_for('static', filename='js/jquery.panzoom.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/bootstrap-datetimepicker.min.js') }}"></script>
     <script type="text/javascript">
         $(document).ready(function(){
+            $('.datetimepicker').datetimepicker();
+
             $('.panzoom').panzoom({
                 $zoomRange: $('input[type="range"]')
             });
