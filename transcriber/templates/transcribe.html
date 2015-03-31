@@ -47,16 +47,17 @@
 
                                     {% elif form_field.type == 'TranscriberDateField' %}
                                         <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }}</label>
-                                        <div class='col-sm-6'>
+                                        <div class='col-sm-6 input-group date datepicker'>
                                             {{ form_field(class_='form-control') }}
+                                            <span class="input-group-addon"><span class="fa fa-calendar"></span></span>
                                         </div>
 
                                     {% elif form_field.type == 'TranscriberDateTimeField' %}
                                         <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }}</label>
-                                            <div class='col-sm-6 input-group date datetimepicker'>
+                                        <div class='col-sm-6 input-group date datetimepicker'>
                                             {{ form_field(class_='form-control') }}
                                             <span class="input-group-addon"><span class="fa fa-calendar"></span></span>
-                                            </div>
+                                        </div>
 
                                     {% endif %}
                                     <div class="col-sm-offset-6">
@@ -108,6 +109,9 @@
     <script type="text/javascript">
         $(document).ready(function(){
             $('.datetimepicker').datetimepicker();
+            $('.datepicker').datetimepicker({
+                format: 'MM/DD/YYYY'
+            });
 
             $('.panzoom').panzoom({
                 $zoomRange: $('input[type="range"]')
