@@ -7,7 +7,7 @@ from flask_security.core import current_user
 from transcriber.app_config import UPLOAD_FOLDER
 from werkzeug import secure_filename
 from transcriber.models import FormMeta, FormSection, FormField, \
-    Image, TaskGroup
+    Image, TaskGroup, User
 from transcriber.database import engine, db_session
 from transcriber.helpers import slugify, add_images
 from flask_wtf import Form
@@ -590,6 +590,83 @@ def transcriptions():
             transcriptions.append(row_pretty)
 
     return render_template('transcriptions.html', task=task_dict, transcriptions = transcriptions, header = header)
+
+@views.route('/user/', methods=['GET', 'POST'])
+def user():
+    if not request.args.get('user_id'):
+        return redirect(url_for('views.index'))
+
+    user_transcriptions = []
+    user_row = db_session.query(User)\
+                .filter(User.id == request.args.get('user_id'))\
+                .first()
+    user = {
+    'id': user_row.id,
+    'name': user_row.name,
+    'email': user_row.email
+    }
+    all_tasks = db_session.query(FormMeta)\
+            .filter(or_(FormMeta.status != 'deleted', 
+                        FormMeta.status == None)).all()
+
+    for task in all_tasks:
+        task_info = task.as_dict()
+        table_name = task_info['table_name']
+
+        q = ''' 
+                SELECT * from (SELECT id, fetch_url from image) i
+                JOIN "{0}" t 
+                ON (i.id = t.image_id)
+                WHERE transcriber = '{1}'
+            '''.format(table_name, user['name'])
+        h = ''' 
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = '{0}'
+        '''.format(table_name)
+
+        with engine.begin() as conn:
+            t_header = conn.execute(text(h)).fetchall()
+            rows_all = conn.execute(text(q)).fetchall()
+
+        if len(rows_all) > 0:
+            num_cols = len(rows_all[0])
+
+            # this code assumes that first 2 cols are info from joined image table,
+            # next 4 cols are meta info abt transcription
+            # & remaining cols are for fields
+            # w/ 3 cols per field: fieldname/fieldname_blank/fieldname_not_legible
+            meta_h = []
+            field_h = []
+            for h in t_header[:4]:
+                meta_h.append(h[0])
+            for h in t_header[4::3]:
+                field_h.append(h[0])
+            header = meta_h+field_h
+
+            transcriptions = [header]
+            for row in rows_all:
+                row = list(row)
+                row_pretty = row[2:5] # transcription metadata
+                # assumes image_id is the 4th metadata col
+                image_id = row[5]
+                image_url = row[1]
+                image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
+                row_pretty.append(image_link)
+
+                row_transcribed = [row[i:i + 3] for i in range(6, num_cols, 3)] # transcribed fields
+                for field in row_transcribed:
+                    field_pretty = str(field[0])
+                    if field[1]:
+                        field_pretty = field_pretty+'<i class="fa fa-times"></i>'
+                    if field[2]:
+                        field_pretty = field_pretty+'<i class="fa fa-question"></i>'
+                    row_pretty.append(field_pretty)
+                transcriptions.append(row_pretty)
+
+            user_transcriptions.append((task_info, transcriptions))
+
+    return render_template('user.html', user=user, user_transcriptions = user_transcriptions)
 
 @views.route('/uploads/<filename>')
 def uploaded_image(filename):

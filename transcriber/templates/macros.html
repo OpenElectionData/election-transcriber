@@ -21,12 +21,12 @@
     {% endif %}
 {%- endmacro %}
 
-{% macro render_header(task_name, task_dict, task_id, current_tab) -%}
+{% macro render_header(title, task_dict, task_id, current_tab) -%}
     <div class='row'>
         <div class='col-sm-12'>
             <ul class="nav nav-tabs">
-                {% if task_name %}
-                    <li role="presentation"><h4><strong>{{task_name}}</strong></h4></li>
+                {% if title %}
+                    <li role="presentation"><h4><strong>{{title | safe}}</strong></h4></li>
                 {% endif %}
                 {% if task_dict %}
                     <button type="button" data-toggle="modal" data-target="#help-modal" class="btn btn-link"><i class='fa fa-info-circle fa-lg'></i></button>
