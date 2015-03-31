@@ -573,6 +573,10 @@ def transcriptions():
         for row in rows_all:
             row = list(row)
             row_pretty = row[2:5] # transcription metadata
+            # link for transcriber
+            transcriber = row_pretty[1]
+            row_pretty[1] = "<a href='"+url_for('views.user', user=transcriber)+"'>"+transcriber+"</a>"
+
             # assumes image_id is the 4th metadata col
             image_id = row[5]
             image_url = row[1]
@@ -593,13 +597,14 @@ def transcriptions():
 
 @views.route('/user/', methods=['GET', 'POST'])
 def user():
-    if not request.args.get('user_id'):
+    if not request.args.get('user'):
         return redirect(url_for('views.index'))
 
     user_transcriptions = []
     user_row = db_session.query(User)\
-                .filter(User.id == request.args.get('user_id'))\
+                .filter(User.name == request.args.get('user'))\
                 .first()
+
     user = {
     'id': user_row.id,
     'name': user_row.name,
