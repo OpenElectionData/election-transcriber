@@ -15,11 +15,11 @@
             </div>
             <table class="table">
                 <tr>
-                    {% for h in header %}
+                    {% for h in transcriptions[0] %}
                         <th> {{h}} </th>
                     {% endfor %}
                 </tr>
-                {% for transcription in transcriptions %}
+                {% for transcription in transcriptions[1:] %}
                     <tr>
                         {% for col in transcription %}
                             <td><small> {{col|safe}} </small></td>

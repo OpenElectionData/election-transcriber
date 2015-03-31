@@ -569,7 +569,7 @@ def transcriptions():
             field_h.append(h[0])
         header = meta_h+field_h
 
-        transcriptions = []
+        transcriptions = [header]
         for row in rows_all:
             row = list(row)
             row_pretty = row[2:5] # transcription metadata
@@ -593,7 +593,7 @@ def transcriptions():
                 row_pretty.append(field_pretty)
             transcriptions.append(row_pretty)
 
-    return render_template('transcriptions.html', task=task_dict, transcriptions = transcriptions, header = header)
+    return render_template('transcriptions.html', task=task_dict, transcriptions = transcriptions)
 
 @views.route('/user/', methods=['GET', 'POST'])
 def user():
