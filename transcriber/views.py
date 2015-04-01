@@ -613,12 +613,20 @@ def user():
     user_row = db_session.query(User)\
                 .filter(User.name == request.args.get('user'))\
                 .first()
+    
+    if user_row:
+        user = {
+        'id': user_row.id,
+        'name': user_row.name,
+        'detail': user_row.email
+        }
+    else:
+        user = {
+        'id': None,
+        'name': request.args.get('user'),
+        'detail': "Anonymous Transcriber"
+        }
 
-    user = {
-    'id': user_row.id,
-    'name': user_row.name,
-    'email': user_row.email
-    }
     all_tasks = db_session.query(FormMeta)\
             .filter(or_(FormMeta.status != 'deleted', 
                         FormMeta.status == None)).all()
