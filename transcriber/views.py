@@ -432,8 +432,14 @@ def transcribe():
     if request.method == 'POST':
         form = form(request.form)
         if form.validate():
+
+            if current_user.is_anonymous():
+                username = request.remote_addr
+            else:
+                username = current_user.name
+
             ins_args = {
-                'transcriber': current_user.name,
+                'transcriber': username,
                 'image_id': flask_session['image_id'],
             }
             for k,v in request.form.items():
