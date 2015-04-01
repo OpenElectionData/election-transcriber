@@ -497,6 +497,7 @@ def transcribe():
         return render_template('transcribe.html', form=form, task=task_dict)
 
 @views.route('/download-transcriptions/', methods=['GET', 'POST'])
+@login_required
 def download_transcriptions():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
@@ -526,6 +527,7 @@ def download_transcriptions():
     return resp
 
 @views.route('/transcriptions/', methods=['GET', 'POST'])
+@login_required
 def transcriptions():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
@@ -596,6 +598,7 @@ def transcriptions():
     return render_template('transcriptions.html', task=task_dict, transcriptions = transcriptions)
 
 @views.route('/user/', methods=['GET', 'POST'])
+@login_required
 def user():
     if not request.args.get('user'):
         return redirect(url_for('views.index'))
