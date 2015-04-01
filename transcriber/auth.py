@@ -58,5 +58,7 @@ def login():
 @auth.route('/logout/')
 def logout():
     logout_user()
-    return redirect(url_for('auth.login'))
+    response = redirect(url_for('auth.login'))
+    response.set_cookie('session', '', expires=0)
+    return response
 
