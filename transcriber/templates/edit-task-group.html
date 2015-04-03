@@ -15,14 +15,14 @@
                 <div class="col-sm-5 well well-sm task-well">
                     <span class="task-choice" data-task_index="{{ loop.index }}"
                         data-task_id="{{ task.id }}">
-                            <strong>{{ task.name }}</strong>
+                            <i class="fa fa-arrows-v fa-fw"></i> <strong>{{ task.name }}</strong>
                     </span>
                 </div>
             </div>
         {% endif %}
     {% endfor %}
 </div>
-<br><button class="btn btn-success"><i class='fa fa-check'></i> Save Task Priorities</button>
+<br><button class="btn btn-success" id="save-priorities"><i class='fa fa-check'></i> Save Task Priorities</button>
 
 
 {% endblock %}
@@ -42,6 +42,7 @@
             $('h3 .label').on('mouseout', function(e){
                 $(this).css('cursor', 'inherit');
             })
+
         });
     </script>
 {% endblock %}
