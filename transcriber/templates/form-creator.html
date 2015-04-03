@@ -170,8 +170,8 @@
                             </div>
                             <div class="col-sm-4">
                                 <select class="form-control" name="datatype_section_<%= section.index %>_field_<%= field.index %>">
-                                    <option value="string" <% if(field.data_type == 'string'){ %>selected="true"<% } %>>Text</option>
                                     <option value="integer" <% if(field.data_type == 'integer'){ %>selected="true"<% } %>>Number</option>
+                                    <option value="string" <% if(field.data_type == 'string'){ %>selected="true"<% } %>>Text</option>
                                     <option value="boolean" <% if(field.data_type == 'boolean'){ %>selected="true"<% } %>>Yes / No</option>
                                     <option value="date" <% if(field.data_type == 'date'){ %>selected="true"<% } %>>Date</option>
                                     <option value="datetime" <% if(field.data_type == 'datetime'){ %>selected="true"<% } %>>Date with time</option>
