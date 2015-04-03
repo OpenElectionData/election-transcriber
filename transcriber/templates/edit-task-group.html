@@ -1,23 +1,26 @@
 {% extends 'base.html' %}
-{% block title %}Edit task | {{ task_group.name }}{% endblock %}
+{% block title %}Edit task group | {{ task_group.name }}{% endblock %}
 {% block extra_styles %}
     <link href="{{ url_for('static', filename='css/jquery-ui.min.css') }}" rel="stylesheet">
 {% endblock %}
 {% block content %}
+<h2>{{ task_group.name }}</h2>
+<hr>
+<p>Drag the tasks to set task priority, from highest to lowest.</p><br>
+
 <div id="task-sorter">
     {% for task in task_group.tasks %}
         <div class="row">
-            <div class="col-sm-12">
-                <h3 data-task_index="{{ loop.index }}"
+            <div class="col-sm-5 well well-sm task-well">
+                <span class="task-choice" data-task_index="{{ loop.index }}"
                     data-task_id="{{ task.id }}">
-                    <span class="label label-primary">
-                        {{ task.name }}
-                    </span>
-                </h3>
+                        <strong>{{ task.name }}</strong>
+                </span>
             </div>
         </div>
     {% endfor %}
 </div>
+<br><button class="btn btn-success"><i class='fa fa-check'></i> Save Task Priorities</button>
 
 
 {% endblock %}
@@ -28,7 +31,7 @@
         $(document).ready(function(){
             $('#task-sorter').sortable({
                 update: function(event, ui){
-                    console.log(ui.item.find('h3').data('task_index'));
+                    console.log(ui.item.find('.task-choice').data('task_index'));
                 }
             })
             $('h3 .label').on('mouseover', function(e){
