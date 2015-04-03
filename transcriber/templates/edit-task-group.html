@@ -10,14 +10,16 @@
 
 <div id="task-sorter">
     {% for task in task_group.tasks %}
-        <div class="row">
-            <div class="col-sm-5 well well-sm task-well">
-                <span class="task-choice" data-task_index="{{ loop.index }}"
-                    data-task_id="{{ task.id }}">
-                        <strong>{{ task.name }}</strong>
-                </span>
+        {% if task.status != 'deleted' %}
+            <div class="row">
+                <div class="col-sm-5 well well-sm task-well">
+                    <span class="task-choice" data-task_index="{{ loop.index }}"
+                        data-task_id="{{ task.id }}">
+                            <strong>{{ task.name }}</strong>
+                    </span>
+                </div>
             </div>
-        </div>
+        {% endif %}
     {% endfor %}
 </div>
 <br><button class="btn btn-success"><i class='fa fa-check'></i> Save Task Priorities</button>
