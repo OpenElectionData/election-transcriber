@@ -7,6 +7,7 @@ from wtforms.fields import StringField
 from wtforms.validators import DataRequired
 from transcriber.models import Image, FormMeta
 from transcriber.database import db_session
+from flask import url_for
 
 # Temporary function to populate incoming tasks with some canned images.
 def add_images(form_id):
@@ -33,3 +34,50 @@ def slugify(text, delim=u'_'):
         return unicode(delim.join(result))
     else: # pragma: no cover
         return text
+
+# given all rows, produce pretty rows to display in html table
+def pretty_transcriptions(t_header, rows_all):
+    num_cols = len(rows_all[0])
+
+    # this code assumes that first 2 cols are info from joined image table,
+    # next 4 cols are meta info abt transcription
+    # & remaining cols are for fields
+
+    # 4 cols per field: fieldname/fieldname_blank/fieldname_not_legible/fieldname_altered
+    cpf = 4
+
+    meta_h = []
+    field_h = []
+    for h in t_header[:4]:
+        meta_h.append(h[0])
+    for h in t_header[4::cpf]:
+        field_h.append(h[0])
+    header = meta_h+field_h
+
+    transcriptions = [header]
+    for row in rows_all:
+        row = list(row)
+        row_pretty = row[2:5] # transcription metadata
+        # link for transcriber
+        transcriber = row_pretty[1]
+        row_pretty[1] = "<a href='"+url_for('views.user', user=transcriber)+"'>"+transcriber+"</a>"
+
+        # assumes image_id is the 4th metadata col
+        image_id = row[5]
+        image_url = row[1]
+        image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
+        row_pretty.append(image_link)
+
+        row_transcribed = [row[i:i + cpf] for i in range(6, num_cols, cpf)] # transcribed fields
+        for field in row_transcribed:
+            field_pretty = str(field[0])
+            if field[1]:
+                field_pretty = field_pretty+'<i class="fa fa-times"></i>'
+            if field[2]:
+                field_pretty = field_pretty+'<i class="fa fa-question"></i>'
+            if field[3]:
+                field_pretty = field_pretty+'<i class="fa fa-exclamation-triangle"></i>'
+            row_pretty.append(field_pretty)
+        transcriptions.append(row_pretty)
+
+    return transcriptions
