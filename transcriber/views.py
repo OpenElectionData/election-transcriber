@@ -9,7 +9,7 @@ from werkzeug import secure_filename
 from transcriber.models import FormMeta, FormSection, FormField, \
     Image, TaskGroup, User
 from transcriber.database import engine, db_session
-from transcriber.helpers import slugify, add_images
+from transcriber.helpers import slugify, add_images, pretty_transcriptions
 from flask_wtf import Form
 from transcriber.dynamic_form import TranscriberIntegerField as IntegerField, \
     TranscriberDateTimeField as DateTimeField, TranscriberDateField as DateField, \
@@ -280,16 +280,23 @@ def form_creator():
                 sql_type = SQL_DATA_TYPE[field.data_type]
                 alt = 'ALTER TABLE "{0}" ADD COLUMN {1} {2}'\
                         .format(form_meta.table_name, field.slug, sql_type)
-                blank = 'ALTER TABLE "{0}" ADD COLUMN {1}_blank boolean'\
-                        .format(form_meta.table_name, field.slug)
+                blank = '''
+                    ALTER TABLE "{0}" 
+                    ADD COLUMN {1}_blank boolean
+                    '''.format(form_meta.table_name, field.slug)
                 not_legible = '''
                     ALTER TABLE "{0}" 
                     ADD COLUMN {1}_not_legible boolean
+                    '''.format(form_meta.table_name, field.slug)
+                altered = '''
+                    ALTER TABLE "{0}" 
+                    ADD COLUMN {1}_altered boolean
                     '''.format(form_meta.table_name, field.slug)
                 with engine.begin() as conn:
                     conn.execute(alt)
                     conn.execute(blank)
                     conn.execute(not_legible)
+                    conn.execute(altered)
         else:
             form_meta.table_name = '{0}_{1}'.format(
                     unicode(uuid4()).rsplit('-', 1)[1], 
@@ -308,6 +315,7 @@ def form_creator():
                 cols.append(Column(field.slug, dt))
                 cols.append(Column('{0}_blank'.format(field.slug), Boolean))
                 cols.append(Column('{0}_not_legible'.format(field.slug), Boolean))
+                cols.append(Column('{0}_altered'.format(field.slug), Boolean))
             table = Table(form_meta.table_name, metadata, *cols)
             table.create(bind=engine)
             db_session.add(form_meta)
@@ -424,9 +432,11 @@ def transcribe():
             setattr(form, field.slug, ft)
             blank = '{0}_blank'.format(field.slug)
             not_legible = '{0}_not_legible'.format(field.slug)
+            altered = '{0}_altered'.format(field.slug)
             setattr(form, blank, BooleanField())
             setattr(form, not_legible, BooleanField())
-            bools.extend([blank, not_legible])
+            setattr(form, altered, BooleanField())
+            bools.extend([blank, not_legible, altered])
             section_dict['fields'].append(field)
         task_dict['sections'].append(section_dict)
     if request.method == 'POST':
@@ -563,43 +573,7 @@ def transcriptions():
         rows_all = conn.execute(text(q)).fetchall()
 
     if len(rows_all) > 0:
-        num_cols = len(rows_all[0])
-
-        # this code assumes that first 2 cols are info from joined image table,
-        # next 4 cols are meta info abt transcription
-        # & remaining cols are for fields
-        # w/ 3 cols per field: fieldname/fieldname_blank/fieldname_not_legible
-        meta_h = []
-        field_h = []
-        for h in t_header[:4]:
-            meta_h.append(h[0])
-        for h in t_header[4::3]:
-            field_h.append(h[0])
-        header = meta_h+field_h
-
-        transcriptions = [header]
-        for row in rows_all:
-            row = list(row)
-            row_pretty = row[2:5] # transcription metadata
-            # link for transcriber
-            transcriber = row_pretty[1]
-            row_pretty[1] = "<a href='"+url_for('views.user', user=transcriber)+"'>"+transcriber+"</a>"
-
-            # assumes image_id is the 4th metadata col
-            image_id = row[5]
-            image_url = row[1]
-            image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
-            row_pretty.append(image_link)
-
-            row_transcribed = [row[i:i + 3] for i in range(6, num_cols, 3)] # transcribed fields
-            for field in row_transcribed:
-                field_pretty = str(field[0])
-                if field[1]:
-                    field_pretty = field_pretty+'<i class="fa fa-times"></i>'
-                if field[2]:
-                    field_pretty = field_pretty+'<i class="fa fa-question"></i>'
-                row_pretty.append(field_pretty)
-            transcriptions.append(row_pretty)
+        transcriptions = pretty_transcriptions(t_header, rows_all)
 
     return render_template('transcriptions.html', task=task_dict, transcriptions = transcriptions)
 
@@ -652,40 +626,7 @@ def user():
             rows_all = conn.execute(text(q)).fetchall()
 
         if len(rows_all) > 0:
-            num_cols = len(rows_all[0])
-
-            # this code assumes that first 2 cols are info from joined image table,
-            # next 4 cols are meta info abt transcription
-            # & remaining cols are for fields
-            # w/ 3 cols per field: fieldname/fieldname_blank/fieldname_not_legible
-            meta_h = []
-            field_h = []
-            for h in t_header[:4]:
-                meta_h.append(h[0])
-            for h in t_header[4::3]:
-                field_h.append(h[0])
-            header = meta_h+field_h
-
-            transcriptions = [header]
-            for row in rows_all:
-                row = list(row)
-                row_pretty = row[2:5] # transcription metadata
-                # assumes image_id is the 4th metadata col
-                image_id = row[5]
-                image_url = row[1]
-                image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
-                row_pretty.append(image_link)
-
-                row_transcribed = [row[i:i + 3] for i in range(6, num_cols, 3)] # transcribed fields
-                for field in row_transcribed:
-                    field_pretty = str(field[0])
-                    if field[1]:
-                        field_pretty = field_pretty+'<i class="fa fa-times"></i>'
-                    if field[2]:
-                        field_pretty = field_pretty+'<i class="fa fa-question"></i>'
-                    row_pretty.append(field_pretty)
-                transcriptions.append(row_pretty)
-
+            transcriptions = pretty_transcriptions(t_header, rows_all)
             user_transcriptions.append((task_info, transcriptions))
 
     return render_template('user.html', user=user, user_transcriptions = user_transcriptions)

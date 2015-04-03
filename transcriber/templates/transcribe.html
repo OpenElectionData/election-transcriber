@@ -19,6 +19,7 @@
                         {% set form_field = form|attr(field.slug) %}
                         {% set form_blank = form|attr(field.slug + '_blank') %}
                         {% set form_not_legible = form|attr(field.slug + '_not_legible') %}
+                        {% set form_altered = form|attr(field.slug + '_altered') %}
                         {% if form_field.errors %}
                         <div class="form-group has-error">
                         {% else %}
@@ -67,10 +68,13 @@
                                     <div class="col-sm-offset-9">
                                         <div class="checkbox field-checks">
                                             <label>
-                                                {{ form_blank }} <small>Blank?</small>
+                                                {{ form_blank(class='check-blank') }} <small>Blank?</small>
                                             </label>
                                             <label>
-                                                {{ form_not_legible }} <small>Not legible?</small>
+                                                {{ form_not_legible(class='check-nl') }} <small>Not legible?</small>
+                                            </label>
+                                            <label>
+                                                {{ form_altered(class='check-altered') }} <small>Looks altered?</small>
                                             </label>
                                         </div>
                                     </div>
