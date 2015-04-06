@@ -11,6 +11,7 @@ class BlankValidator(object):
     def __call__(self, form, field):
         blank = form.data['{0}_blank'.format(field.name)]
         not_legible = form.data['{0}_not_legible'.format(field.name)]
+        print "FIELD TYPE", field.type
         if not field.data and not blank and not not_legible:
             raise ValidationError(self.message)
 

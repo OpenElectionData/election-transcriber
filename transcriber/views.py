@@ -11,10 +11,8 @@ from transcriber.models import FormMeta, FormSection, FormField, \
 from transcriber.database import engine, db_session
 from transcriber.helpers import slugify, add_images, pretty_transcriptions
 from flask_wtf import Form
-from transcriber.dynamic_form import TranscriberIntegerField as IntegerField, \
-    TranscriberDateTimeField as DateTimeField, TranscriberDateField as DateField, \
-    BlankValidator
-from wtforms.fields import BooleanField, StringField
+from transcriber.dynamic_form import BlankValidator
+from wtforms.fields import BooleanField, StringField, IntegerField, DateTimeField, DateField
 from datetime import datetime
 from transcriber.app_config import TIME_ZONE
 from sqlalchemy import Table, Column, MetaData, String, Boolean, \
@@ -418,6 +416,8 @@ def transcribe():
     for section in sorted(task.sections, key=attrgetter('index')):
         section_dict = {'name': section.name, 'fields': []}
         for field in sorted(section.fields, key=attrgetter('index')):
+            print field
+            print field.data_type
             message = u'If the "{0}" field is either blank or not legible, \
                     please mark the appropriate checkbox'.format(field.name)
             validators = [BlankValidator(message=message)]
@@ -425,10 +425,7 @@ def transcribe():
                 bools.append(field.slug)
                 ft = FORM_TYPE[field.data_type]()
             else:
-                if field.data_type == 'string':
-                    ft = FORM_TYPE[field.data_type](validators=validators)
-                else:
-                    ft = FORM_TYPE[field.data_type]()
+                ft = FORM_TYPE[field.data_type](validators=validators)
             setattr(form, field.slug, ft)
             blank = '{0}_blank'.format(field.slug)
             not_legible = '{0}_not_legible'.format(field.slug)
