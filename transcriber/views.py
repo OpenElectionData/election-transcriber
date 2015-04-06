@@ -563,6 +563,7 @@ def transcriptions():
             SELECT * from (SELECT id, fetch_url from image) i
             JOIN "{0}" t 
             ON (i.id = t.image_id)
+            ORDER BY i.id, t.id
         '''.format(table_name)
     h = ''' 
             SELECT column_name
