@@ -559,6 +559,11 @@ def transcriptions():
 
     table_name = task_dict['table_name']
 
+    images_unseen = db_session.query(Image)\
+            .filter(Image.form_id == request.args['task_id'])\
+            .filter(Image.view_count == 0)\
+            .all()
+
     q = ''' 
             SELECT * from (SELECT id, fetch_url from image) i
             JOIN "{0}" t 
@@ -578,7 +583,7 @@ def transcriptions():
     if len(rows_all) > 0:
         transcriptions = pretty_transcriptions(t_header, rows_all)
 
-    return render_template('transcriptions.html', task=task_dict, transcriptions = transcriptions)
+    return render_template('transcriptions.html', task=task_dict, transcriptions=transcriptions, images_unseen=images_unseen)
 
 @views.route('/user/', methods=['GET', 'POST'])
 @login_required

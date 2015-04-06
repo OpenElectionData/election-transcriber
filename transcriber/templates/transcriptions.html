@@ -34,6 +34,20 @@
     </div>
 </div>
 
+{% if images_unseen %}
+<div class="row">
+    <div class="col-sm-12">
+        <hr>
+        <h3><strong>{{images_unseen|length}}</strong> images without any transcriptions yet</h3>
+        <strong>image_id</strong>
+        {% for image in images_unseen %}
+            <br><a href="{{image.fetch_url}}" target="blank"> {{image.id}} </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
+
 {% endblock %}
 {% block extra_javascript %}
 
