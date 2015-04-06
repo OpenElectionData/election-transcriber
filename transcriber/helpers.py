@@ -52,6 +52,8 @@ def pretty_transcriptions(t_header, rows_all):
         meta_h.append(h[0])
     for h in t_header[4::cpf]:
         field_h.append(h[0])
+    # move image_id to first col
+    meta_h.insert(0, meta_h.pop())
     header = meta_h+field_h
 
     transcriptions = [header]
@@ -66,7 +68,8 @@ def pretty_transcriptions(t_header, rows_all):
         image_id = row[5]
         image_url = row[1]
         image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
-        row_pretty.append(image_link)
+        row_pretty = [image_link]+row_pretty
+        # row_pretty.append(image_link)
 
         row_transcribed = [row[i:i + cpf] for i in range(6, num_cols, cpf)] # transcribed fields
         for field in row_transcribed:
