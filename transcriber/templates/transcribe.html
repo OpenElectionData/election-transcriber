@@ -99,6 +99,7 @@
                         <i class='fa fa-check'></i>
                         Submit
                     </button>
+
                     {% if task.images_left %}
                         <div class='pull-right'>
                         <i class="fa fa-file-text-o fa-fw"></i> <strong>{{task.images_left}}</strong> documents remaining
@@ -107,6 +108,15 @@
                 </div>
             </div>
         </form>
+    </div>
+    <div class="col-sm-6">
+        {% with saved = get_flashed_messages(category_filter=["saved"]) %}
+            {% if saved %}
+            <div class="alert alert-success fade-out" role="alert">
+              {{ saved[0] }}
+            </div>
+            {% endif %}
+        {% endwith %}
     </div>
 </div>
 
@@ -124,8 +134,8 @@
             $('.panzoom').panzoom({
                 $zoomRange: $('input[type="range"]')
             });
-
-            $('#form-area').hide().delay(1000).fadeIn(800);
+            $('.fade-out').show().delay(1200).fadeOut(800);
+            $('#form-area').hide().delay(2000).fadeIn(800);
         })
 
         //dynamically set the size of the image iframe

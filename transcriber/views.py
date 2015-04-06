@@ -470,6 +470,8 @@ def transcribe():
             db_session.add(image)
             db_session.commit()
 
+            flash("Transcription saved!", "saved")
+
             # clear form fields once transcription is saved
             for field in form:
                 if field.type != 'CSRFTokenField':

@@ -27,18 +27,20 @@
 
   <body style="height: 100%">
       <div>
-          {% with messages = get_flashed_messages() %}
+          {% with messages = get_flashed_messages(with_categories=true) %}
               {% if messages %}
                   <div class="row">
                     <div class="col-sm-12">
-                      {% for message in messages %}
+                      {% for category, message in messages %}
+                        {% if category == 'message' %}
                           <div class="alert alert-success alert-dismissible task-finish-alert" role="alert">
                           <button type="button" class="close" data-dismiss="alert">
                           <span aria-hidden="true">&times;</span>
                           <span class="sr-only">Close</span>
                           </button>
-                          {{ message|safe }}
+                          {{ message[1]|safe }}
                           </div>
+                        {% endif %}
                       {% endfor %}
                     </div>
                   </div>
