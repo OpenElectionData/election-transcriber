@@ -11,9 +11,10 @@ from transcriber.models import FormMeta, FormSection, FormField, \
 from transcriber.database import engine, db_session
 from transcriber.helpers import slugify, add_images, pretty_transcriptions
 from flask_wtf import Form
+from transcriber.dynamic_form import NullableIntegerField as IntegerField
 from transcriber.dynamic_form import validate_integer, validate_date, \
     validate_blank_not_legible
-from wtforms.fields import BooleanField, StringField, IntegerField, \
+from wtforms.fields import BooleanField, StringField, \
     DateTimeField, DateField
 from wtforms.validators import DataRequired
 from datetime import datetime
@@ -464,7 +465,10 @@ def transcribe():
             }
             for k,v in request.form.items():
                 if k != 'csrf_token':
-                    ins_args[k] = v
+                    if v:
+                        ins_args[k] = v
+                    else:
+                        ins_args[k] = None
             if not set(bools).intersection(set(ins_args.keys())):
                 for f in bools:
                     ins_args[f] = False
