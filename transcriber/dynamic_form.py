@@ -38,6 +38,24 @@ class NullableDateTimeField(DateTimeField):
                     self.data = None
                     raise ValidationError(self.gettext('Not a valid datetime value'))
 
+class NullableDateField(NullableDateTimeField):
+    """
+    A DateField where the field can be null if the input data is an empty
+    string.
+    """
+
+    def process_formdata(self, valuelist):
+        if valuelist:
+            if valuelist[0] == '':
+                self.data = None
+            else:
+                date_str = ' '.join(valuelist)
+                try:
+                    self.data = parser.parse(date_str).date()
+                except ValueError:
+                    self.data = None
+                    raise ValidationError(self.gettext('Not a valid date value'))
+
 # checks that something has been inputed - either blank, not legible, or content field
 def validate_blank_not_legible(form, field):
     blank = form.data['{0}_blank'.format(field.name)]

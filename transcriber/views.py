@@ -12,9 +12,10 @@ from transcriber.database import engine, db_session
 from transcriber.helpers import slugify, add_images, pretty_transcriptions
 from flask_wtf import Form
 from transcriber.dynamic_form import NullableIntegerField as IntegerField, \
-    NullableDateTimeField as DateTimeField
+    NullableDateTimeField as DateTimeField, \
+    NullableDateField as DateField
 from transcriber.dynamic_form import validate_integer, validate_blank_not_legible
-from wtforms.fields import BooleanField, StringField, DateField
+from wtforms.fields import BooleanField, StringField
 from wtforms.validators import DataRequired
 from datetime import datetime
 from transcriber.app_config import TIME_ZONE
