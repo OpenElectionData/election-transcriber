@@ -14,7 +14,7 @@ from flask_wtf import Form
 from transcriber.dynamic_form import NullableIntegerField as IntegerField, \
     NullableDateTimeField as DateTimeField, \
     NullableDateField as DateField
-from transcriber.dynamic_form import validate_integer, validate_blank_not_legible
+from transcriber.dynamic_form import validate_blank_not_legible
 from wtforms.fields import BooleanField, StringField
 from wtforms.validators import DataRequired
 from datetime import datetime
@@ -417,8 +417,6 @@ def transcribe():
     task_dict = task.as_dict()
     task_dict['sections'] = []
     bools = []
-    integers = []
-    dates = []
     for section in sorted(task.sections, key=attrgetter('index')):
         section_dict = {'name': section.name, 'fields': []}
         for field in sorted(section.fields, key=attrgetter('index')):
@@ -426,10 +424,6 @@ def transcribe():
                     please mark the appropriate checkbox'.format(field.name)
             if field.data_type == 'boolean':
                 bools.append(field.slug)
-            elif field.data_type == 'integer':
-                integers.append(field.slug)
-            elif field.data_type in ['datetime', 'date']:
-                dates.append(field.slug)
             ft = FORM_TYPE[field.data_type]()
             setattr(form, field.slug, ft)
             blank = '{0}_blank'.format(field.slug)
@@ -441,15 +435,11 @@ def transcribe():
             bools.extend([blank, not_legible, altered])
             section_dict['fields'].append(field)
         task_dict['sections'].append(section_dict)
-    for int_field in integers:
-        setattr(form, 'validate_{0}'.format(int_field), validate_integer)
-    for date_field in dates:
-        setattr(form, 'validate_{0}'.format(date_field), validate_blank_not_legible)
-    special = set(integers) | set(dates)
+
     all_fields = set([f.slug for f in section_dict['fields']])
-    others = all_fields - special
-    for field in others:
+    for field in all_fields:
         setattr(form, 'validate_{0}'.format(field), validate_blank_not_legible)
+
     if request.method == 'POST':
         form = form(request.form)
         if form.validate():

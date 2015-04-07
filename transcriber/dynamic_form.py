@@ -65,24 +65,3 @@ def validate_blank_not_legible(form, field):
                 please mark the appropriate checkbox'.format(field.name)
         raise ValidationError(message)
     return True
-
-# if blank or not legible checked, return true
-def require_content_validation(form, field):
-    blank = form.data['{0}_blank'.format(field.name)]
-    not_legible = form.data['{0}_not_legible'.format(field.name)]
-    if blank or not_legible:
-        return False
-    else:
-        return True
-
-def validate_integer(form, field):
-    validate_blank_not_legible(form, field)
-    data = form.data[field.name]
-    if data and require_content_validation(form, field):
-        try:
-            data = int(data)
-        except ValueError:
-            message = u'The "{0}" field expects a number. If it is blank or \
-                    not legible, mark the appropriate box'.format(field.name)
-            raise ValidationError(message)
-    return True
