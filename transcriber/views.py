@@ -11,11 +11,10 @@ from transcriber.models import FormMeta, FormSection, FormField, \
 from transcriber.database import engine, db_session
 from transcriber.helpers import slugify, add_images, pretty_transcriptions
 from flask_wtf import Form
-from transcriber.dynamic_form import NullableIntegerField as IntegerField
-from transcriber.dynamic_form import validate_integer, validate_date, \
-    validate_blank_not_legible
-from wtforms.fields import BooleanField, StringField, \
-    DateTimeField, DateField
+from transcriber.dynamic_form import NullableIntegerField as IntegerField, \
+    NullableDateTimeField as DateTimeField
+from transcriber.dynamic_form import validate_integer, validate_blank_not_legible
+from wtforms.fields import BooleanField, StringField, DateField
 from wtforms.validators import DataRequired
 from datetime import datetime
 from transcriber.app_config import TIME_ZONE
@@ -444,7 +443,7 @@ def transcribe():
     for int_field in integers:
         setattr(form, 'validate_{0}'.format(int_field), validate_integer)
     for date_field in dates:
-        setattr(form, 'validate_{0}'.format(date_field), validate_date)
+        setattr(form, 'validate_{0}'.format(date_field), validate_blank_not_legible)
     special = set(integers) | set(dates)
     all_fields = set([f.slug for f in section_dict['fields']])
     others = all_fields - special
