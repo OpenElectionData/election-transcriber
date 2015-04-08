@@ -64,6 +64,7 @@ class Image(Base):
     form_id = Column(Integer, ForeignKey('form_meta.id'))
     form = relationship('FormMeta', 
                 backref=backref('images', cascade="all, delete-orphan"))
+    checkout_expire = Column(DateTime(timezone=True))
 
     def __repr__(self):
         return '<Image %r>' % self.fetch_url
