@@ -17,7 +17,7 @@ from transcriber.dynamic_form import NullableIntegerField as IntegerField, \
 from transcriber.dynamic_form import validate_blank_not_legible
 from wtforms.fields import BooleanField, StringField
 from wtforms.validators import DataRequired
-from datetime import datetime
+from datetime import datetime, timedelta
 from transcriber.app_config import TIME_ZONE
 from sqlalchemy import Table, Column, MetaData, String, Boolean, \
         Integer, DateTime, Date, text, and_, or_
@@ -491,6 +491,16 @@ def transcribe():
     image_id = request.args.get('image_id')
 
     image = None
+
+    # update image checkout expiration
+    current_time = datetime.now()
+    expired = db_session.query(Image).filter(Image.checkout_expire < current_time).all()
+    if expired:
+        for expired_image in expired:
+            expired_image.checkout_expire = None
+            db_session.add(expired_image)
+            db_session.commit()
+
     if image_id:
         image = db_session.query(Image).get(int(image_id))
     else:
@@ -505,6 +515,7 @@ def transcribe():
                 .count()
         image = db_session.query(Image)\
                 .filter(Image.form_id == task.id)\
+                .filter(Image.checkout_expire == None)\
                 .filter(Image.view_count < task_dict['reviewer_count'])\
                 .order_by(Image.view_count)\
                 .first()
@@ -513,6 +524,10 @@ def transcribe():
         flash('No more documents left to transcribe for %s!' %task_dict['name'])
         return redirect(url_for('views.index'))
     else:
+        # checkout image for 5 mins
+        image.checkout_expire = current_time+timedelta(seconds=5*60)
+        db_session.add(image)
+        db_session.commit()
         flask_session['image'] = image.fetch_url
         flask_session['image_type'] = image.image_type
         flask_session['image_id'] = image.id
