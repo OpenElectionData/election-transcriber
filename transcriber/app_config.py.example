@@ -7,6 +7,11 @@ DEFAULT_USER = {
     'email': 'eric@eric.com',
     'password': 'really-secret',
 }
+CLERK_USER = {
+    'name': 'person',
+    'email': 'person@person.com',
+    'password': 'secrets',
+}
 
 DB_USER = ''
 DB_PW = ''
@@ -39,8 +44,8 @@ SECURITY_CHANGE_URL = '/change-password/'
 SECURITY_CONFIRM_URL = '/confirm/'
 SECURITY_LOGIN_USER_TEMPLATE = 'login.html'
 SECURITY_REGISTER_USER_TEMPLATE = 'register.html'
-SECURITY_RESET_PASSWORD_TEMPLATE = 'reset-password.html'
-SECURITY_CHANGE_PASSWORD_TEMPLATE = 'change-password.html'
+SECURITY_RESET_PASSWORD_TEMPLATE = 'reset_password.html'
+SECURITY_CHANGE_PASSWORD_TEMPLATE = 'change_password.html'
 SECURITY_CONFIRMABLE = True
 SECURITY_RECOVERABLE = True
 SECURITY_CHANGEABLE = True

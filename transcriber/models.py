@@ -35,7 +35,7 @@ class SecurityUserDatastore(SecurityDatastore, UserDatastore):
 
     def get_user(self, identifier):
         if self._is_numeric(identifier):
-            return self.session.query(self.ser_model).get(identifier)
+            return self.session.query(self.user_model).get(identifier)
         for attr in get_identity_attributes():
             query = getattr(self.user_model, attr).ilike(identifier)
             rv = self.session.query(self.user_model).filter(query).first()
