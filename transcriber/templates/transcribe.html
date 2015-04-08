@@ -117,6 +117,13 @@
             </div>
             {% endif %}
         {% endwith %}
+        {% with expired = get_flashed_messages(category_filter=["expired"]) %}
+            {% if expired %}
+            <div class="alert alert-danger fade-out" role="alert">
+              {{ expired[0] }}
+            </div>
+            {% endif %}
+        {% endwith %}
     </div>
 </div>
 

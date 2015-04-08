@@ -398,6 +398,7 @@ def transcribe_intro():
 def transcribe():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
+    current_time = datetime.now().replace(tzinfo=TIME_ZONE)
     section_sq = db_session.query(FormSection)\
             .filter(or_(FormSection.status != 'deleted', 
                         FormSection.status == None))\
@@ -444,39 +445,44 @@ def transcribe():
         form = form(request.form)
         if form.validate():
 
-            if current_user.is_anonymous():
-                username = request.remote_addr
-            else:
-                username = current_user.name
-
-            ins_args = {
-                'transcriber': username,
-                'image_id': flask_session['image_id'],
-            }
-            for k,v in request.form.items():
-                if k != 'csrf_token':
-                    if v:
-                        ins_args[k] = v
-                    else:
-                        ins_args[k] = None
-            if not set(bools).intersection(set(ins_args.keys())):
-                for f in bools:
-                    ins_args[f] = False
-            ins = ''' 
-                INSERT INTO "{0}" ({1}) VALUES ({2})
-            '''.format(task.table_name, 
-                       ','.join([f for f in ins_args.keys()]),
-                       ','.join([':{0}'.format(f) for f in ins_args.keys()]))
-            with engine.begin() as conn:
-                conn.execute(text(ins), **ins_args)
             image = db_session.query(Image).get(flask_session['image_id'])
-            image.view_count += 1
-            db_session.add(image)
-            db_session.commit()
+            if not image.checkout_expire or image.checkout_expire < current_time:
+                flash("Form has expired", "expired")
+            else:
+                if current_user.is_anonymous():
+                    username = request.remote_addr
+                else:
+                    username = current_user.name
 
-            flash("Transcription saved!", "saved")
+                ins_args = {
+                    'transcriber': username,
+                    'image_id': flask_session['image_id'],
+                }
+                for k,v in request.form.items():
+                    if k != 'csrf_token':
+                        if v:
+                            ins_args[k] = v
+                        else:
+                            ins_args[k] = None
+                if not set(bools).intersection(set(ins_args.keys())):
+                    for f in bools:
+                        ins_args[f] = False
+                ins = ''' 
+                    INSERT INTO "{0}" ({1}) VALUES ({2})
+                '''.format(task.table_name, 
+                           ','.join([f for f in ins_args.keys()]),
+                           ','.join([':{0}'.format(f) for f in ins_args.keys()]))
 
-            # clear form fields once transcription is saved
+                with engine.begin() as conn:
+                    conn.execute(text(ins), **ins_args)
+                image.view_count += 1
+                image.checkout_expire = None
+                db_session.add(image)
+                db_session.commit()
+
+                flash("Transcription saved!", "saved")
+
+            # clear form fields
             for field in form:
                 if field.type != 'CSRFTokenField':
                     field.data = None
@@ -493,7 +499,6 @@ def transcribe():
     image = None
 
     # update image checkout expiration
-    current_time = datetime.now()
     expired = db_session.query(Image).filter(Image.checkout_expire < current_time).all()
     if expired:
         for expired_image in expired:
