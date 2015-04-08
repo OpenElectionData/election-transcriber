@@ -27,6 +27,7 @@ from uuid import uuid4
 from operator import attrgetter, itemgetter
 from itertools import groupby
 from io import StringIO
+import pytz
 
 views = Blueprint('views', __name__)
 
@@ -398,7 +399,6 @@ def transcribe_intro():
 def transcribe():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
-    current_time = datetime.now().replace(tzinfo=TIME_ZONE)
     section_sq = db_session.query(FormSection)\
             .filter(or_(FormSection.status != 'deleted', 
                         FormSection.status == None))\
@@ -441,6 +441,8 @@ def transcribe():
     for field in all_fields:
         setattr(form, 'validate_{0}'.format(field), validate_blank_not_legible)
 
+    current_time = datetime.now().replace(tzinfo=pytz.UTC)
+    expire_time = current_time+timedelta(seconds=5*60)
     if request.method == 'POST':
         form = form(request.form)
         if form.validate():
@@ -526,11 +528,15 @@ def transcribe():
                 .first()
 
     if image == None:
-        flash('No more documents left to transcribe for %s!' %task_dict['name'])
-        return redirect(url_for('views.index'))
+        if task_dict['images_left'] == 0:
+            flash('No more documents left to transcribe for %s!' %task_dict['name'])
+            return redirect(url_for('views.index'))
+        else:
+            flash("All images associated with '%s' have been checked out" %task_dict['name'])
+            return redirect(url_for('views.index'))
     else:
         # checkout image for 5 mins
-        image.checkout_expire = current_time+timedelta(seconds=5*60)
+        image.checkout_expire = expire_time
         db_session.add(image)
         db_session.commit()
         flask_session['image'] = image.fetch_url
