@@ -2,7 +2,7 @@ from flask import Blueprint, make_response, request, render_template, \
     url_for, send_from_directory, session as flask_session, redirect, flash
 import json
 import os
-from flask_security.decorators import login_required
+from flask_security.decorators import login_required, roles_required
 from flask_security.core import current_user
 from transcriber.app_config import UPLOAD_FOLDER
 from werkzeug import secure_filename
@@ -115,6 +115,7 @@ def about():
 
 @views.route('/upload/',methods=['GET', 'POST'])
 @login_required
+@roles_required('admin')
 def upload():
     image = None
     if request.method == 'POST':
@@ -130,6 +131,7 @@ def upload():
 
 @views.route('/delete-part/', methods=['DELETE'])
 @login_required
+@roles_required('admin')
 def delete_part():
     part_id = request.form.get('part_id')
     part_type = request.form.get('part_type')
@@ -176,6 +178,7 @@ def delete_part():
 
 @views.route('/form-creator/', methods=['GET', 'POST'])
 @login_required
+@roles_required('admin')
 def form_creator():
     form_meta = FormMeta()
     if request.args.get('form_id'):
@@ -366,6 +369,7 @@ def form_creator():
 
 @views.route('/get-task-group/')
 @login_required
+@roles_required('admin')
 def get_task_group():
     term = request.args.get('term')
     where = TaskGroup.name.ilike('%%%s%%' % term)
@@ -378,12 +382,39 @@ def get_task_group():
 
 @views.route('/edit-task-group/')
 @login_required
+@roles_required('admin')
 def edit_task_group():
     if not request.args.get('group_id'):
         flash('Group ID is required')
         return redirect(url_for('views.index'))
     task_group = db_session.query(TaskGroup).get(request.args['group_id'])
     return render_template('edit-task-group.html',task_group=task_group)
+
+@views.route('/prioritize-tasks/')
+@login_required
+@roles_required('admin')
+def prioritize_tasks():
+
+    task_array = request.form.get('task_array')
+    r = {
+        'status': 'ok',
+        'message': ''
+    }
+    status_code = 200
+
+    # set erros here if necessary
+    # if not part_id:
+    #     r['status'] = 'error'
+    #     r['message'] = 'Need the ID of the component to remove'
+    #     status_code = 400
+
+    # update stuff here based on task_array
+
+    flash("Priorities saved")
+
+    response = make_response(json.dumps(r), status_code)
+    response.headers['Content-Type'] = 'application/json'
+    return response
 
 @views.route('/transcribe-intro/', methods=['GET', 'POST'])
 def transcribe_intro():
@@ -546,6 +577,7 @@ def transcribe():
 
 @views.route('/download-transcriptions/', methods=['GET', 'POST'])
 @login_required
+@roles_required('admin')
 def download_transcriptions():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
@@ -576,6 +608,7 @@ def download_transcriptions():
 
 @views.route('/transcriptions/', methods=['GET', 'POST'])
 @login_required
+@roles_required('admin')
 def transcriptions():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
@@ -617,6 +650,7 @@ def transcriptions():
 
 @views.route('/user/', methods=['GET', 'POST'])
 @login_required
+@roles_required('admin')
 def user():
     if not request.args.get('user'):
         return redirect(url_for('views.index'))
