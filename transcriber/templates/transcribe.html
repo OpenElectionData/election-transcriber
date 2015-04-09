@@ -143,6 +143,22 @@
             });
             $('.fade-out').show().delay(1200).fadeOut(700);
             $('#form-area').hide().delay(2000).fadeIn(800);
+
+            $('.check-blank').change(function(){
+                // when blank is checked, clear field content & uncheck not legible checkbox
+                if(this.checked){
+                    field_name = this.id.slice(0,-6)
+                    $('#'+field_name).val('')
+                    $('#'+field_name+'_not_legible').attr('checked', false);
+                }
+            });
+            $('.check-nl').change(function(){
+                // when not legible is checked, uncheck blank checkbox
+                if(this.checked){
+                    field_name = this.id.slice(0,-12)
+                    $('#'+field_name+'_blank').attr('checked', false);
+                }
+            });
         })
 
         //dynamically set the size of the image iframe
