@@ -6,10 +6,11 @@
         <h1>Election Results Transcriber</h1>
 
         {% if tasks %}
-
+            {% if current_user.has_role('admin') %}
             <p>
                 <a href="{{ url_for('views.upload') }}" class="btn btn-success">New transcription task &raquo; </a>
             </p>
+            {% endif %}
 
             <table class='table' id='transcription_tasks'>
                 <thead>
@@ -24,7 +25,13 @@
                 <tbody>
                     {% for t in tasks %}
                         <tr>
-                            <td><a href="{{ url_for('views.edit_task_group', group_id=t[0].task_group.id) }}">{{ t[0].task_group.name }}</a></td>
+                            <td>
+                                {% if current_user.has_role('admin') %}
+                                <a href="{{ url_for('views.edit_task_group', group_id=t[0].task_group.id) }}">{{ t[0].task_group.name }}</a>
+                                {% else %}
+                                {{ t[0].task_group.name }}
+                                {% endif %}
+                            </td>
                             <td>{{t[0].name}}</td>
                             <td>
                                 <span datetime='{{t[0].deadline | format_date_sort}}'>
@@ -41,8 +48,10 @@
                                 </div>
                             </td>
                             <td>
+                                {% if current_user.has_role('admin') %}
                                 <a href="{{ url_for('views.form_creator', form_id=t[0].id) }}"><i class="fa fa-cog fa-fw"></i> Settings</a><br />
                                 <a href="{{ url_for('views.transcriptions', task_id=t[0].id) }}"><i class="fa fa-eye fa-fw"></i> View transcriptions</a><br />
+                                {% endif %}
                                 {% if t[1]['reviews_complete'] < t[1]['reviews_total'] %}
                                 <a href='{{ url_for('views.transcribe_intro', task_id=t[0].id )}}'><i class="fa fa-pencil fa-fw"></i> <strong>Start transcribing!</strong></a>
                                 {% endif %}
@@ -53,9 +62,13 @@
             </table>
 
         {% else %}
+            {% if current_user.has_role('admin') %}
             <p>
                 <a href="{{ url_for('views.upload') }}" class="btn btn-primary">Create your first transcription task > </a>
             </p>
+            {% else %}
+                <p> No transcription tasks available </p>
+            {% endif %}
         {% endif %}
     </div>
 </div>
