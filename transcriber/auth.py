@@ -63,15 +63,19 @@ class RegisterForm(Form):
         user = db_session.query(User)\
             .filter(func.lower(User.email) == func.lower(self.email.data))\
             .first()
+        errors = False
         if user is not None:
             self.email.errors.append('Email address is already registered')
-            return False
+            errors = True
         
         user = db_session.query(User)\
             .filter(func.lower(User.name) == func.lower(self.name.data))\
             .first()
         if user is not None:
             self.name.errors.append('Username is already registered')
+            errors = True
+        
+        if errors:
             return False
 
         return True
@@ -106,3 +110,4 @@ def register():
         form.user = user
         return redirect('/')
     return render_template('security/register_user.html', register_user_form=form)
+

@@ -193,8 +193,9 @@ class User(Base, UserMixin):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False, unique=True)
     email = Column(String, nullable=False, unique=True)
+    confirmed_at = Column(DateTime)
     _password = Column('password', String, nullable=False)
-    active = Column(Boolean, default=True)
+    active = Column(Boolean, default=False)
     roles = relationship('Role', secondary=roles_users, 
                             backref=backref('users', lazy='dynamic')) 
     def __repr__(self): # pragma: no cover

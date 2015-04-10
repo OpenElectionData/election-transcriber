@@ -41,7 +41,10 @@ def init_db(sess=None, eng=None):
                 name = user['name']
                 email = user['email']
                 password = user['password']
-                datastore.create_user(email=email, password=password, name=name)
+                datastore.create_user(email=email, 
+                                      password=password, 
+                                      name=name, 
+                                      active=True)
                 datastore.commit()
         except IntegrityError, e:
             print "user already exists"
