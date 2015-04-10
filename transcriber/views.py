@@ -66,7 +66,9 @@ def allowed_file(filename):
 def index():
     tasks = db_session.query(FormMeta)\
             .filter(or_(FormMeta.status != 'deleted', 
-                        FormMeta.status == None)).all()
+                        FormMeta.status == None))\
+            .order_by(FormMeta.task_group_id, FormMeta.index)\
+            .all()
             # order by due date here
     t = []
     for task in tasks:
@@ -407,7 +409,7 @@ def edit_task_group():
 
             if save_ok:
                 flash("Priorities saved")
-                
+
         else:
             flash("Error saving priorities")
 
