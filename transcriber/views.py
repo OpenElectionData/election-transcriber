@@ -71,6 +71,7 @@ def index():
             .all()
             # order by due date here
     t = []
+    groups = []
     for task in tasks:
         # make the progress bar depend on reviews (#docs * #reviewers) instead of documents?
         task_dict = task.as_dict()
@@ -101,6 +102,12 @@ def index():
             doc_percent = None
             review_percent = None
 
+        if task.task_group_id not in groups and review_percent < 100:
+            is_top_task = True
+            groups.append(task.task_group_id)
+        else:
+            is_top_task = False
+
         progress_dict = {}
         progress_dict['docs_percent'] = doc_percent
         progress_dict['docs_complete'] = docs_complete
@@ -108,7 +115,7 @@ def index():
         progress_dict['reviews_complete'] = reviews_complete
         progress_dict['reviews_total'] = reviewer_count*docs_total
         progress_dict['review_percent'] = review_percent
-        t.append([task, progress_dict])
+        t.append([task, progress_dict, is_top_task])
         
     return render_template('index.html', tasks=t)
 

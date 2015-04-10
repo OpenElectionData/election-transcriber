@@ -54,7 +54,7 @@
                         {% endfor %}
                     {% else %}
                         {% for t in tasks %}
-                            {% if t[0].index == 0 %}
+                            {% if t[2] %}
                             <tr>
                                 <td>
                                     {{ t[0].task_group.name }}
