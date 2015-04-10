@@ -11,10 +11,9 @@
 <div id="task-sorter">
     {% for task in task_group.tasks %}
         {% if task.status != 'deleted' %}
-            <div class="row">
+            <div class="row" id="{{ task.id }}">
                 <div class="col-sm-5 well well-sm task-well">
-                    <span class="task-choice" data-task_index="{{ loop.index }}"
-                        data-task_id="{{ task.id }}">
+                    <span class="task-choice">
                             <i class="fa fa-arrows-v fa-fw"></i> <strong>{{ task.name }}</strong>
                     </span>
                 </div>
@@ -22,7 +21,10 @@
         {% endif %}
     {% endfor %}
 </div>
-<br><button class="btn btn-success" id="save-priorities"><i class='fa fa-check'></i> Save Task Priorities</button>
+<form id="prioritize-tasks" role="form" class="form-horizontal" method="POST" action="">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+    <br><button class="btn btn-success" id="save-form"><i class='fa fa-check'></i> Save Task Priorities</button>
+</form>
 
 
 {% endblock %}
@@ -31,11 +33,8 @@
     <script src="{{ url_for('static', filename='js/jquery-ui.min.js') }}"></script>
     <script type='text/javascript'>
         $(document).ready(function(){
-            $('#task-sorter').sortable({
-                update: function(event, ui){
-                    console.log(ui.item.find('.task-choice').data('task_index'));
-                }
-            })
+            $('#task-sorter').sortable()
+
             $('h3 .label').on('mouseover', function(e){
                 $(this).css('cursor', 'pointer');
             })
@@ -43,6 +42,17 @@
                 $(this).css('cursor', 'inherit');
             })
 
+            $('#save-form').on('click', function(e){
+
+                var task_array = $('#task-sorter').sortable('toArray')
+
+                var input = $("<input>")
+                   .attr("type", "hidden")
+                   .attr("name", "task_array").val(JSON.stringify(task_array));
+                    $('#prioritize-tasks').append($(input));
+
+            })
         });
+
     </script>
 {% endblock %}

@@ -28,6 +28,7 @@ from operator import attrgetter, itemgetter
 from itertools import groupby
 from io import StringIO
 import pytz
+import ast
 
 views = Blueprint('views', __name__)
 
@@ -380,41 +381,38 @@ def get_task_group():
     resp.headers['Content-Type'] = 'application/json'
     return resp
 
-@views.route('/edit-task-group/')
+@views.route('/edit-task-group/', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')
 def edit_task_group():
     if not request.args.get('group_id'):
         flash('Group ID is required')
         return redirect(url_for('views.index'))
+    if request.method == 'POST':
+        form = request.form
+        if form['task_array']:
+            priorities = ast.literal_eval(form['task_array'])
+
+            save_ok = True
+            for i, task_id in enumerate(priorities):
+                task = db_session.query(FormMeta).get(int(task_id))
+                if task:
+                    task.index = i
+                    db_session.add(task)
+                    db_session.commit()
+                else:
+                    flash("Error saving priorities")
+                    save_ok = False
+                    break
+
+            if save_ok:
+                flash("Priorities saved")
+                
+        else:
+            flash("Error saving priorities")
+
     task_group = db_session.query(TaskGroup).get(request.args['group_id'])
     return render_template('edit-task-group.html',task_group=task_group)
-
-@views.route('/prioritize-tasks/')
-@login_required
-@roles_required('admin')
-def prioritize_tasks():
-
-    task_array = request.form.get('task_array')
-    r = {
-        'status': 'ok',
-        'message': ''
-    }
-    status_code = 200
-
-    # set erros here if necessary
-    # if not part_id:
-    #     r['status'] = 'error'
-    #     r['message'] = 'Need the ID of the component to remove'
-    #     status_code = 400
-
-    # update stuff here based on task_array
-
-    flash("Priorities saved")
-
-    response = make_response(json.dumps(r), status_code)
-    response.headers['Content-Type'] = 'application/json'
-    return response
 
 @views.route('/transcribe-intro/', methods=['GET', 'POST'])
 def transcribe_intro():
