@@ -481,6 +481,15 @@ def transcribe():
 
     current_time = datetime.now().replace(tzinfo=pytz.UTC)
     expire_time = current_time+timedelta(seconds=5*60)
+
+    # update image checkout expiration
+    expired = db_session.query(Image).filter(Image.checkout_expire < current_time).all()
+    if expired:
+        for expired_image in expired:
+            expired_image.checkout_expire = None
+            db_session.add(expired_image)
+            db_session.commit()
+            
     if request.method == 'POST':
         form = form(request.form)
         if form.validate():
@@ -538,14 +547,6 @@ def transcribe():
     image_id = request.args.get('image_id')
 
     image = None
-
-    # update image checkout expiration
-    expired = db_session.query(Image).filter(Image.checkout_expire < current_time).all()
-    if expired:
-        for expired_image in expired:
-            expired_image.checkout_expire = None
-            db_session.add(expired_image)
-            db_session.commit()
 
     if image_id:
         image = db_session.query(Image).get(int(image_id))
