@@ -14,10 +14,15 @@ class NullableIntegerField(IntegerField):
                 self.data = None
             else:
                 try:
+                    if str(valuelist[0])!= str(int(valuelist[0])):
+                        raise ValueError()
                     self.data = int(valuelist[0])
                 except ValueError:
                     self.data = None
-                    raise ValueError(self.gettext('Not a valid integer value'))
+                    if valuelist[0][0] == '0' and len(valuelist[0])>1:
+                        raise ValueError(self.gettext('An integer cannot have leading zeros'))
+                    else:
+                        raise ValueError(self.gettext('Not a valid integer value'))
 
 
 class NullableDateTimeField(DateTimeField):
@@ -60,7 +65,7 @@ class NullableDateField(NullableDateTimeField):
 def validate_blank_not_legible(form, field):
     blank = form.data['{0}_blank'.format(field.name)]
     not_legible = form.data['{0}_not_legible'.format(field.name)]
-    if not field.data and not blank and not not_legible:
+    if field.data == None and not blank and not not_legible:
         message = u'If the "{0}" field is either blank or not legible, \
                 please mark the appropriate checkbox'.format(field.name)
         raise ValidationError(message)
