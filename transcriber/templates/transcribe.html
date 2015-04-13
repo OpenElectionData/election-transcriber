@@ -133,7 +133,9 @@
     <script src="{{ url_for('static', filename='js/bootstrap-datetimepicker.min.js') }}"></script>
     <script type="text/javascript">
         $(document).ready(function(){
-            $('.datetimepicker').datetimepicker();
+            $('.datetimepicker').datetimepicker({
+                format: 'MM/DD/YYYY HH:mm'
+            });
             $('.datepicker').datetimepicker({
                 format: 'MM/DD/YYYY'
             });
