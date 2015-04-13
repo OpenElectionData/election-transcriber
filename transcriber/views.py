@@ -535,10 +535,11 @@ def transcribe():
             for field in form:
                 if field.type != 'CSRFTokenField':
                     field.data = None
+        else:
+            return render_template('transcribe.html', form=form, task=task_dict)
 
     else:
         form = form(meta={})
-        return render_template('transcribe.html', form=form, task=task_dict)
 
     # This is where we put in the image. 
     # Right now it's just always loading the example image
