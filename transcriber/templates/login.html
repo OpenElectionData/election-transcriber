@@ -3,7 +3,7 @@
 {% block content %}
     <div class="row">
         <div class='col-md-6 col-md-offset-3'>
-            <h1>Election Transcriber</h1>
+            <h1><i class='fa fa-sign-in'></i> Login</h1>
             <div class="well">
                 <form role="form" method="POST">
                     {{ form.csrf_token }}
@@ -12,7 +12,7 @@
                     {% else %}
                         <div class="form-group">
                     {% endif %}
-                        <label for="id_email">Email:</label>
+                        <label for="id_email">Email</label>
                         <input type="text" class="form-control" id="id_email" name="email" placeholder="Enter email">
                         {% if form.email.errors %}
                             {% for error in form.email.errors %}
@@ -34,8 +34,11 @@
                         {% endif %}
                     </div>
                     <button type="submit" class="btn btn-info">Login &raquo;</button>
-                    <a href="{{ url_for('security.forgot_password') }}">Forgot password?</a>
+                    <a class='btn btn-link' href="{{ url_for('security.forgot_password') }}">Forgot your password?</a>
                 </form>
+            </div>
+            <div class='well'>
+                <p>Don't have an account? <a href="{{ url_for('security.register') }}">Sign up for one &raquo;</a></p>
             </div>
         </div>
     </div>

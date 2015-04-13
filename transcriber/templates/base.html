@@ -64,9 +64,9 @@
               <a href='{{ url_for('views.index') }}'>Home</a>
             </li>
             {% if current_user.is_authenticated() %}
-              <li><a href='{{ url_for('auth.logout') }}'>Logout</a></li>
+              <li><a href='{{ url_for('auth.logout') }}'><i class='fa fa-sign-out'></i> Logout</a></li>
             {% else %}
-            <li><a href='{{ url_for('auth.login') }}'>Login</a></li>
+            <li><a href='{{ url_for('auth.login') }}'><i class='fa fa-sign-in'></i> Login</a></li>
             {% endif %}
           </ul>
         </div><!--/.nav-collapse -->
