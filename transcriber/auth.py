@@ -4,7 +4,8 @@ from flask import session as flask_session, redirect, url_for, request, Blueprin
 from functools import wraps
 from flask.ext.security.utils import login_user, logout_user
 from flask.ext.security.registerable import register_user
-from flask.ext.security.forms import LoginForm as BaseLoginForm
+from flask.ext.security.forms import LoginForm as BaseLoginForm, \
+    RegisterForm as BaseRegisterForm
 from flask_wtf import Form
 from flask_wtf.csrf import CsrfProtect
 from wtforms import TextField, PasswordField
@@ -47,7 +48,7 @@ class LoginForm(BaseLoginForm):
         self.user = user
         return True
 
-class RegisterForm(Form):
+class RegisterForm(BaseRegisterForm):
     name = TextField('username', validators=[DataRequired()])
     email = TextField('email', validators=[DataRequired(), Email()])
     password = PasswordField('password', validators=[DataRequired()])
@@ -85,14 +86,3 @@ class RegisterForm(Form):
         return {'name': self.name.data, 
                 'password': self.password.data, 
                 'email': self.email.data}
-                
-
-@auth.route('/register/', methods=['GET', 'POST'])
-def register():
-    form = RegisterForm()
-    if form.validate_on_submit():
-        user = register_user(**form.as_dict())
-        form.user = user
-        return redirect('/')
-    return render_template('security/register_user.html', register_user_form=form)
-
