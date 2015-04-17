@@ -4,6 +4,7 @@ from flask import session as flask_session, redirect, url_for, request, Blueprin
 from functools import wraps
 from flask.ext.security.utils import login_user, logout_user
 from flask.ext.security.registerable import register_user
+from flask.ext.security.forms import LoginForm as BaseLoginForm
 from flask_wtf import Form
 from flask_wtf.csrf import CsrfProtect
 from wtforms import TextField, PasswordField
@@ -19,7 +20,7 @@ auth = Blueprint('auth', __name__)
 
 csrf = CsrfProtect()
 
-class LoginForm(Form):
+class LoginForm(BaseLoginForm):
     email = TextField('email', validators=[DataRequired(), Email()])
     password = PasswordField('password', validators=[DataRequired()])
 
@@ -84,23 +85,7 @@ class RegisterForm(Form):
         return {'name': self.name.data, 
                 'password': self.password.data, 
                 'email': self.email.data}
-
-@auth.route('/login/', methods=['GET', 'POST'])
-def login():
-    form = LoginForm()
-    if form.validate_on_submit():
-        user = form.user
-        login_user(user)
-        return redirect(request.args.get('next') or url_for('views.index'))
-    email = form.email.data
-    return render_template('login.html', form=form, email=email)
-
-@auth.route('/logout/')
-def logout():
-    logout_user()
-    response = redirect(url_for('auth.login'))
-    response.set_cookie('session', '', expires=0)
-    return response
+                
 
 @auth.route('/register/', methods=['GET', 'POST'])
 def register():
