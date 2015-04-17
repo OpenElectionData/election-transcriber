@@ -536,7 +536,7 @@ def transcribe():
                 if field.type != 'CSRFTokenField':
                     field.data = None
         else:
-            return render_template('transcribe.html', form=form, task=task_dict)
+            return render_template('transcribe.html', form=form, task=task_dict, is_new=False)
 
     else:
         form = form(meta={})
@@ -583,7 +583,7 @@ def transcribe():
         flask_session['image'] = image.fetch_url
         flask_session['image_type'] = image.image_type
         flask_session['image_id'] = image.id
-        return render_template('transcribe.html', form=form, task=task_dict)
+        return render_template('transcribe.html', form=form, task=task_dict, is_new = True)
 
 @views.route('/download-transcriptions/', methods=['GET', 'POST'])
 @login_required

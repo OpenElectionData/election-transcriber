@@ -9,105 +9,111 @@
     <div class='col-md-6'>
         {{ render_image() }}
     </div>
-    <div class="col-sm-6" id="form-area">
-        <form id="transcriber" role="form" class="form-horizontal" method="POST" action="">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            {% for section in task.sections %}
-                <div class="well">
-                    <h3>{{ section.name }}</h3>
-                    {% for field in section.fields %}
-                        {% set form_field = form|attr(field.slug) %}
-                        {% set form_blank = form|attr(field.slug + '_blank') %}
-                        {% set form_not_legible = form|attr(field.slug + '_not_legible') %}
-                        {% set form_altered = form|attr(field.slug + '_altered') %}
-                        {% if form_field.errors %}
-                        <div class="form-group has-error">
-                        {% else %}
-                        <div class="form-group">
-                        {% endif %}
-                            <div class="row">
-                                <div class="col-sm-12">
-                                    {% if form_field.type == 'StringField' %}
-                                        <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }}</label>
-                                        <div class='col-sm-6'>
-                                            {{ form_field(class_='form-control') }}
-                                        </div>
-
-                                    {% elif form_field.type == 'NullableIntegerField' %}
-                                        <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }}</label>
-                                        <div class='col-sm-6'>
-                                            {{ form_field(class_='form-control') }}
-                                        </div>
-
-                                    {% elif form_field.type == 'BooleanField' %}
-                                        <div class="checkbox col-sm-offset-3">
-                                            <label>
-                                                {{ form_field }} {{ field.name }}
-                                            </label>
-                                        </div>
-
-                                    {% elif form_field.type == 'NullableDateField' %}
-                                        <div class='col-sm-9'>
-                                            <label for="id_{{ field.slug }}" class="col-sm-4 control-label">{{ field.name }}</label>
-                                            <div class='input-group date datepicker'>
+    {% if is_new %}
+    <div class="pretend-new">
+    {% else %}
+    <div>
+    {% endif %}
+        <div class="col-sm-6" id="form-area">
+            <form id="transcriber" role="form" class="form-horizontal" method="POST" action="">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                {% for section in task.sections %}
+                    <div class="well">
+                        <h3>{{ section.name }}</h3>
+                        {% for field in section.fields %}
+                            {% set form_field = form|attr(field.slug) %}
+                            {% set form_blank = form|attr(field.slug + '_blank') %}
+                            {% set form_not_legible = form|attr(field.slug + '_not_legible') %}
+                            {% set form_altered = form|attr(field.slug + '_altered') %}
+                            {% if form_field.errors %}
+                            <div class="form-group has-error">
+                            {% else %}
+                            <div class="form-group">
+                            {% endif %}
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        {% if form_field.type == 'StringField' %}
+                                            <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }}</label>
+                                            <div class='col-sm-6'>
                                                 {{ form_field(class_='form-control') }}
-                                                <span class="input-group-addon"><span class="fa fa-calendar"></span></span>
                                             </div>
-                                        </div>
 
-                                    {% elif form_field.type == 'NullableDateTimeField' %}
-                                        <div class='col-sm-9'>
-                                            <label for="id_{{ field.slug }}" class="col-sm-4 control-label">{{ field.name }}</label>
-                                            <div class='input-group date datetimepicker'>
+                                        {% elif form_field.type == 'NullableIntegerField' %}
+                                            <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }}</label>
+                                            <div class='col-sm-6'>
                                                 {{ form_field(class_='form-control') }}
-                                                <span class="input-group-addon"><span class="fa fa-calendar"></span></span>
                                             </div>
-                                        </div>
 
-                                    {% endif %}
-                                    <div class="col-sm-offset-9">
-                                        <div class="checkbox field-checks">
-                                            <label>
-                                                {{ form_blank(class='check-blank', tabindex="-1") }} <small>Blank?</small>
-                                            </label>
-                                            <label>
-                                                {{ form_not_legible(class='check-nl', tabindex="-1") }} <small>Not legible?</small>
-                                            </label>
-                                            <label>
-                                                {{ form_altered(class='check-altered', tabindex="-1") }} <small>Looks altered?</small>
-                                            </label>
+                                        {% elif form_field.type == 'BooleanField' %}
+                                            <div class="checkbox col-sm-offset-3">
+                                                <label>
+                                                    {{ form_field }} {{ field.name }}
+                                                </label>
+                                            </div>
+
+                                        {% elif form_field.type == 'NullableDateField' %}
+                                            <div class='col-sm-9'>
+                                                <label for="id_{{ field.slug }}" class="col-sm-4 control-label">{{ field.name }}</label>
+                                                <div class='input-group date datepicker'>
+                                                    {{ form_field(class_='form-control') }}
+                                                    <span class="input-group-addon"><span class="fa fa-calendar"></span></span>
+                                                </div>
+                                            </div>
+
+                                        {% elif form_field.type == 'NullableDateTimeField' %}
+                                            <div class='col-sm-9'>
+                                                <label for="id_{{ field.slug }}" class="col-sm-4 control-label">{{ field.name }}</label>
+                                                <div class='input-group date datetimepicker'>
+                                                    {{ form_field(class_='form-control') }}
+                                                    <span class="input-group-addon"><span class="fa fa-calendar"></span></span>
+                                                </div>
+                                            </div>
+
+                                        {% endif %}
+                                        <div class="col-sm-offset-9">
+                                            <div class="checkbox field-checks">
+                                                <label>
+                                                    {{ form_blank(class='check-blank', tabindex="-1") }} <small>Blank?</small>
+                                                </label>
+                                                <label>
+                                                    {{ form_not_legible(class='check-nl', tabindex="-1") }} <small>Not legible?</small>
+                                                </label>
+                                                <label>
+                                                    {{ form_altered(class='check-altered', tabindex="-1") }} <small>Looks altered?</small>
+                                                </label>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-sm-12">
-                                    {% if form_field.errors %}
-                                        {% for error in form_field.errors %}
-                                        <span class="help-block"><i class="fa fa-remove"> </i> {{error}}</span>
-                                        {% endfor %}
-                                    {% endif %}
+                                <div class="row">
+                                    <div class="col-sm-12">
+                                        {% if form_field.errors %}
+                                            {% for error in form_field.errors %}
+                                            <span class="help-block"><i class="fa fa-remove"> </i> {{error}}</span>
+                                            {% endfor %}
+                                        {% endif %}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endfor %}
-            <div class="form-group">
-                <div class="col-sm-12">
-                    <button class="btn btn-success" id="save-form">
-                        <i class='fa fa-check'></i>
-                        Submit
-                    </button>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+                <div class="form-group">
+                    <div class="col-sm-12">
+                        <button class="btn btn-success" id="save-form">
+                            <i class='fa fa-check'></i>
+                            Submit
+                        </button>
 
-                    {% if task.images_left %}
-                        <div class='pull-right'>
-                        <i class="fa fa-file-text-o fa-fw"></i> <strong>{{task.images_left}}</strong> documents remaining
-                        </div>
-                    {% endif %}
+                        {% if task.images_left %}
+                            <div class='pull-right'>
+                            <i class="fa fa-file-text-o fa-fw"></i> <strong>{{task.images_left}}</strong> documents remaining
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
     <div class="col-sm-6">
         {% with saved = get_flashed_messages(category_filter=["saved"]) %}
@@ -144,7 +150,7 @@
                 $zoomRange: $('input[type="range"]')
             });
             $('.fade-out').show().delay(1200).fadeOut(700);
-            $('#form-area').hide().delay(2000).fadeIn(800);
+            $('.pretend-new').hide().delay(2000).fadeIn(800);
 
             $('.check-blank').change(function(){
                 // when blank is checked, clear field content & uncheck not legible checkbox
