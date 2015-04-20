@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.exc import IntegrityError
+from flask.ext.security.utils import encrypt_password
 
 from transcriber.app_config import DEFAULT_USER, CLERK_USER, DB_CONN
 
@@ -19,6 +20,9 @@ Base = declarative_base()
 
 def init_db(sess=None, eng=None):
     from transcriber.models import User, Role, SecurityUserDatastore
+    from transcriber import create_app
+
+    fake_app = create_app()
 
     Base.metadata.create_all(bind=engine)
 
@@ -34,30 +38,31 @@ def init_db(sess=None, eng=None):
         db_session.rollback()
 
     print "adding users"
-    for user in [DEFAULT_USER, CLERK_USER]:
-        try:
-            if user:
-                print "adding ", user['name']
-                name = user['name']
-                email = user['email']
-                password = user['password']
-                datastore.create_user(email=email, 
-                                      password=password, 
-                                      name=name, 
-                                      active=True)
-                datastore.commit()
-        except IntegrityError, e:
-            print "user already exists"
-            db_session.rollback()
+    with fake_app.app_context():
+        for user in [DEFAULT_USER, CLERK_USER]:
+            try:
+                if user:
+                    print "adding ", user['name']
+                    name = user['name']
+                    email = user['email']
+                    password = encrypt_password(user['password'])
+                    datastore.create_user(email=email, 
+                                          password=password, 
+                                          name=name, 
+                                          active=True)
+                    datastore.commit()
+            except IntegrityError, e:
+                print "user already exists"
+                db_session.rollback()
 
-    try:
-        print "adding roles to users"
-        default_user = db_session.query(User).filter(User.name == DEFAULT_USER['name']).first()
-        admin_role = db_session.query(Role).filter(Role.name == 'admin').first()
-        datastore.add_role_to_user(default_user, admin_role)
-        datastore.commit()
-    except IntegrityError, e:
-        print "Failed to add roles to users"
+        try:
+            print "adding roles to users"
+            default_user = db_session.query(User).filter(User.name == DEFAULT_USER['name']).first()
+            admin_role = db_session.query(Role).filter(Role.name == 'admin').first()
+            datastore.add_role_to_user(default_user, admin_role)
+            datastore.commit()
+        except IntegrityError, e:
+            print "Failed to add roles to users"
 
 
     from alembic.config import Config
