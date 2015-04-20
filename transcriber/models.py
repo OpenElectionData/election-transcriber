@@ -194,32 +194,16 @@ class User(Base, UserMixin):
     name = Column(String, nullable=False, unique=True)
     email = Column(String, nullable=False, unique=True)
     confirmed_at = Column(DateTime)
-    #_password = Column('password', String, nullable=False)
+    password = Column('password', String, nullable=False)
     active = Column(Boolean, default=False)
     roles = relationship('Role', secondary=roles_users, 
                             backref=backref('users', lazy='dynamic')) 
     def __repr__(self): # pragma: no cover
         return '<User %r>' % self.name
 
-    # def _get_password(self):
-    #     return self._password
-    
-    # def _set_password(self, value):
-    #     self._password = flask_bcrypt.generate_password_hash(value)
-
-    # password = property(_get_password, _set_password)
-    # password = synonym('_password', descriptor=password)
-
     @classmethod
     def get_by_username(cls, name):
         return session.query(cls).filter(cls.name == name).first()
-
-    @classmethod
-    def check_password(cls, name, value):
-        user = cls.get_by_username(name)
-        if not user: # pragma: no cover
-            return False
-        return flask_bcrypt.check_password_hash(user.password, value)
 
     def is_authenticated(self):
         return True

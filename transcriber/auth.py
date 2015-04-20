@@ -2,8 +2,8 @@
 from flask import session as flask_session, redirect, url_for, request, Blueprint, \
     render_template, abort, flash, make_response
 from functools import wraps
-from flask.ext.security.utils import login_user, logout_user
-from flask.ext.security.registerable import register_user
+from flask.ext.security.utils import login_user, logout_user, \
+    verify_and_update_password
 from flask.ext.security.forms import LoginForm as BaseLoginForm, \
     RegisterForm as BaseRegisterForm
 from flask_wtf import Form
@@ -41,7 +41,7 @@ class LoginForm(BaseLoginForm):
             self.email.errors.append('Email address is not registered')
             return False
 
-        if not user.check_password(user.name, self.password.data):
+        if not verify_and_update_password(self.password.data, user):
             self.password.errors.append('Password is not valid')
             return False
 
