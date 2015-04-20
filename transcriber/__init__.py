@@ -1,6 +1,6 @@
 from flask import Flask
 from transcriber.views import views
-from transcriber.models import User, Role, SecurityUserDatastore, bcrypt
+from transcriber.models import User, Role, SecurityUserDatastore, flask_bcrypt
 from transcriber.auth import auth, csrf, LoginForm, RegisterForm
 from transcriber.database import db_session
 from flask_mail import Mail
@@ -24,7 +24,7 @@ def create_app():
     mail.init_app(app)
     csrf.init_app(app)
     # login_manager.init_app(app)
-    bcrypt.init_app(app)
+    flask_bcrypt.init_app(app)
 
     @app.template_filter('format_number')
     def format_number(s): # pragma: no cover
