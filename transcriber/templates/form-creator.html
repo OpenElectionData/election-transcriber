@@ -169,7 +169,7 @@
                                        id="id_section_<%= section.index %>_field_<%= field.index %>" />
                             </div>
                             <div class="col-sm-4">
-                                <select class="form-control" name="datatype_section_<%= section.index %>_field_<%= field.index %>">
+                                <select class="form-control" name="datatype_section_<%= section.index %>_field_<%= field.index %>" disabled>
                                     <option value="integer" <% if(field.data_type == 'integer'){ %>selected="true"<% } %>>Number</option>
                                     <option value="string" <% if(field.data_type == 'string'){ %>selected="true"<% } %>>Text</option>
                                     <option value="boolean" <% if(field.data_type == 'boolean'){ %>selected="true"<% } %>>Yes / No</option>

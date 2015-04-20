@@ -281,9 +281,11 @@ def form_creator():
         for section_id, section in sections.items():
             section.fields = section_fields[section_id]
             for field in section.fields:
-                field.data_type = field_datatypes[section_id][unicode(field.index)]
-                field.section = section
-                db_session.add(field)
+                # if this is a new field (all existing fields will already have a data type)
+                if not field.data_type:
+                    field.data_type = field_datatypes[section_id][unicode(field.index)]
+                    field.section = section
+                    db_session.add(field)
             db_session.add(section)
         db_session.commit()
         db_session.refresh(form_meta, ['fields', 'table_name'])
