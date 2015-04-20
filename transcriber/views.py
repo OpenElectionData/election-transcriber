@@ -220,6 +220,7 @@ def form_creator():
         section_fields = {}
         sections = {}
         field_datatypes = {}
+        changed_field_names = []
         for k,v in request.form.items():
             parts = k.split('_')
             if 'section' in parts:
@@ -256,7 +257,7 @@ def form_creator():
                             .filter(FormSection.index == section_idx)\
                             .filter(FormField.form == form_meta)\
                             .first()
-                    if not field:
+                    if not field: # adding a new field
                         section = db_session.query(FormSection)\
                                 .filter(FormSection.index == section_idx)\
                                 .filter(FormSection.form == form_meta)\
@@ -267,8 +268,11 @@ def form_creator():
                                           form=form_meta,
                                           section=section)
                     else:
-                        field.name = v
-                        field.slug = slugify(v)
+                        # keeping track of field names that have changed
+                        if field.name != v:                        
+                            changed_field_names.append([field.slug, slugify(v)])
+                            field.name = v
+                            field.slug = slugify(v)
                     db_session.add(field)
                     try:
                         section_fields[section_idx].append(field)
@@ -285,7 +289,29 @@ def form_creator():
         db_session.refresh(form_meta, ['fields', 'table_name'])
         
         metadata = MetaData()
+
+        # if the form already exists
         if form_meta.table_name:
+            
+            #update column names
+            for column in changed_field_names:
+                old_slug = column[0]
+                new_slug = column[1]
+                rename = 'ALTER TABLE "{0}" RENAME COLUMN {1} TO {2}'\
+                            .format(form_meta.table_name, old_slug, new_slug)
+                rename_blank = 'ALTER TABLE "{0}" RENAME COLUMN {1}_blank TO {2}_blank'\
+                            .format(form_meta.table_name, old_slug, new_slug)
+                rename_not_legible = 'ALTER TABLE "{0}" RENAME COLUMN {1}_not_legible TO {2}_not_legible'\
+                            .format(form_meta.table_name, old_slug, new_slug)
+                rename_altered = 'ALTER TABLE "{0}" RENAME COLUMN {1}_altered TO {2}_altered'\
+                            .format(form_meta.table_name, old_slug, new_slug)
+
+                with engine.begin() as conn:
+                    conn.execute(rename)
+                    conn.execute(rename_blank)
+                    conn.execute(rename_not_legible)
+                    conn.execute(rename_altered)
+
             table = Table(form_meta.table_name, metadata, 
                           autoload=True, autoload_with=engine)
             new_columns = set([f.slug for f in form_meta.fields])
@@ -313,6 +339,8 @@ def form_creator():
                     conn.execute(blank)
                     conn.execute(not_legible)
                     conn.execute(altered)
+
+        # if the form does not exist yet
         else:
             form_meta.table_name = '{0}_{1}'.format(
                     unicode(uuid4()).rsplit('-', 1)[1], 
