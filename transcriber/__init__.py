@@ -1,9 +1,11 @@
 from flask import Flask
 from transcriber.views import views
-from transcriber.models import User, Role, flask_bcrypt, db
+from transcriber.models import User, Role, flask_bcrypt
+from transcriber.database import db
 from transcriber.auth import auth, csrf, LoginForm, RegisterForm
 from flask_mail import Mail
 from flask.ext.security import Security, SQLAlchemyUserDatastore
+from flask.ext.sqlalchemy import SQLAlchemy
 
 mail = Mail()
 security = Security()
@@ -11,10 +13,14 @@ security = Security()
 def create_app():
     app = Flask(__name__)
     app.config.from_object('transcriber.app_config')
+    app.config['SQLALCHEMY_DATABASE_URI'] = app.config['DB_CONN']
+
     app.register_blueprint(views)
     app.register_blueprint(auth)
     
     db.init_app(app)
+    with app.test_request_context():
+        db.create_all()
     
     datastore = SQLAlchemyUserDatastore(db, User, Role)
     security.init_app(app, 

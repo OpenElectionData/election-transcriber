@@ -5,7 +5,8 @@ from unicodedata import normalize
 from wtforms.form import Form
 from wtforms.fields import StringField
 from wtforms.validators import DataRequired
-from transcriber.models import Image, FormMeta, db
+from transcriber.models import Image, FormMeta
+from transcriber.database import db
 from flask import url_for
 
 # Temporary function to populate incoming tasks with some canned images.

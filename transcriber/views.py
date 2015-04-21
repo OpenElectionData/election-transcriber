@@ -8,7 +8,7 @@ from transcriber.app_config import UPLOAD_FOLDER
 from werkzeug import secure_filename
 from transcriber.models import FormMeta, FormSection, FormField, \
     Image, TaskGroup, User
-from transcriber.models import db
+from transcriber.database import db
 from transcriber.helpers import slugify, add_images, pretty_transcriptions
 from flask_wtf import Form
 from transcriber.dynamic_form import NullableIntegerField as IntegerField, \

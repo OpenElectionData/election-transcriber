@@ -1,19 +1,16 @@
-from transcriber.app_config import DB_CONN
 from transcriber import create_app
+import os
+from transcriber.models import User, Role
+from flask.ext.security.utils import encrypt_password
+from flask.ext.security import SQLAlchemyUserDatastore
+from sqlalchemy.exc import IntegrityError
+from transcriber.database import db
 
-def init_db(sess=None, eng=None):
-    import os
-    from transcriber.models import User, Role
-    from transcriber import db
-    from flask.ext.security.utils import encrypt_password
-    from flask.ext.security import SQLAlchemyUserDatastore
-    from sqlalchemy.exc import IntegrityError
+def init_db():
 
     fake_app = create_app()
-    
-    with fake_app.app_context():
 
-        db.create_all()
+    with fake_app.test_request_context():
 
         datastore = SQLAlchemyUserDatastore(db, User, Role)
 

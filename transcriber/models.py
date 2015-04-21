@@ -4,15 +4,14 @@ from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
 from sqlalchemy.orm import synonym, backref, relationship
 from flask.ext.security import UserMixin, RoleMixin
 from flask.ext.security.utils import md5
-from flask.ext.sqlalchemy import SQLAlchemy
 from werkzeug.local import LocalProxy
 from flask import current_app
 from datetime import datetime
+from transcriber.database import db
 
 _security = LocalProxy(lambda: current_app.extensions['security'])
 
 flask_bcrypt = Bcrypt()
-db = SQLAlchemy()
 
 class Image(db.Model):
     __tablename__ = 'image'
