@@ -199,6 +199,7 @@ def form_creator():
             flask_session['image_type'] = form.sample_image.rsplit('.', 1)[1].lower()
     if not flask_session.get('image'):
         return redirect(url_for('views.upload'))
+    engine = db.session.bind
     if request.method == 'POST':
         name = request.form['task_name']
         form_meta.name = name
@@ -293,6 +294,7 @@ def form_creator():
         metadata = MetaData()
 
         # if the form already exists
+
         if form_meta.table_name:
             
             #update column names
@@ -363,6 +365,7 @@ def form_creator():
                 cols.append(Column('{0}_not_legible'.format(field.slug), Boolean))
                 cols.append(Column('{0}_altered'.format(field.slug), Boolean))
             table = Table(form_meta.table_name, metadata, *cols)
+            engine = db.session.bind
             table.create(bind=engine)
             db.session.add(form_meta)
             db.session.commit()
@@ -463,6 +466,9 @@ def transcribe_intro():
     task_dict = task.as_dict()
     return render_template('transcribe-intro.html', task=task_dict)
 
+class DynamicForm(Form):
+    pass
+
 @views.route('/transcribe/', methods=['GET', 'POST'])
 def transcribe():
     if not request.args.get('task_id'):
@@ -482,7 +488,7 @@ def transcribe():
             .join(field_sq)\
             .filter(FormMeta.id == request.args['task_id'])\
             .first()
-    form = Form
+    form = DynamicForm
     task_dict = task.as_dict()
     task_dict['sections'] = []
     bools = []
@@ -693,6 +699,7 @@ def transcriptions():
             WHERE table_name = '{0}'
         '''.format(table_name)
 
+    engine = db.session.bind
     with engine.begin() as conn:
         t_header = conn.execute(text(h)).fetchall()
         rows_all = conn.execute(text(q)).fetchall()
@@ -730,6 +737,8 @@ def user():
     all_tasks = db.session.query(FormMeta)\
             .filter(or_(FormMeta.status != 'deleted', 
                         FormMeta.status == None)).all()
+
+    engine = db.session.bind
 
     for task in all_tasks:
         task_info = task.as_dict()
