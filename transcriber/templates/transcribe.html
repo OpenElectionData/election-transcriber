@@ -105,9 +105,13 @@
                             Submit
                         </button>
 
-                        {% if task.images_left %}
+                        {% if task.user_transcriptions %}
                             <div class='pull-right'>
-                            <i class="fa fa-file-text-o fa-fw"></i> <strong>{{task.images_left}}</strong> documents remaining
+                                {% if task.user_transcriptions == 1 %}
+                                    You've submitted <strong>1</strong> transcription
+                                {% elif task.user_transcriptions > 1 %}
+                                    You've submitted <strong>{{task.user_transcriptions}}</strong> transcriptions!
+                                {% endif %}
                             </div>
                         {% endif %}
                     </div>

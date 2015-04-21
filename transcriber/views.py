@@ -584,19 +584,33 @@ def transcribe():
     else:
         # add in a filter so that one user does not review the same image multiple times
         # images left & images total (for progress bar) should be specific to the user
-        task_dict['images_left'] = db_session.query(Image)\
-                .filter(Image.form_id == task.id)\
-                .filter(Image.view_count < task_dict['reviewer_count'])\
-                .count()
-        task_dict['images_total'] = db_session.query(Image)\
-                .filter(Image.form_id == task.id)\
-                .count()
         image = db_session.query(Image)\
                 .filter(Image.form_id == task.id)\
                 .filter(Image.checkout_expire == None)\
                 .filter(Image.view_count < task_dict['reviewer_count'])\
                 .order_by(Image.view_count)\
                 .first()
+
+
+    task_dict['images_left'] = db_session.query(Image)\
+            .filter(Image.form_id == task.id)\
+            .filter(Image.view_count < task_dict['reviewer_count'])\
+            .count()
+    task_dict['images_total'] = db_session.query(Image)\
+            .filter(Image.form_id == task.id)\
+            .count()
+
+    if current_user.is_anonymous():
+        username = request.remote_addr
+    else:
+        username = current_user.name
+    q = ''' 
+        SELECT * from "{0}" where transcriber = '{1}'
+        '''.format(task_dict['table_name'], username)
+    with engine.begin() as conn:
+        user_transcriptions = conn.execute(text(q)).fetchall()
+    task_dict['user_transcriptions'] = len(user_transcriptions)
+
 
     if image == None:
         if task_dict['images_left'] == 0:
