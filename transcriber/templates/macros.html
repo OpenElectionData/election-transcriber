@@ -21,7 +21,8 @@
     {% endif %}
 {%- endmacro %}
 
-{% macro render_header(title, task_dict, task_id, current_tab) -%}
+
+{% macro render_admin_header(title, task_dict, task_id, current_tab) -%}
     <div class='row'>
         <div class='col-sm-12'>
             <ul class="nav nav-tabs">
@@ -33,7 +34,6 @@
                 {% endif %}
 
                 {% if task_id %}
-
                     {% if current_tab == 'form-creator' %}
                         <li role="presentation" class="pull-right">
                             <a href='{{ url_for('views.transcribe', task_id=task_id )}}'><i class="fa fa-pencil fa-fw"></i> Transcribe documents</a>
@@ -66,6 +66,48 @@
                         </li>
                     {% endif %}
                 {% endif %}
+            </ul><br>
+        </div>
+    </div>
+
+    <div id="help-modal" class="modal fade">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                    <p class="modal-title"><strong>{{task_dict.name}} - Info</strong></p>
+                </div>
+                <div class="modal-body">
+                    {% if task_dict.description %}
+                        <p>{{task_dict.description}}</p><br>
+                    {% endif %}
+                    <p>
+                    {% if task_dict.reviewer_count %}
+                        <i class="fa fa-user fa-fw"></i> <strong>{{task_dict.reviewer_count}}</strong> reviewers per document<br>
+                    {% endif %}
+                    {% if task_dict.deadline %}
+                        <i class="fa fa-calendar fa-fw"></i> due {{task_dict.deadline | format_date}}<br>
+                    {% endif %}
+                    </p>
+                </div>
+            </div><!-- /.modal-content -->
+        </div><!-- /.modal-dialog -->
+    </div><!-- /.modal -->
+
+{%- endmacro %}
+
+
+{% macro render_header(title, task_dict) -%}
+    <div class='row'>
+        <div class='col-sm-12'>
+            <ul class="nav nav-tabs">
+                {% if title %}
+                    <li role="presentation"><h4><strong>{{title | safe}}</strong></h4></li>
+                {% endif %}
+                {% if task_dict %}
+                    <button type="button" data-toggle="modal" data-target="#help-modal" class="btn btn-link"><i class='fa fa-info-circle fa-lg'></i></button>
+                {% endif %}
+
             </ul><br>
         </div>
     </div>

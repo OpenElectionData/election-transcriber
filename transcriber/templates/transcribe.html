@@ -1,9 +1,14 @@
 {% extends 'base.html' %}
-{% from 'macros.html' import render_image, render_header %}
+{% from 'macros.html' import render_image, render_header, render_admin_header %}
 {% block title %}{{task.name}}{% endblock %}
 {% block content %}
 
-{{ render_header(task.name, task, task.id, 'transcribe') }}
+{% if current_user.has_role('admin') %}
+    {{ render_admin_header(task.name, task, task.id, 'transcribe') }}
+{% else %}
+    {{ render_header(task.name, task) }}
+{% endif %}
+
 
 <div class="row">
     <div class='col-md-6'>

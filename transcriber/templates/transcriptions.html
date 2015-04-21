@@ -1,9 +1,9 @@
 {% extends 'base.html' %}
-{% from 'macros.html' import render_image, render_header %}
+{% from 'macros.html' import render_image, render_admin_header %}
 {% block title %}{{task.name}}{% endblock %}
 {% block content %}
 
-{{ render_header(task.name, task, task.id, 'transcriptions') }}
+{{ render_admin_header(task.name, task, task.id, 'transcriptions') }}
 
 <div class="row">
     <div class="col-sm-12">

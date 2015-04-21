@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% from 'macros.html' import render_image, render_header %}
+{% from 'macros.html' import render_image, render_admin_header %}
 {% block title %}
     {% if form_meta.name %}
     Transcription task - {{form_meta.name}}
@@ -13,9 +13,9 @@
 {% block content %}
 
 {% if form_meta.name %}
-    {{ render_header(form_meta.name, None, form_meta.id, 'form-creator') }}
+    {{ render_admin_header(form_meta.name, None, form_meta.id, 'form-creator') }}
 {% else %}
-    {{ render_header('New Transcription Task', None, None, 'form-creator') }}
+    {{ render_admin_header('New Transcription Task', None, None, 'form-creator') }}
 {% endif %}
 
 <div class="row">
