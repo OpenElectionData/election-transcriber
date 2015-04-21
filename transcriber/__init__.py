@@ -1,10 +1,9 @@
 from flask import Flask
 from transcriber.views import views
-from transcriber.models import User, Role, SecurityUserDatastore, flask_bcrypt
+from transcriber.models import User, Role, flask_bcrypt, db
 from transcriber.auth import auth, csrf, LoginForm, RegisterForm
-from transcriber.database import db_session
 from flask_mail import Mail
-from flask.ext.security import Security
+from flask.ext.security import Security, SQLAlchemyUserDatastore
 
 mail = Mail()
 security = Security()
@@ -15,7 +14,9 @@ def create_app():
     app.register_blueprint(views)
     app.register_blueprint(auth)
     
-    datastore = SecurityUserDatastore(db_session, User, Role)
+    db.init_app(app)
+    
+    datastore = SQLAlchemyUserDatastore(db, User, Role)
     security.init_app(app, 
                       datastore, 
                       login_form=LoginForm, 

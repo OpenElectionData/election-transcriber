@@ -10,8 +10,7 @@ from flask_wtf import Form
 from flask_wtf.csrf import CsrfProtect
 from wtforms import TextField, PasswordField
 from wtforms.validators import DataRequired, Email
-from transcriber.database import db_session
-from transcriber.models import User
+from transcriber.models import User, db
 import os
 import json
 from uuid import uuid4
@@ -34,7 +33,7 @@ class LoginForm(BaseLoginForm):
         if not rv:
             return False
 
-        user = db_session.query(User)\
+        user = db.session.query(User)\
             .filter(func.lower(User.email) == func.lower(self.email.data))\
             .first()
         if user is None:
@@ -62,7 +61,7 @@ class RegisterForm(BaseRegisterForm):
         if not rv:
             return False
 
-        user = db_session.query(User)\
+        user = db.session.query(User)\
             .filter(func.lower(User.email) == func.lower(self.email.data))\
             .first()
         errors = False
@@ -70,7 +69,7 @@ class RegisterForm(BaseRegisterForm):
             self.email.errors.append('Email address is already registered')
             errors = True
         
-        user = db_session.query(User)\
+        user = db.session.query(User)\
             .filter(func.lower(User.name) == func.lower(self.name.data))\
             .first()
         if user is not None:

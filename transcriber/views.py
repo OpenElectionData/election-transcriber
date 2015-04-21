@@ -8,7 +8,7 @@ from transcriber.app_config import UPLOAD_FOLDER
 from werkzeug import secure_filename
 from transcriber.models import FormMeta, FormSection, FormField, \
     Image, TaskGroup, User
-from transcriber.database import engine, db_session
+from transcriber.models import db
 from transcriber.helpers import slugify, add_images, pretty_transcriptions
 from flask_wtf import Form
 from transcriber.dynamic_form import NullableIntegerField as IntegerField, \
@@ -64,7 +64,7 @@ def allowed_file(filename):
 
 @views.route('/')
 def index():
-    tasks = db_session.query(FormMeta)\
+    tasks = db.session.query(FormMeta)\
             .filter(or_(FormMeta.status != 'deleted', 
                         FormMeta.status == None))\
             .order_by(FormMeta.task_group_id, FormMeta.index)\
@@ -80,17 +80,17 @@ def index():
         if reviewer_count == None: # clean this up
             reviewer_count = 1
 
-        docs_left = db_session.query(Image)\
+        docs_left = db.session.query(Image)\
                 .filter(Image.form_id == task_id)\
                 .filter(Image.view_count < reviewer_count)\
                 .count()
-        docs_total = db_session.query(Image)\
+        docs_total = db.session.query(Image)\
                 .filter(Image.form_id == task.id)\
                 .count()
         docs_complete = docs_total - docs_left
         reviews_complete = 0
         for i in range(1, reviewer_count+1):
-            n = db_session.query(Image)\
+            n = db.session.query(Image)\
                 .filter(Image.form_id == task_id)\
                 .filter(Image.view_count == i).count()
             reviews_complete+=n*i
@@ -167,11 +167,11 @@ def delete_part():
         elif part_type == 'form':
             thing = FormMeta
         if thing:
-            it = db_session.query(thing).get(part_id)
+            it = db.session.query(thing).get(part_id)
             if it:
                 it.status = 'deleted'
-                db_session.add(it)
-                db_session.commit()
+                db.session.add(it)
+                db.session.commit()
             else:
                 r['status'] = 'error'
                 r['message'] = '"{0}" is not a valid component ID'.format(part_id)
@@ -192,7 +192,7 @@ def delete_part():
 def form_creator():
     form_meta = FormMeta()
     if request.args.get('form_id'):
-        form = db_session.query(FormMeta).get(request.args['form_id'])
+        form = db.session.query(FormMeta).get(request.args['form_id'])
         if form:
             form_meta = form
             flask_session['image'] = form.sample_image
@@ -207,7 +207,7 @@ def form_creator():
         form_meta.last_update = datetime.now().replace(tzinfo=TIME_ZONE)
         form_meta.sample_image = flask_session['image']
         if request.form.get('task_group_id'):
-            task_group = db_session.query(TaskGroup)\
+            task_group = db.session.query(TaskGroup)\
                     .get(request.form['task_group_id'])
         else:
             task_group = TaskGroup(name=request.form['task_group'],
@@ -215,8 +215,8 @@ def form_creator():
         form_meta.task_group = task_group
         form_meta.deadline = request.form['deadline']
         form_meta.reviewer_count = request.form['reviewer_count']
-        db_session.add(form_meta)
-        db_session.commit()
+        db.session.add(form_meta)
+        db.session.commit()
         section_fields = {}
         sections = {}
         field_datatypes = {}
@@ -227,7 +227,7 @@ def form_creator():
                 if len(parts) == 2:
                     # You've got yourself a section
                     section_idx = k.split('_')[-1]
-                    section = db_session.query(FormSection)\
+                    section = db.session.query(FormSection)\
                             .filter(FormSection.index == section_idx)\
                             .filter(FormSection.form == form_meta)\
                             .first()
@@ -252,13 +252,13 @@ def form_creator():
                     # You've got yourself a field
                     field_idx = k.split('_')[-1]
                     section_idx = k.split('_')[1]
-                    field = db_session.query(FormField)\
+                    field = db.session.query(FormField)\
                             .filter(FormField.index == field_idx)\
                             .filter(FormSection.index == section_idx)\
                             .filter(FormField.form == form_meta)\
                             .first()
                     if not field: # adding a new field
-                        section = db_session.query(FormSection)\
+                        section = db.session.query(FormSection)\
                                 .filter(FormSection.index == section_idx)\
                                 .filter(FormSection.form == form_meta)\
                                 .first()
@@ -273,7 +273,7 @@ def form_creator():
                             changed_field_names.append([field.slug, slugify(v)])
                             field.name = v
                             field.slug = slugify(v)
-                    db_session.add(field)
+                    db.session.add(field)
                     try:
                         section_fields[section_idx].append(field)
                     except KeyError:
@@ -285,10 +285,10 @@ def form_creator():
                 if not field.data_type:
                     field.data_type = field_datatypes[section_id][unicode(field.index)]
                     field.section = section
-                    db_session.add(field)
-            db_session.add(section)
-        db_session.commit()
-        db_session.refresh(form_meta, ['fields', 'table_name'])
+                    db.session.add(field)
+            db.session.add(section)
+        db.session.commit()
+        db.session.refresh(form_meta, ['fields', 'table_name'])
         
         metadata = MetaData()
 
@@ -364,8 +364,8 @@ def form_creator():
                 cols.append(Column('{0}_altered'.format(field.slug), Boolean))
             table = Table(form_meta.table_name, metadata, *cols)
             table.create(bind=engine)
-            db_session.add(form_meta)
-            db_session.commit()
+            db.session.add(form_meta)
+            db.session.commit()
             add_images(form_meta.id)
         return redirect(url_for('views.index'))
     next_section_index = 2
@@ -413,7 +413,7 @@ def form_creator():
 def get_task_group():
     term = request.args.get('term')
     where = TaskGroup.name.ilike('%%%s%%' % term)
-    base_query = db_session.query(TaskGroup).filter(where)
+    base_query = db.session.query(TaskGroup).filter(where)
     names = [{'name': t.name, 'id': str(t.id), 'description': t.description} \
             for t in base_query.all()]
     resp = make_response(json.dumps(names))
@@ -434,11 +434,11 @@ def edit_task_group():
 
             save_ok = True
             for i, task_id in enumerate(priorities):
-                task = db_session.query(FormMeta).get(int(task_id))
+                task = db.session.query(FormMeta).get(int(task_id))
                 if task:
                     task.index = i
-                    db_session.add(task)
-                    db_session.commit()
+                    db.session.add(task)
+                    db.session.commit()
                 else:
                     flash("Error saving priorities")
                     save_ok = False
@@ -450,14 +450,14 @@ def edit_task_group():
         else:
             flash("Error saving priorities")
 
-    task_group = db_session.query(TaskGroup).get(request.args['group_id'])
+    task_group = db.session.query(TaskGroup).get(request.args['group_id'])
     return render_template('edit-task-group.html',task_group=task_group)
 
 @views.route('/transcribe-intro/', methods=['GET', 'POST'])
 def transcribe_intro():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
-    task = db_session.query(FormMeta)\
+    task = db.session.query(FormMeta)\
             .filter(FormMeta.id == request.args['task_id'])\
             .first()
     task_dict = task.as_dict()
@@ -467,17 +467,17 @@ def transcribe_intro():
 def transcribe():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
-    section_sq = db_session.query(FormSection)\
+    section_sq = db.session.query(FormSection)\
             .filter(or_(FormSection.status != 'deleted', 
                         FormSection.status == None))\
             .order_by(FormSection.index)\
             .subquery()
-    field_sq = db_session.query(FormField)\
+    field_sq = db.session.query(FormField)\
             .filter(or_(FormField.status != 'deleted', 
                         FormField.status == None))\
             .order_by(FormField.index)\
             .subquery()
-    task = db_session.query(FormMeta)\
+    task = db.session.query(FormMeta)\
             .join(section_sq)\
             .join(field_sq)\
             .filter(FormMeta.id == request.args['task_id'])\
@@ -513,18 +513,18 @@ def transcribe():
     expire_time = current_time+timedelta(seconds=5*60)
 
     # update image checkout expiration
-    expired = db_session.query(Image).filter(Image.checkout_expire < current_time).all()
+    expired = db.session.query(Image).filter(Image.checkout_expire < current_time).all()
     if expired:
         for expired_image in expired:
             expired_image.checkout_expire = None
-            db_session.add(expired_image)
-            db_session.commit()
+            db.session.add(expired_image)
+            db.session.commit()
             
     if request.method == 'POST':
         form = form(request.form)
         if form.validate():
 
-            image = db_session.query(Image).get(flask_session['image_id'])
+            image = db.session.query(Image).get(flask_session['image_id'])
             if not image.checkout_expire or image.checkout_expire < current_time:
                 flash("Form has expired", "expired")
             else:
@@ -556,8 +556,8 @@ def transcribe():
                     conn.execute(text(ins), **ins_args)
                 image.view_count += 1
                 image.checkout_expire = None
-                db_session.add(image)
-                db_session.commit()
+                db.session.add(image)
+                db.session.commit()
 
                 flash("Transcription saved!", "saved")
 
@@ -580,11 +580,11 @@ def transcribe():
     image = None
 
     if image_id:
-        image = db_session.query(Image).get(int(image_id))
+        image = db.session.query(Image).get(int(image_id))
     else:
         # add in a filter so that one user does not review the same image multiple times
         # images left & images total (for progress bar) should be specific to the user
-        image = db_session.query(Image)\
+        image = db.session.query(Image)\
                 .filter(Image.form_id == task.id)\
                 .filter(Image.checkout_expire == None)\
                 .filter(Image.view_count < task_dict['reviewer_count'])\
@@ -622,8 +622,8 @@ def transcribe():
     else:
         # checkout image for 5 mins
         image.checkout_expire = expire_time
-        db_session.add(image)
-        db_session.commit()
+        db.session.add(image)
+        db.session.commit()
         flask_session['image'] = image.fetch_url
         flask_session['image_type'] = image.image_type
         flask_session['image_id'] = image.id
@@ -636,7 +636,7 @@ def download_transcriptions():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
 
-    task = db_session.query(FormMeta)\
+    task = db.session.query(FormMeta)\
             .filter(FormMeta.id == request.args['task_id'])\
             .first()
     task_dict = task.as_dict()
@@ -648,7 +648,7 @@ def download_transcriptions():
         ) TO STDOUT WITH CSV HEADER DELIMITER ','
     '''.format(table_name)
 
-    engine = db_session.bind
+    engine = db.session.bind
     conn = engine.raw_connection()
     curs = conn.cursor()
     outp = StringIO()
@@ -669,14 +669,14 @@ def transcriptions():
     transcriptions = None
     header = None
 
-    task = db_session.query(FormMeta)\
+    task = db.session.query(FormMeta)\
             .filter(FormMeta.id == request.args['task_id'])\
             .first()
     task_dict = task.as_dict()
 
     table_name = task_dict['table_name']
 
-    images_unseen = db_session.query(Image)\
+    images_unseen = db.session.query(Image)\
             .filter(Image.form_id == request.args['task_id'])\
             .filter(Image.view_count == 0)\
             .all()
@@ -710,7 +710,7 @@ def user():
         return redirect(url_for('views.index'))
 
     user_transcriptions = []
-    user_row = db_session.query(User)\
+    user_row = db.session.query(User)\
                 .filter(User.name == request.args.get('user'))\
                 .first()
     
@@ -727,7 +727,7 @@ def user():
         'detail': "Anonymous Transcriber"
         }
 
-    all_tasks = db_session.query(FormMeta)\
+    all_tasks = db.session.query(FormMeta)\
             .filter(or_(FormMeta.status != 'deleted', 
                         FormMeta.status == None)).all()
 

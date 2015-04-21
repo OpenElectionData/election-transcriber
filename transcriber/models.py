@@ -1,11 +1,10 @@
-from transcriber.database import Base, db_session as session
 from flask_bcrypt import Bcrypt
 from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
     DateTime, text, Text
 from sqlalchemy.orm import synonym, backref, relationship
 from flask.ext.security import UserMixin, RoleMixin
 from flask.ext.security.utils import md5
-from flask.ext.security.datastore import Datastore, UserDatastore
+from flask.ext.sqlalchemy import SQLAlchemy
 from werkzeug.local import LocalProxy
 from flask import current_app
 from datetime import datetime
@@ -13,48 +12,9 @@ from datetime import datetime
 _security = LocalProxy(lambda: current_app.extensions['security'])
 
 flask_bcrypt = Bcrypt()
+db = SQLAlchemy()
 
-class SecurityDatastore(Datastore):
-    def __init__(self, session):
-        self.session = session
-
-    def commit(self):
-        self.session.commit()
-
-    def put(self, model):
-        self.session.add(model)
-        return model
-    
-    def delete(self, model):
-        self.session.delete(model)
-
-class SecurityUserDatastore(SecurityDatastore, UserDatastore):
-    def __init__(self, session, user_model, role_model):
-        SecurityDatastore.__init__(self, session)
-        UserDatastore.__init__(self, user_model, role_model)
-
-    def get_user(self, identifier):
-        if self._is_numeric(identifier):
-            return self.session.query(self.user_model).get(identifier)
-        query = getattr(self.user_model, 'email').ilike(identifier)
-        rv = self.session.query(self.user_model).filter(query).first()
-        if rv is not None:
-            return rv
-
-    def _is_numeric(self, value):
-        try:
-            int(value)
-        except ValueError:
-            return False
-        return True
-    
-    def find_user(self, **kwargs):
-        return self.session.query(self.user_model).filter_by(**kwargs).first()
-    
-    def find_role(self, role):
-        return self.session.query(self.role_model).filter_by(name=role).first()
-
-class Image(Base):
+class Image(db.Model):
     __tablename__ = 'image'
     id = Column(Integer, primary_key=True)
     view_count = Column(Integer, default=0)
@@ -68,7 +28,7 @@ class Image(Base):
     def __repr__(self):
         return '<Image %r>' % self.fetch_url
 
-class TaskGroup(Base):
+class TaskGroup(db.Model):
     __tablename__ = 'task_group'
     id = Column(Integer, primary_key=True)
     name = Column(String)
@@ -92,7 +52,7 @@ class TaskGroup(Base):
             base_d['tasks'].append(task.as_dict())
         return base_d
 
-class FormMeta(Base):
+class FormMeta(db.Model):
     __tablename__ = 'form_meta'
     id = Column(Integer, primary_key=True)
     name = Column(String)
@@ -126,7 +86,7 @@ class FormMeta(Base):
             base_d['task_group'] = self.task_group.simple_dict()
         return base_d
 
-class FormSection(Base):
+class FormSection(db.Model):
     __tablename__ = 'form_section'
     id = Column(Integer, primary_key=True)
     name = Column(String)
@@ -147,7 +107,7 @@ class FormSection(Base):
             base_d['fields'].append(field.as_dict())
         return base_d
 
-class FormField(Base):
+class FormField(db.Model):
     __tablename__ = 'form_field'
     id = Column(Integer, primary_key=True)
     name = Column(String)
@@ -168,11 +128,11 @@ class FormField(Base):
     def as_dict(self):
         return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
-roles_users = Table('roles_users', Base.metadata,
+roles_users = Table('roles_users', db.Model.metadata,
         Column('user_id', Integer(), ForeignKey('ndi_user.id')),
         Column('role_id', Integer(), ForeignKey('ndi_role.id')))
 
-class Role(Base, RoleMixin):
+class Role(db.Model, RoleMixin):
     __tablename__ = 'ndi_role'
     id = Column(Integer(), primary_key=True)
     name = Column(String, unique=True)
@@ -188,7 +148,7 @@ class Role(Base, RoleMixin):
     def __hash__(self):
         return hash(self.name)
 
-class User(Base, UserMixin):
+class User(db.Model, UserMixin):
     __tablename__ = 'ndi_user'
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False, unique=True)

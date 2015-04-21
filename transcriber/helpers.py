@@ -5,8 +5,7 @@ from unicodedata import normalize
 from wtforms.form import Form
 from wtforms.fields import StringField
 from wtforms.validators import DataRequired
-from transcriber.models import Image, FormMeta
-from transcriber.database import db_session
+from transcriber.models import Image, FormMeta, db
 from flask import url_for
 
 # Temporary function to populate incoming tasks with some canned images.
@@ -19,8 +18,8 @@ def add_images(form_id):
         image = Image(fetch_url=fetch_url, 
                       image_type='pdf', 
                       form_id=form_id)
-        db_session.add(image)
-    db_session.commit()
+        db.session.add(image)
+    db.session.commit()
 
 def slugify(text, delim=u'_'):
     if text:

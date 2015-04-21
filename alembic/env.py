@@ -21,8 +21,8 @@ from os.path import abspath, dirname, join
 path = abspath(join(dirname(__file__), '..'))
 sys.path.insert(1, path)
 
-from transcriber.database import Base
-target_metadata = Base.metadata
+from transcriber.models import db
+target_metadata = db.metadata
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
