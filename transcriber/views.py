@@ -473,6 +473,7 @@ class DynamicForm(Form):
 def transcribe():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
+    engine = db.session.bind
     section_sq = db.session.query(FormSection)\
             .filter(or_(FormSection.status != 'deleted', 
                         FormSection.status == None))\
@@ -597,14 +598,13 @@ def transcribe():
                 .order_by(Image.view_count)\
                 .first()
 
-
-    task_dict['images_left'] = db_session.query(Image)\
-            .filter(Image.form_id == task.id)\
-            .filter(Image.view_count < task_dict['reviewer_count'])\
-            .count()
-    task_dict['images_total'] = db_session.query(Image)\
-            .filter(Image.form_id == task.id)\
-            .count()
+    # task_dict['images_left'] = db.session.query(Image)\
+    #         .filter(Image.form_id == task.id)\
+    #         .filter(Image.view_count < task_dict['reviewer_count'])\
+    #         .count()
+    # task_dict['images_total'] = db.session.query(Image)\
+    #         .filter(Image.form_id == task.id)\
+    #         .count()
 
     if current_user.is_anonymous():
         username = request.remote_addr
