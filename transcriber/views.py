@@ -674,16 +674,17 @@ def transcriptions():
         return redirect(url_for('views.index'))
     transcriptions = None
     header = None
+    task_id = request.args.get('task_id')
 
     task = db.session.query(FormMeta)\
-            .filter(FormMeta.id == request.args['task_id'])\
+            .filter(FormMeta.id == task_id)\
             .first()
     task_dict = task.as_dict()
 
     table_name = task_dict['table_name']
 
     images_unseen = db.session.query(Image)\
-            .filter(Image.form_id == request.args['task_id'])\
+            .filter(Image.form_id == task_id)\
             .filter(Image.view_count == 0)\
             .all()
 
@@ -705,7 +706,7 @@ def transcriptions():
         rows_all = conn.execute(text(q)).fetchall()
 
     if len(rows_all) > 0:
-        transcriptions = pretty_transcriptions(t_header, rows_all)
+        transcriptions = pretty_transcriptions(t_header, rows_all, task_id)
 
     return render_template('transcriptions.html', task=task_dict, transcriptions=transcriptions, images_unseen=images_unseen)
 
@@ -761,7 +762,7 @@ def user():
             rows_all = conn.execute(text(q)).fetchall()
 
         if len(rows_all) > 0:
-            transcriptions = pretty_transcriptions(t_header, rows_all)
+            transcriptions = pretty_transcriptions(t_header, rows_all, task_info["id"])
             user_transcriptions.append((task_info, transcriptions))
 
     return render_template('user.html', user=user, user_transcriptions = user_transcriptions)

@@ -5,7 +5,7 @@ from unicodedata import normalize
 from wtforms.form import Form
 from wtforms.fields import StringField
 from wtforms.validators import DataRequired
-from transcriber.models import Image, FormMeta
+from transcriber.models import Image, FormMeta, FormField
 from transcriber.database import db
 from flask import url_for
 
@@ -36,7 +36,7 @@ def slugify(text, delim=u'_'):
         return text
 
 # given all rows, produce pretty rows to display in html table
-def pretty_transcriptions(t_header, rows_all):
+def pretty_transcriptions(t_header, rows_all, task_id):
     num_cols = len(rows_all[0])
 
     # this code assumes that first 2 cols are info from joined image table,
@@ -49,9 +49,13 @@ def pretty_transcriptions(t_header, rows_all):
     meta_h = []
     field_h = []
     for h in t_header[:4]:
-        meta_h.append(h[0])
+        meta_f = h[0]
+        meta_f = re.sub(r'_', ' ', meta_f) # un-slugify
+        meta_h.append(meta_f)
     for h in t_header[4::cpf]:
-        field_h.append(h[0])
+        f_slug = h[0]
+        field = FormField.query.filter(FormField.form_id == task_id).filter(FormField.slug == f_slug).first().as_dict()
+        field_h.append(field["name"])
     # move image_id to first col
     meta_h.insert(0, meta_h.pop())
     header = meta_h+field_h
