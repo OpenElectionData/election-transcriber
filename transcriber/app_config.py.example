@@ -50,3 +50,6 @@ SECURITY_CONFIRM_SALT = 'also-really-secret'
 SECURITY_RESET_SALT = 'also-really-secret'
 SECURITY_LOGIN_SALT = 'also-really-secret'
 SECURITY_REMEMBER_SALT = 'also-really-really-secret'
+
+DOCUMENTCLOUD_USER = 'foo@bar.com'
+DOCUMENTCLOUD_PW = 'baz'

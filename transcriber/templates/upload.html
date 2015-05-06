@@ -4,15 +4,26 @@
 <div class="row">
     <div class='col-md-8'>
         <h3>Start a new transcription task</h3>
-        <p>To get started, we'll need a sample image or PDF of the kind of document you want transcribed.</p>
+        <p>To get started, specify the images on DocumentCloud that will be associated with this task</p>
         <div class='well'>
           <form role="form" class="form" method="POST" action="" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <div class="form-group">
-              <input type="file" name="input_file" id="input_file" />
-              <p class="help-block">
-                  You can upload images (.jpg or .png) and portable document  files (.pdf) up to 100mb in size. 
-              </p>
+              <label for="election_id" class="control-label">Election Id</label>
+              <input type="text"
+                 class="form-control"
+                 id="election_id"
+                 name="election_id"
+                 placeholder="The election_id attribute for the documents you want"
+                 aria-describedby="section-name-addon"/>
+              <label for="hierarchy_filter" class="control-label">Hierarchy Filter</label>
+              <input type="text"
+                 class="form-control"
+                 id="hierarchy_filter"
+                 name="hierarchy_filter"
+                 placeholder="A pattern to filter forms based on the hierarchy attribute for the documents you want"
+                 aria-describedby="section-name-addon"/>
+
             </div>
             <button type="submit" class="btn btn-success">Next ></button>
           </form>
