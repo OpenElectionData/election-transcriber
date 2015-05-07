@@ -29,6 +29,8 @@ from itertools import groupby
 from io import StringIO
 import pytz
 import ast
+from documentcloud import DocumentCloud
+from .app_config import DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW
 
 views = Blueprint('views', __name__)
 
@@ -129,14 +131,27 @@ def about():
 def upload():
     image = None
     if request.method == 'POST':
-        uploaded = request.files['input_file']
-        if uploaded and allowed_file(uploaded.filename):
-            image = secure_filename(uploaded.filename)
-            uploaded.save(os.path.join(UPLOAD_FOLDER, image))
-            image = url_for('views.uploaded_image', filename=image)
-            flask_session['image'] = image
-            flask_session['image_type'] = image.rsplit('.', 1)[1].lower()
+
+        election_id = request.form.get('election_id')
+        hiearchy_filter = request.form.get('hierarchy_filter')
+
+        client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
+        all_docs = client.projects.get_by_title('ndi').document_list
+        doc_list = [doc for doc in all_docs if doc.data['election_id']==election_id]
+
+        # if there is a hierarchy filter, filter docs further here
+        ##########################################################
+
+        if len(doc_list) > 0:
+            first_doc = doc_list[0]
+            flask_session['image'] = first_doc.pdf_url
+            flask_session['image_type'] = 'pdf'
+            flask_session['doc_list'] = doc_list
+
             return redirect(url_for('views.form_creator'))
+        else:
+            flash("No DocumentCloud images found")
+
     return render_template('upload.html', image=image)
 
 @views.route('/delete-part/', methods=['DELETE'])
@@ -369,6 +384,8 @@ def form_creator():
             table.create(bind=engine)
             db.session.add(form_meta)
             db.session.commit()
+            # add document cloud images to the images table, assign to form_id
+            ##################################################################
             add_images(form_meta.id)
         return redirect(url_for('views.index'))
     next_section_index = 2
