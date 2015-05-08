@@ -31,6 +31,7 @@ import pytz
 import ast
 from documentcloud import DocumentCloud
 from .app_config import DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW
+import re
 
 views = Blueprint('views', __name__)
 
@@ -133,24 +134,31 @@ def upload():
     if request.method == 'POST':
 
         election_id = request.form.get('election_id')
-        hiearchy_filter = request.form.get('hierarchy_filter')
+        hierarchy_filter = request.form.get('hierarchy_filter')
 
         client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
         all_docs = client.projects.get_by_title('ndi').document_list
         doc_list = [doc for doc in all_docs if doc.data['election_id']==election_id]
 
-        # if there is a hierarchy filter, filter docs further here
-        ##########################################################
+        if hierarchy_filter:
+            try:
+                match_pattern = '^'+re.sub("\*",".+",hierarchy_filter)+'$'
+                pattern = re.compile(match_pattern)
+                doc_list = [doc for doc in doc_list if pattern.match(doc.data['hierarchy'])]
+            except:
+                flash("Invalid hierarchy filter")
+                doc_list = None
 
-        if len(doc_list) > 0:
-            first_doc = doc_list[0]
-            flask_session['image'] = first_doc.pdf_url
-            flask_session['image_type'] = 'pdf'
-            flask_session['doc_url_list'] = [doc.pdf_url for doc in doc_list]
+        if doc_list:
+            if len(doc_list) > 0:
+                first_doc = doc_list[0]
+                flask_session['image'] = first_doc.pdf_url
+                flask_session['image_type'] = 'pdf'
+                flask_session['doc_url_list'] = [doc.pdf_url for doc in doc_list]
 
-            return redirect(url_for('views.form_creator'))
-        else:
-            flash("No DocumentCloud images found")
+                return redirect(url_for('views.form_creator'))
+            else:
+                flash("No DocumentCloud images found")
 
     return render_template('upload.html', image=image)
 
