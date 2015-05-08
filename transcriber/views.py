@@ -146,7 +146,7 @@ def upload():
             first_doc = doc_list[0]
             flask_session['image'] = first_doc.pdf_url
             flask_session['image_type'] = 'pdf'
-            flask_session['doc_list'] = doc_list
+            flask_session['doc_id_list'] = [doc.id for doc in doc_list]
 
             return redirect(url_for('views.form_creator'))
         else:
