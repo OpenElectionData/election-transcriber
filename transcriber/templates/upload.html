@@ -15,6 +15,9 @@
                  id="election_id"
                  name="election_id"
                  placeholder="The election_id attribute for the documents you want"
+                {% if election_id %}
+                  value={{election_id}}
+                {% endif %}
                  aria-describedby="section-name-addon"/>
               <label for="hierarchy_filter" class="control-label">Hierarchy Filter</label>
               <input type="text"
@@ -22,12 +25,23 @@
                  id="hierarchy_filter"
                  name="hierarchy_filter"
                  placeholder="A pattern to filter forms based on the hierarchy attribute for the documents you want"
+                {% if hierarchy_filter %}
+                  value={{hierarchy_filter}}
+                {% endif %}
                  aria-describedby="section-name-addon"/>
 
             </div>
-            <button type="submit" class="btn btn-success">Next ></button>
+            <button type="submit" class="btn btn-default btn-sm">Look for Images</button>
+            {% if session.doc_url_list %}
+              <span class="post-button-text">
+                <strong>{{ session.doc_url_list|length }}</strong> images found
+              </span>
+            {% endif %}
           </form>
         </div>
+        {% if session.doc_url_list %}
+          <a href="{{ url_for('views.form_creator') }}" class="btn btn-success">Next ></a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}

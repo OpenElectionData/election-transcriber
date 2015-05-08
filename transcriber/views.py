@@ -130,7 +130,8 @@ def about():
 @login_required
 @roles_required('admin')
 def upload():
-    image = None
+    flask_session['doc_url_list']=None
+
     if request.method == 'POST':
 
         election_id = request.form.get('election_id')
@@ -156,11 +157,11 @@ def upload():
                 flask_session['image_type'] = 'pdf'
                 flask_session['doc_url_list'] = [doc.pdf_url for doc in doc_list]
 
-                return redirect(url_for('views.form_creator'))
+                return render_template('upload.html', election_id=election_id, hierarchy_filter=hierarchy_filter)
             else:
                 flash("No DocumentCloud images found")
 
-    return render_template('upload.html', image=image)
+    return render_template('upload.html')
 
 @views.route('/delete-part/', methods=['DELETE'])
 @login_required
