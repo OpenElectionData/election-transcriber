@@ -31,7 +31,9 @@
                  aria-describedby="section-name-addon"/>
 
             </div>
-            <button type="submit" class="btn btn-default btn-sm">Look for Images</button>
+            <button id="search-images" type="submit" class="btn btn-default btn-sm">Look for Images</button>
+            <span id="spinner">
+            </span>
             {% if session.doc_url_list %}
               <span class="post-button-text">
                 <strong>{{ session.doc_url_list|length }}</strong> images found
@@ -46,4 +48,11 @@
 </div>
 {% endblock %}
 {% block extra_javascript %}
+  <script>
+    $(document).ready(function(){
+      $( "#search-images" ).click(function() {
+        $("#spinner").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>searching DocumentCloud...</small>')
+      });
+    });
+  </script>
 {% endblock %}
