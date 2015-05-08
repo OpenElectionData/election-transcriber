@@ -9,7 +9,7 @@ from werkzeug import secure_filename
 from transcriber.models import FormMeta, FormSection, FormField, \
     Image, TaskGroup, User
 from transcriber.database import db
-from transcriber.helpers import slugify, add_images, pretty_transcriptions
+from transcriber.helpers import slugify, pretty_transcriptions
 from flask_wtf import Form
 from transcriber.dynamic_form import NullableIntegerField as IntegerField, \
     NullableDateTimeField as DateTimeField, \
@@ -146,7 +146,7 @@ def upload():
             first_doc = doc_list[0]
             flask_session['image'] = first_doc.pdf_url
             flask_session['image_type'] = 'pdf'
-            flask_session['doc_id_list'] = [doc.id for doc in doc_list]
+            flask_session['doc_url_list'] = [doc.pdf_url for doc in doc_list]
 
             return redirect(url_for('views.form_creator'))
         else:
@@ -383,10 +383,14 @@ def form_creator():
             engine = db.session.bind
             table.create(bind=engine)
             db.session.add(form_meta)
+
+            for url in flask_session['doc_url_list']:
+                image = Image(fetch_url=url, 
+                              image_type='pdf', 
+                              form_id=form_meta.id)
+                db.session.add(image)
+
             db.session.commit()
-            # add document cloud images to the images table, assign to form_id
-            ##################################################################
-            add_images(form_meta.id)
         return redirect(url_for('views.index'))
     next_section_index = 2
     next_field_indicies = {1: 2}
