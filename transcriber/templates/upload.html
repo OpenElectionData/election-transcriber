@@ -2,7 +2,7 @@
 {% block title %}Task Creator - Upload{% endblock %}
 {% block content %}
 <div class="row">
-    <div class='col-md-8'>
+    <div class='col-sm-8'>
         <h3>Start a new transcription task</h3>
         <p>Specify the documents to be transcribed</p>
         <div class='well'>
@@ -33,7 +33,7 @@
                   {% endif %}
                     <div class="panel-body">
                       
-                      <label for="hierarchy_filter" class="control-label">Filter by hierarchy</label>
+                      <label for="hierarchy_filter" class="control-label">Filter documents by hierarchy</label>
                       <input type="text"
                          class="form-control"
                          id="hierarchy_filter"
@@ -43,7 +43,7 @@
                           value={{hierarchy_filter}}
                         {% endif %}
                          aria-describedby="section-name-addon"/>
-                      <p><small>Enter a pattern to filter forms based on the hierarchy data attribute</small></p>
+                      <p><small>Enter a match pattern to filter documents based on the <code>hierarchy</code> data attribute in DocumentCloud</small></p>
 
                     </div>
                   </div>
