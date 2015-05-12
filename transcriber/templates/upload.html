@@ -4,21 +4,21 @@
 <div class="row">
     <div class='col-md-8'>
         <h3>Start a new transcription task</h3>
-        <p>To get started, specify the images on DocumentCloud that will be associated with this task</p>
+        <p>Specify the documents to be transcribed</p>
         <div class='well'>
           <form role="form" class="form" method="POST" action="" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <div class="form-group">
-              <label for="election_id" class="control-label">Election Id</label>
-              <input type="text"
-                 class="form-control"
-                 id="election_id"
-                 name="election_id"
-                 placeholder="The election_id attribute for the documents you want"
-                {% if election_id %}
-                  value={{election_id}}
-                {% endif %}
-                 aria-describedby="section-name-addon"/>
+              <label for="project_name" class="control-label">Select a document cloud project</label>
+
+
+              <select class="form-control" id="project_name" name="project_name">
+                {% for project_name in project_list %}
+                <option>{{project_name}}</option>
+                {% endfor %}
+              </select>
+
+              <hr>
               <label for="hierarchy_filter" class="control-label">Hierarchy Filter</label>
               <input type="text"
                  class="form-control"
@@ -53,6 +53,7 @@
       $( "#search-images" ).click(function() {
         $("#spinner").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>searching DocumentCloud...</small>')
       });
+
     });
   </script>
 {% endblock %}

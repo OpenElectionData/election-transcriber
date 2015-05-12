@@ -131,15 +131,15 @@ def about():
 @roles_required('admin')
 def upload():
     flask_session['doc_url_list']=None
+    client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
+    project_list = [project.title for project in client.projects.all()]
 
     if request.method == 'POST':
 
-        election_id = request.form.get('election_id')
+        project_name = request.form.get('project_name')
         hierarchy_filter = request.form.get('hierarchy_filter')
 
-        client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
-        all_docs = client.projects.get_by_title('ndi').document_list
-        doc_list = [doc for doc in all_docs if doc.data['election_id']==election_id]
+        doc_list = client.projects.get_by_title(project_name).document_list
 
         if hierarchy_filter:
             try:
@@ -157,11 +157,12 @@ def upload():
                 flask_session['image_type'] = 'pdf'
                 flask_session['doc_url_list'] = [doc.pdf_url for doc in doc_list]
 
-                return render_template('upload.html', election_id=election_id, hierarchy_filter=hierarchy_filter)
+                return render_template('upload.html', project_list=project_list, project_name=project_name, hierarchy_filter=hierarchy_filter)
             else:
                 flash("No DocumentCloud images found")
 
-    return render_template('upload.html')
+
+    return render_template('upload.html', project_list=project_list)
 
 @views.route('/delete-part/', methods=['DELETE'])
 @login_required
