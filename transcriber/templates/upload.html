@@ -18,17 +18,37 @@
                 {% endfor %}
               </select>
 
-              <hr>
-              <label for="hierarchy_filter" class="control-label">Hierarchy Filter</label>
-              <input type="text"
-                 class="form-control"
-                 id="hierarchy_filter"
-                 name="hierarchy_filter"
-                 placeholder="A pattern to filter forms based on the hierarchy attribute for the documents you want"
-                {% if hierarchy_filter %}
-                  value={{hierarchy_filter}}
-                {% endif %}
-                 aria-describedby="section-name-addon"/>
+              <br>
+              <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+                <div class="panel panel-default">
+                  <div class="panel-heading" role="tab" id="headingOne" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                    <h4 class="panel-title">
+                        <i class="fa fa-plus"></i> Advanced Options
+                    </h4>
+                  </div>
+                  {% if hierarchy_filter %}
+                  <div id="collapseOne" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+                  {% else %}
+                  <div id="collapseOne" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
+                  {% endif %}
+                    <div class="panel-body">
+                      
+                      <label for="hierarchy_filter" class="control-label">Filter by hierarchy</label>
+                      <input type="text"
+                         class="form-control"
+                         id="hierarchy_filter"
+                         name="hierarchy_filter"
+                         placeholder="/ATLANTIDA/*"
+                        {% if hierarchy_filter %}
+                          value={{hierarchy_filter}}
+                        {% endif %}
+                         aria-describedby="section-name-addon"/>
+                      <p><small>Enter a pattern to filter forms based on the hierarchy data attribute</small></p>
+
+                    </div>
+                  </div>
+                </div>
+              </div>
 
             </div>
             <button id="search-images" type="submit" class="btn btn-default btn-sm">Look for Images</button>
