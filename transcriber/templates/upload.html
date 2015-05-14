@@ -135,7 +135,9 @@
                 h1_html = h1_html+"<li><span><i class='icon-folder-open'></i>"+h1+"</span><ul>"+h2_html+"</ul></li>" 
               }
             }
-            $('#h-representation > ul').append("<li><span><i class='icon-folder-open'></i>"+h0+"</span><ul>"+h1_html+"</ul></li>");
+            fa=''
+            if(h1_html){fa = "<i class='fa fa-plus'></i> "}
+            $('#h-representation > ul').append("<li><span>"+fa+h0+"</span><ul>"+h1_html+"</ul></li>");
           }
         }
 
@@ -151,10 +153,10 @@
           var children = $(this).parent('li.parent_li').find(' > ul > li');
           if (children.is(":visible")) {
             children.hide('fast');
-            $(this).attr('title', 'Expand this branch').find(' > i').addClass('icon-plus-sign').removeClass('icon-minus-sign');
+            $(this).attr('title', 'Expand this branch').find(' > i').addClass('fa-plus').removeClass('fa-minus');
           } else {
             children.show('fast');
-            $(this).attr('title', 'Collapse this branch').find(' > i').addClass('icon-minus-sign').removeClass('icon-plus-sign');
+            $(this).attr('title', 'Collapse this branch').find(' > i').addClass('fa-minus').removeClass('fa-plus');
           }
           e.stopPropagation();
         });
