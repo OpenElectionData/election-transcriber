@@ -13,12 +13,29 @@
 
 
               <select class="form-control" id="project_name" name="project_name">
-                {% for project_name in project_list %}
-                <option>{{project_name}}</option>
-                {% endfor %}
+                {% if not project_name %}
+                <option disabled selected> -- </option>
+                  {% for project_option in project_list %}
+                  <option>{{project_option}}</option>
+                  {% endfor %}
+                {% else %}
+                  <option>{{project_name}}</option>
+                  {% for project_option in project_list %}
+                    {% if project_option != project_name %}
+                    <option>{{project_option}}</option>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
               </select>
+              <span id="spinner"></span>
+              {% if session.doc_url_list and not hierarchy_filter%}
+                <span class="post-button-text">
+                  <strong>{{ session.doc_url_list|length }}</strong> images found for {{ project_name }}
+                </span><br>
+              {% endif %}
 
               <br>
+              {% if project_name %}
               <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
                 <div class="panel panel-default">
                   <div class="panel-heading" role="tab" id="headingOne" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
@@ -45,24 +62,27 @@
                          aria-describedby="section-name-addon"/>
                       <p><small>Enter a match pattern to filter documents based on the <code>hierarchy</code> data attribute in DocumentCloud</small></p>
 
+                      <button id="filter-images-hierarchy" type="submit" class="btn btn-default btn-sm">Apply filters</button>
+                      <span id="spinner-2">
+                      </span>
+                      {% if session.doc_url_list and hierarchy_filter %}
+                        <span class="post-button-text-2">
+                          <strong>{{ session.doc_url_list|length }}</strong> images found for {{ project_name }}
+                        </span>
+                      {% endif %}
+
                     </div>
                   </div>
                 </div>
               </div>
+              {% endif %}
 
             </div>
-            <button id="search-images" type="submit" class="btn btn-default btn-sm">Look for Images</button>
-            <span id="spinner">
-            </span>
-            {% if session.doc_url_list %}
-              <span class="post-button-text">
-                <strong>{{ session.doc_url_list|length }}</strong> images found
-              </span>
-            {% endif %}
+
           </form>
         </div>
         {% if session.doc_url_list %}
-          <a href="{{ url_for('views.form_creator') }}" class="btn btn-success">Next ></a>
+          <a href="{{ url_for('views.form_creator') }}" class="btn btn-success" id="next-step">Create task with {{session.doc_url_list|length}} images ></a>
         {% endif %}
     </div>
 </div>
@@ -70,8 +90,18 @@
 {% block extra_javascript %}
   <script>
     $(document).ready(function(){
-      $( "#search-images" ).click(function() {
+      $('#project_name').change(function() {
+        $(".post-button-text").empty()
+        $("#accordion").remove()
         $("#spinner").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>searching DocumentCloud...</small>')
+        this.form.submit();
+      });
+
+      $( "#filter-images-hierarchy" ).click(function() {
+        $(".post-button-text").empty()
+        $(".post-button-text-2").empty()
+        $("#next-step").hide()
+        $("#spinner-2").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>searching DocumentCloud...</small>')
       });
 
     });
