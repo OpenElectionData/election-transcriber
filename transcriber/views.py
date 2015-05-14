@@ -140,6 +140,8 @@ def upload():
         hierarchy_filter = request.form.get('hierarchy_filter')
 
         doc_list = client.projects.get_by_title(project_name).document_list
+        h_str_list = [doc.data['hierarchy'] for doc in doc_list]
+        h_obj = construct_hierarchy_object(h_str_list)
 
         if hierarchy_filter:
             try:
@@ -157,12 +159,32 @@ def upload():
                 flask_session['image_type'] = 'pdf'
                 flask_session['doc_url_list'] = [doc.pdf_url for doc in doc_list]
 
-                return render_template('upload.html', project_list=project_list, project_name=project_name, hierarchy_filter=hierarchy_filter)
+                return render_template('upload.html', project_list=project_list, project_name=project_name, hierarchy_filter=hierarchy_filter, h_obj=h_obj)
             else:
                 flash("No DocumentCloud images found")
 
 
     return render_template('upload.html', project_list=project_list)
+
+def construct_hierarchy_object(str_list):
+    h_obj = {}
+    for string in str_list:
+        if string and string[0] == '/':
+            string = string[1:]
+        h = string.split('/')
+
+        if len(h)>0 and h[0] not in h_obj:
+            h_obj[h[0]] = {}
+        if len(h)>1 and h[1] not in h_obj[h[0]]:
+            h_obj[h[0]][h[1]] = {}
+        if len(h)>2 and h[2] not in h_obj[h[0]][h[1]]:
+            h_obj[h[0]][h[1]][h[2]] = {}
+        if len(h)>3 and h[3] not in h_obj[h[0]][h[1]][h[2]]:
+            h_obj[h[0]][h[1]][h[2]] = {}
+
+    io = StringIO()
+    return json.dumps(h_obj, io)
+
 
 @views.route('/delete-part/', methods=['DELETE'])
 @login_required
