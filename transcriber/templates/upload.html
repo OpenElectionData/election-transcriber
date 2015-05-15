@@ -132,12 +132,15 @@
               if (h_obj[h0].hasOwnProperty(h1)) {
 
                 var h2_html = ''
-                h1_html = h1_html+"<li><span><i class='icon-folder-open'></i>"+h1+"</span><ul>"+h2_html+"</ul></li>" 
+                h1_html = h1_html+"<li><span><i class='icon-folder-open'></i>"+h1+"</span>"+h2_html+"</li>" 
               }
             }
             fa=''
-            if(h1_html){fa = "<i class='fa fa-plus'></i> "}
-            $('#h-representation > ul').append("<li><span>"+fa+h0+"</span><ul>"+h1_html+"</ul></li>");
+            if(h1_html){
+              fa = "<i class='fa fa-plus'></i> "
+              h1_html = "<ul>"+h1_html+"</ul>"
+            }
+            $('#h-representation > ul').append("<li><span>"+fa+h0+"</span>"+h1_html+"</li>");
           }
         }
 
@@ -149,6 +152,13 @@
         console.log("making html into tree")
 
         $('.tree li:has(ul)').addClass('parent_li').find(' > span').attr('title', 'Collapse this branch');
+
+        var all_children = $('.tree li.parent_li').find(' > ul > li');
+        if (all_children.is(":visible")) {
+          all_children.hide();
+          $(this).attr('title', 'Expand this branch').find(' > i').addClass('fa-plus').removeClass('fa-minus');
+        }
+
         $('.tree li.parent_li > span').on('click', function (e) {
           var children = $(this).parent('li.parent_li').find(' > ul > li');
           if (children.is(":visible")) {
