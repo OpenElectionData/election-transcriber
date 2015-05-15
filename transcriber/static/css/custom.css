@@ -1,4 +1,8 @@
 /* NDI OEDI styling */
+body {
+  font-family:"Raleway","Helvetica Neue",Helvetica,Arial,sans-serif;
+}
+
 a, .btn-link {
   color: #CC4627;
 }
@@ -59,6 +63,7 @@ a:hover, a:focus, a:active {
 
 h1, h2, h3, h4, h5{
   color: #003C7D;
+  font-weight: 700;
 }
 
 .progress{
