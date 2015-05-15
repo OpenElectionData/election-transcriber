@@ -1,3 +1,50 @@
+/* NDI OEDI styling */
+a, .btn-link {
+  color: #CC4627;
+}
+
+a:hover, a:focus, a:active {
+  color: #CC4627;
+}
+
+.navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>.active>a:hover, .navbar-default .navbar-nav>.active>a:focus, .navbar-default .navbar-nav>li>a:hover {
+  color: #CC4627;
+}
+
+.btn {
+    border-radius: 0px;
+}
+
+.btn-success{
+  background-color: #003C7D;
+  background-image: none;
+  border: none;
+}
+
+.btn-success:hover{
+  background-color: #003C7D;
+  background-image: none;
+  border: none;
+}
+
+.btn-info{
+  color: #003C7D;
+  background-color: #B9E5FA;
+  background-image: none;
+  border: none;
+}
+
+.btn-info:hover{
+  color: #003C7D;
+  background-color: #B9E5FA;
+  background-image: none;
+  border: none;
+}
+
+h1, h2, h3, h4, h5{
+  color: #003C7D;
+}
+
 /* Space out content a bit */
 body {
   padding-bottom: 20px;
