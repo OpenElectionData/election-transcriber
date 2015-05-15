@@ -130,9 +130,21 @@
 
             for (var h1 in h_obj[h0]) {
               if (h_obj[h0].hasOwnProperty(h1)) {
-
                 var h2_html = ''
-                h1_html = h1_html+"<li><span><i class='icon-folder-open'></i>"+h1+"</span>"+h2_html+"</li>" 
+
+                for (var h2 in h_obj[h0][h1]) {
+                  if (h_obj[h0][h1].hasOwnProperty(h2)) {
+                    var h3_html = ''
+
+                    h2_html = h2_html+"<li><span>"+h2+"</span>"+h3_html+"</li>" 
+                  }
+                }
+                fa=''
+                if(h2_html){
+                  fa = "<i class='fa fa-plus'></i> "
+                  h2_html = "<ul>"+h2_html+"</ul>"
+                }
+                h1_html = h1_html+"<li><span>"+fa+h1+"</span>"+h2_html+"</li>" 
               }
             }
             fa=''
