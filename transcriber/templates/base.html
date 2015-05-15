@@ -56,12 +56,13 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
           </button>
-          <a class="navbar-brand" href="/">Election Results Transcriber</a>
+          <a class="navbar-brand" id="ndi-logo" href="/"><img src="/static/images/ndi-logo.png"></img></a>
+          <a class="navbar-brand" id="oedi-logo" href="/"><img src="/static/images/oedi-logo.png"></img></a>
         </div>
         <div class="navbar-collapse collapse pull-right">
           <ul class="nav navbar-nav">
             <li class="{% if request.path == url_for('views.index') %}active{% endif %}">
-              <a href='{{ url_for('views.index') }}'>Home</a>
+              <a href='{{ url_for('views.index') }}'>ELECTION TRANSCRIBER</a>
             </li>
             {% if current_user.is_authenticated() %}
               <li><a href="{{ url_for_security('logout') }}"><i class='fa fa-sign-out'></i> Logout</a></li>
@@ -83,6 +84,7 @@
           </p>
         </div> -->
       </div>
+
 
     <!-- Bootstrap core JavaScript
     ================================================== -->

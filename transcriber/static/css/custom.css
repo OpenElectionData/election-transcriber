@@ -11,12 +11,24 @@ a:hover, a:focus, a:active {
   color: #93321c;
 }
 
-.navbar-default .navbar-nav>.active>a, .navbar-nav>li>a {
-  color: #CC4627;
+.navbar-default{
+  background-color: #003C7D;
+  height: 50px;
+}
+.navbar-brand img{
+  height: 26px;
+}
+
+.navbar-default .navbar-nav>.active>a, .navbar-default .navbar-nav>li>a {
+  color: #DEEAF3;
 }
 
 .navbar-default .navbar-nav>.active>a:hover, .navbar-default .navbar-nav>.active>a:focus, .navbar-default .navbar-nav>li>a:hover {
-  color: #93321c;
+  color: #fff;
+}
+
+.navbar > .navbar-collapse{
+  margin-top: 6px;
 }
 
 .btn {
@@ -78,6 +90,10 @@ h1, h2, h3, h4, h5{
   border-radius: 0px;
   border: none;
   background-color: #F1F2F2;
+}
+
+.bottom{
+  background-color: red;
 }
 
 /* Space out content a bit */
