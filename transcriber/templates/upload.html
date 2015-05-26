@@ -160,7 +160,8 @@
         $('.tree li:has(ul)').addClass('parent_li').find(' > span').attr('title', 'Collapse this branch');
 
         var all_children = $('.tree li.parent_li').find(' > ul > li');
-        if (all_children.is(":visible")) {
+        if (all_children) {
+          // collapse all children by default
           all_children.hide();
           $(this).attr('title', 'Expand this branch').find(' > i').addClass('fa-plus').removeClass('fa-minus');
         }
