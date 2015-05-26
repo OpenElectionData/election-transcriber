@@ -189,6 +189,8 @@
           if ($(this).is(":checked")){
             children_boxes.prop("checked", true);
           } else{
+            var parent_boxes = $(this).parent().parents('li.parent_li').find(' > input');
+            parent_boxes.prop("checked", false);
             children_boxes.prop("checked", false);
           }
         });
