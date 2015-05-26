@@ -36,12 +36,6 @@
 
               <br>
               {% if project_name %}
-              <p>HIERARCHY</p>
-              <div id="h-representation" class="tree">
-                <ul>
-                </ul>
-              </div>
-              <br><br>
 
 
 
@@ -60,17 +54,20 @@
                   {% endif %}
                     <div class="panel-body">
                       
-                      <label for="hierarchy_filter" class="control-label">Filter documents by hierarchy</label>
-                      <input type="text"
+                      <p>Filter documents by hierarchy</p>
+                      <div id="h-representation" class="tree">
+                        <ul>
+                        </ul>
+                      </div>
+
+                      <input type="hidden"
                          class="form-control"
                          id="hierarchy_filter"
                          name="hierarchy_filter"
-                         placeholder="/ATLANTIDA/*"
                         {% if hierarchy_filter %}
                           value={{hierarchy_filter}}
                         {% endif %}
                          aria-describedby="section-name-addon"/>
-                      <p><small>Enter a match pattern to filter documents based on the <code>hierarchy</code> data attribute in DocumentCloud</small></p>
 
                       <button id="filter-images-hierarchy" type="submit" class="btn btn-default btn-sm">Apply filters</button>
                       <span id="spinner-2">
@@ -121,8 +118,6 @@
       {% endif %}
 
       function makeHTML(h_obj){
-        console.log("making html")
-        console.log(h_obj)
         var box = '<input type="checkbox"/>'
 
         for (var h0 in h_obj) {
@@ -142,7 +137,7 @@
                 }
                 fa=''
                 if(h2_html){
-                  fa = "<i class='fa fa-plus'></i> "
+                  fa = "<i class='fa fa-plus fa-fw'></i>"
                   h2_html = "<ul>"+h2_html+"</ul>"
                 }
                 h1_html = h1_html+"<li><span>"+fa+h1+"</span>"+box+h2_html+"</li>" 
@@ -150,7 +145,7 @@
             }
             fa=''
             if(h1_html){
-              fa = "<i class='fa fa-plus'></i> "
+              fa = "<i class='fa fa-plus fa-fw'></i>"
               h1_html = "<ul>"+h1_html+"</ul>"
             }
             $('#h-representation > ul').append("<li><span>"+fa+h0+"</span>"+box+h1_html+"</li>");
@@ -162,8 +157,6 @@
       }
 
       function makeTree(){
-        console.log("making html into tree")
-
         $('.tree li:has(ul)').addClass('parent_li').find(' > span').attr('title', 'Collapse this branch');
 
         var all_children = $('.tree li.parent_li').find(' > ul > li');
@@ -184,7 +177,7 @@
           e.stopPropagation();
         });
 
-        $('.tree li.parent_li > input').on('click', function (e) {
+        $('.tree li > input').on('click', function (e) {
           var children_boxes = $(this).parent('li.parent_li').find(' > ul > li > input');
           if ($(this).is(":checked")){
             children_boxes.prop("checked", true);
@@ -193,10 +186,28 @@
             parent_boxes.prop("checked", false);
             children_boxes.prop("checked", false);
           }
+          $('#hierarchy_filter').val(JSON.stringify(getMatchPatterns()))
         });
 
       }
 
+      function getMatchPatterns(){
+        var checked_boxes = $('#h-representation').find('input:checked');
+        var match_patterns = []
+        checked_boxes.each(function(idx, checkbox){
+          if (!$(checkbox).parent().parent().parent().find('> input').is(':checked')){
+            var this_level = $(checkbox).parent().find(' > span').text()
+            var other_levels = $(checkbox).parent().parents('li.parent_li').find(' > span')
+            var match_pattern = ''
+            $(other_levels).each(function(idx, h_name){
+              match_pattern += '/'+$(h_name).text()
+            });
+            match_pattern += '/'+this_level;
+            match_patterns.push(match_pattern)
+          }
+        });
+        return match_patterns;
+      }
 
     });
   </script>

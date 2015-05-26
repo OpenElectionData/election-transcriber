@@ -145,9 +145,8 @@ def upload():
 
         if hierarchy_filter:
             try:
-                match_pattern = '^'+re.sub("\*",".+",hierarchy_filter)+'$'
-                pattern = re.compile(match_pattern)
-                doc_list = [doc for doc in doc_list if pattern.match(doc.data['hierarchy'])]
+                match_strings = json.loads(hierarchy_filter)
+                doc_list = [doc for doc in doc_list if string_start_match(doc.data['hierarchy'], match_strings)]
             except:
                 flash("Invalid hierarchy filter")
                 doc_list = None
@@ -165,6 +164,12 @@ def upload():
 
 
     return render_template('upload.html', project_list=project_list)
+
+def string_start_match(full_string, match_strings):
+    for match_string in match_strings:
+        if match_string in full_string:
+            return True
+    return False
 
 def construct_hierarchy_object(str_list):
     h_obj = {}
