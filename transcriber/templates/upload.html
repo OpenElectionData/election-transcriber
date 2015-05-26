@@ -123,7 +123,8 @@
       function makeHTML(h_obj){
         console.log("making html")
         console.log(h_obj)
-        
+        var box = '<input type="checkbox"/>'
+
         for (var h0 in h_obj) {
           if (h_obj.hasOwnProperty(h0)) {
             var h1_html = ''
@@ -136,7 +137,7 @@
                   if (h_obj[h0][h1].hasOwnProperty(h2)) {
                     var h3_html = ''
 
-                    h2_html = h2_html+"<li><span>"+h2+"</span>"+h3_html+"</li>" 
+                    h2_html = h2_html+"<li><span>"+h2+"</span>"+box+h3_html+"</li>" 
                   }
                 }
                 fa=''
@@ -144,7 +145,7 @@
                   fa = "<i class='fa fa-plus'></i> "
                   h2_html = "<ul>"+h2_html+"</ul>"
                 }
-                h1_html = h1_html+"<li><span>"+fa+h1+"</span>"+h2_html+"</li>" 
+                h1_html = h1_html+"<li><span>"+fa+h1+"</span>"+box+h2_html+"</li>" 
               }
             }
             fa=''
@@ -152,7 +153,7 @@
               fa = "<i class='fa fa-plus'></i> "
               h1_html = "<ul>"+h1_html+"</ul>"
             }
-            $('#h-representation > ul').append("<li><span>"+fa+h0+"</span>"+h1_html+"</li>");
+            $('#h-representation > ul').append("<li><span>"+fa+h0+"</span>"+box+h1_html+"</li>");
           }
         }
 
@@ -182,6 +183,16 @@
           }
           e.stopPropagation();
         });
+
+        $('.tree li.parent_li > input').on('click', function (e) {
+          var children_boxes = $(this).parent('li.parent_li').find(' > ul > li > input');
+          if ($(this).is(":checked")){
+            children_boxes.prop("checked", true);
+          } else{
+            children_boxes.prop("checked", false);
+          }
+        });
+
       }
 
 
