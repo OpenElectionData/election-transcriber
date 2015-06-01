@@ -689,9 +689,10 @@ def transcribe():
         image.checkout_expire = expire_time
         db.session.add(image)
         db.session.commit()
-        flask_session['image'] = image.fetch_url
-        flask_session['image_type'] = image.image_type
-        flask_session['image_id'] = image.id
+        dc_image = db.session.query(DocumentCloudImage).get(image.image_id)
+        flask_session['image'] = dc_image.fetch_url
+        flask_session['image_type'] = dc_image.image_type
+        flask_session['image_id'] = dc_image.id
         return render_template('transcribe.html', form=form, task=task_dict, is_new = True)
 
 @views.route('/download-transcriptions/', methods=['GET', 'POST'])
