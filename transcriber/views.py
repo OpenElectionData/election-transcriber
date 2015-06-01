@@ -7,7 +7,7 @@ from flask_security.core import current_user
 from transcriber.app_config import UPLOAD_FOLDER
 from werkzeug import secure_filename
 from transcriber.models import FormMeta, FormSection, FormField, \
-    Image, TaskGroup, User
+    DocumentCloudImage, ImageTaskAssignment, TaskGroup, User
 from transcriber.database import db
 from transcriber.helpers import slugify, pretty_transcriptions
 from flask_wtf import Form
@@ -83,19 +83,19 @@ def index():
         if reviewer_count == None: # clean this up
             reviewer_count = 1
 
-        docs_left = db.session.query(Image)\
-                .filter(Image.form_id == task_id)\
-                .filter(Image.view_count < reviewer_count)\
+        docs_left = db.session.query(ImageTaskAssignment)\
+                .filter(ImageTaskAssignment.form_id == task_id)\
+                .filter(ImageTaskAssignment.view_count < reviewer_count)\
                 .count()
-        docs_total = db.session.query(Image)\
-                .filter(Image.form_id == task.id)\
+        docs_total = db.session.query(ImageTaskAssignment)\
+                .filter(ImageTaskAssignment.form_id == task_id)\
                 .count()
         docs_complete = docs_total - docs_left
         reviews_complete = 0
         for i in range(1, reviewer_count+1):
-            n = db.session.query(Image)\
-                .filter(Image.form_id == task_id)\
-                .filter(Image.view_count == i).count()
+            n = db.session.query(ImageTaskAssignment)\
+                .filter(ImageTaskAssignment.form_id == task_id)\
+                .filter(ImageTaskAssignment.view_count == i).count()
             reviews_complete+=n*i
 
         if docs_total > 0 and reviewer_count > 0:
@@ -140,6 +140,15 @@ def upload():
         hierarchy_filter = request.form.get('hierarchy_filter')
 
         doc_list = client.projects.get_by_title(project_name).document_list
+
+        # adding images document_cloud_image table
+        for doc in doc_list:
+            if db.session.query(DocumentCloudImage).filter(DocumentCloudImage.fetch_url==doc.pdf_url).first()==None:
+                new_image = DocumentCloudImage(image_type='pdf', fetch_url=doc.pdf_url)
+                db.session.add(new_image)
+        db.session.commit()
+
+
         h_str_list = [doc.data['hierarchy'] for doc in doc_list]
         h_obj = construct_hierarchy_object(h_str_list)
 
@@ -422,10 +431,10 @@ def form_creator():
             db.session.add(form_meta)
 
             for url in flask_session['doc_url_list']:
-                image = Image(fetch_url=url, 
-                              image_type='pdf', 
+                image_id = DocumentCloudImage.get_id_by_url(url)
+                img_task_assign = ImageTaskAssignment(image_id=image_id, 
                               form_id=form_meta.id)
-                db.session.add(image)
+                db.session.add(img_task_assign)
 
             db.session.commit()
         return redirect(url_for('views.index'))
@@ -578,7 +587,7 @@ def transcribe():
     expire_time = current_time+timedelta(seconds=5*60)
 
     # update image checkout expiration
-    expired = db.session.query(Image).filter(Image.checkout_expire < current_time).all()
+    expired = db.session.query(ImageTaskAssignment).filter(ImageTaskAssignment.checkout_expire < current_time).all()
     if expired:
         for expired_image in expired:
             expired_image.checkout_expire = None
@@ -589,7 +598,7 @@ def transcribe():
         form = form(request.form)
         if form.validate():
 
-            image = db.session.query(Image).get(flask_session['image_id'])
+            image = db.session.query(ImageTaskAssignment).get(flask_session['image_id'])
             if not image.checkout_expire or image.checkout_expire < current_time:
                 flash("Form has expired", "expired")
             else:
@@ -645,24 +654,16 @@ def transcribe():
     image = None
 
     if image_id:
-        image = db.session.query(Image).get(int(image_id))
+        image = db.session.query(ImageTaskAssignment).get(int(image_id))
     else:
         # add in a filter so that one user does not review the same image multiple times
         # images left & images total (for progress bar) should be specific to the user
-        image = db.session.query(Image)\
-                .filter(Image.form_id == task.id)\
-                .filter(Image.checkout_expire == None)\
-                .filter(Image.view_count < task_dict['reviewer_count'])\
-                .order_by(Image.view_count)\
+        image = db.session.query(ImageTaskAssignment)\
+                .filter(ImageTaskAssignment.form_id == task.id)\
+                .filter(ImageTaskAssignment.checkout_expire == None)\
+                .filter(ImageTaskAssignment.view_count < task_dict['reviewer_count'])\
+                .order_by(ImageTaskAssignment.view_count)\
                 .first()
-
-    # task_dict['images_left'] = db.session.query(Image)\
-    #         .filter(Image.form_id == task.id)\
-    #         .filter(Image.view_count < task_dict['reviewer_count'])\
-    #         .count()
-    # task_dict['images_total'] = db.session.query(Image)\
-    #         .filter(Image.form_id == task.id)\
-    #         .count()
 
     if current_user.is_anonymous():
         username = request.remote_addr
@@ -741,13 +742,13 @@ def transcriptions():
 
     table_name = task_dict['table_name']
 
-    images_unseen = db.session.query(Image)\
-            .filter(Image.form_id == task_id)\
-            .filter(Image.view_count == 0)\
+    images_unseen = db.session.query(ImageTaskAssignment)\
+            .filter(ImageTaskAssignment.form_id == task_id)\
+            .filter(ImageTaskAssignment.view_count == 0)\
             .all()
 
     q = ''' 
-            SELECT * from (SELECT id, fetch_url from image) i
+            SELECT * from (SELECT id, fetch_url from document_cloud_image) i
             JOIN "{0}" t 
             ON (i.id = t.image_id)
             ORDER BY i.id, t.id
