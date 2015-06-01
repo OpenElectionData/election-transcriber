@@ -13,19 +13,30 @@ _security = LocalProxy(lambda: current_app.extensions['security'])
 
 flask_bcrypt = Bcrypt()
 
-class Image(db.Model):
-    __tablename__ = 'image'
+
+class DocumentCloudImage(db.Model):
+    __tablename__ = 'document_cloud_image'
     id = Column(Integer, primary_key=True)
-    view_count = Column(Integer, default=0)
     image_type = Column(String)
     fetch_url = Column(String)
-    form_id = Column(Integer, ForeignKey('form_meta.id'))
-    form = relationship('FormMeta', 
-                backref=backref('images', cascade="all, delete-orphan"))
-    checkout_expire = Column(DateTime(timezone=True))
 
     def __repr__(self):
-        return '<Image %r>' % self.fetch_url
+        return '<DocumentCloudImage %r>' % self.fetch_url
+
+    @classmethod
+    def get_id_by_url(cls, url):
+        return db.session.query(cls).filter(cls.fetch_url == url).first().id
+
+class ImageTaskAssignment(db.Model):
+    __tablename__ = 'image_task_assignment'
+    id = Column(Integer, primary_key=True)
+    image_id = Column(Integer, ForeignKey('document_cloud_image.id'))
+    form_id = Column(Integer, ForeignKey('form_meta.id'))
+    checkout_expire = Column(DateTime(timezone=True))
+    view_count = Column(Integer, default=0)
+
+    def __repr__(self):
+        return '<ImageTask %r %r>' % (self.image_id, self.form_id)
 
 class TaskGroup(db.Model):
     __tablename__ = 'task_group'
