@@ -5,7 +5,7 @@ from unicodedata import normalize
 from wtforms.form import Form
 from wtforms.fields import StringField
 from wtforms.validators import DataRequired
-from transcriber.models import Image, FormMeta, FormField
+from transcriber.models import FormMeta, FormField
 from transcriber.database import db
 from flask import url_for
 
