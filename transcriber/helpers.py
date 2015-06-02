@@ -5,9 +5,10 @@ from unicodedata import normalize
 from wtforms.form import Form
 from wtforms.fields import StringField
 from wtforms.validators import DataRequired
-from transcriber.models import FormMeta, FormField
+from transcriber.models import FormMeta, FormField, User
 from transcriber.database import db
 from flask import url_for
+from sqlalchemy import text, or_
 
 
 def slugify(text, delim=u'_'):
@@ -75,3 +76,56 @@ def pretty_transcriptions(t_header, rows_all, task_id):
         transcriptions.append(row_pretty)
 
     return transcriptions
+
+# given a username, returns user info & user activity
+def get_user_activity(user_name):
+
+    user_transcriptions = []
+    user_row = db.session.query(User)\
+                .filter(User.name == user_name)\
+                .first()
+    
+    if user_row:
+        user = {
+        'id': user_row.id,
+        'name': user_row.name,
+        'detail': user_row.email
+        }
+    else:
+        user = {
+        'id': None,
+        'name': user_name,
+        'detail': "Anonymous Transcriber"
+        }
+
+    all_tasks = db.session.query(FormMeta)\
+            .filter(or_(FormMeta.status != 'deleted', 
+                        FormMeta.status == None)).all()
+
+    engine = db.session.bind
+
+    for task in all_tasks:
+        task_info = task.as_dict()
+        table_name = task_info['table_name']
+
+        q = ''' 
+                SELECT * from (SELECT id, fetch_url from document_cloud_image) i
+                JOIN "{0}" t 
+                ON (i.id = t.image_id)
+                WHERE transcriber = '{1}'
+            '''.format(table_name, user['name'])
+        h = ''' 
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = '{0}'
+        '''.format(table_name)
+
+        with engine.begin() as conn:
+            t_header = conn.execute(text(h)).fetchall()
+            rows_all = conn.execute(text(q)).fetchall()
+
+        if len(rows_all) > 0:
+            transcriptions = pretty_transcriptions(t_header, rows_all, task_info["id"])
+            user_transcriptions.append((task_info, transcriptions))
+
+    return (user, user_transcriptions)

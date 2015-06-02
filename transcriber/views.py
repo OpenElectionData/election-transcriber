@@ -9,7 +9,7 @@ from werkzeug import secure_filename
 from transcriber.models import FormMeta, FormSection, FormField, \
     DocumentCloudImage, ImageTaskAssignment, TaskGroup, User
 from transcriber.database import db
-from transcriber.helpers import slugify, pretty_transcriptions
+from transcriber.helpers import slugify, pretty_transcriptions, get_user_activity
 from flask_wtf import Form
 from transcriber.dynamic_form import NullableIntegerField as IntegerField, \
     NullableDateTimeField as DateTimeField, \
@@ -774,113 +774,20 @@ def user():
     if not request.args.get('user'):
         return redirect(url_for('views.index'))
 
-    user_transcriptions = []
-    user_row = db.session.query(User)\
-                .filter(User.name == request.args.get('user'))\
-                .first()
-    
-    if user_row:
-        user = {
-        'id': user_row.id,
-        'name': user_row.name,
-        'detail': user_row.email
-        }
-    else:
-        user = {
-        'id': None,
-        'name': request.args.get('user'),
-        'detail': "Anonymous Transcriber"
-        }
-
-    all_tasks = db.session.query(FormMeta)\
-            .filter(or_(FormMeta.status != 'deleted', 
-                        FormMeta.status == None)).all()
-
-    engine = db.session.bind
-
-    for task in all_tasks:
-        task_info = task.as_dict()
-        table_name = task_info['table_name']
-
-        q = ''' 
-                SELECT * from (SELECT id, fetch_url from document_cloud_image) i
-                JOIN "{0}" t 
-                ON (i.id = t.image_id)
-                WHERE transcriber = '{1}'
-            '''.format(table_name, user['name'])
-        h = ''' 
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_name = '{0}'
-        '''.format(table_name)
-
-        with engine.begin() as conn:
-            t_header = conn.execute(text(h)).fetchall()
-            rows_all = conn.execute(text(q)).fetchall()
-
-        if len(rows_all) > 0:
-            transcriptions = pretty_transcriptions(t_header, rows_all, task_info["id"])
-            user_transcriptions.append((task_info, transcriptions))
+    user, user_transcriptions = get_user_activity(request.args.get('user'))
 
     return render_template('user.html', user=user, user_transcriptions = user_transcriptions)
 
 
 @views.route('/view-activity/', methods=['GET', 'POST'])
 def view_activity():
-
     if current_user.is_anonymous():
         username = request.remote_addr
     else:
         username = current_user.name
 
-    user_transcriptions = []
-    user_row = db.session.query(User)\
-                .filter(User.name == username)\
-                .first()
+    user, user_transcriptions = get_user_activity(username)
     
-    if user_row:
-        user = {
-        'id': user_row.id,
-        'name': user_row.name,
-        'detail': user_row.email
-        }
-    else:
-        user = {
-        'id': None,
-        'name': username,
-        'detail': "Anonymous Transcriber"
-        }
-
-    all_tasks = db.session.query(FormMeta)\
-            .filter(or_(FormMeta.status != 'deleted', 
-                        FormMeta.status == None)).all()
-
-    engine = db.session.bind
-
-    for task in all_tasks:
-        task_info = task.as_dict()
-        table_name = task_info['table_name']
-
-        q = ''' 
-                SELECT * from (SELECT id, fetch_url from document_cloud_image) i
-                JOIN "{0}" t 
-                ON (i.id = t.image_id)
-                WHERE transcriber = '{1}'
-            '''.format(table_name, user['name'])
-        h = ''' 
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_name = '{0}'
-        '''.format(table_name)
-
-        with engine.begin() as conn:
-            t_header = conn.execute(text(h)).fetchall()
-            rows_all = conn.execute(text(q)).fetchall()
-
-        if len(rows_all) > 0:
-            transcriptions = pretty_transcriptions(t_header, rows_all, task_info["id"])
-            user_transcriptions.append((task_info, transcriptions))
-
     return render_template('view-activity.html', user=user, user_transcriptions = user_transcriptions)
 
 @views.route('/uploads/<filename>')
