@@ -743,10 +743,7 @@ def transcriptions():
 
     table_name = task_dict['table_name']
 
-    images_unseen = db.session.query(ImageTaskAssignment)\
-            .filter(ImageTaskAssignment.form_id == task_id)\
-            .filter(ImageTaskAssignment.view_count == 0)\
-            .all()
+    images_unseen = ImageTaskAssignment.get_unseen_images_by_task(task_id)
 
     q = ''' 
             SELECT * from (SELECT id, fetch_url from document_cloud_image) i
