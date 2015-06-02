@@ -6,7 +6,7 @@ script_location = alembic
 sqlalchemy.url = postgres://user:pass@localhost/election_transcriber
 
 [alembic:include]
-tables = image,task_group,form_meta,form_section,form_field,ndi_role,roles_users,ndi_user
+tables = document_cloud_image,image_task_assignment,task_group,form_meta,form_section,form_field,ndi_role,roles_users,ndi_user
 
 # template used to generate migration files
 # file_template = %%(rev)s_%%(slug)s
