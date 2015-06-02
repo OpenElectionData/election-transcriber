@@ -806,7 +806,7 @@ def user():
         table_name = task_info['table_name']
 
         q = ''' 
-                SELECT * from (SELECT id, fetch_url from image) i
+                SELECT * from (SELECT id, fetch_url from document_cloud_image) i
                 JOIN "{0}" t 
                 ON (i.id = t.image_id)
                 WHERE transcriber = '{1}'
