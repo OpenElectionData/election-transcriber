@@ -31,12 +31,18 @@ class ImageTaskAssignment(db.Model):
     __tablename__ = 'image_task_assignment'
     id = Column(Integer, primary_key=True)
     image_id = Column(Integer, ForeignKey('document_cloud_image.id'))
+    image = relationship('DocumentCloudImage', backref='taskassignments')
     form_id = Column(Integer, ForeignKey('form_meta.id'))
     checkout_expire = Column(DateTime(timezone=True))
     view_count = Column(Integer, default=0)
 
     def __repr__(self):
         return '<ImageTask %r %r>' % (self.image_id, self.form_id)
+
+    @classmethod
+    def get_unseen_images_by_task(cls, task_id):
+        return [row.image for row in db.session.query(cls).filter(cls.form_id == task_id).filter(cls.view_count == 0).all()]
+
 
 class TaskGroup(db.Model):
     __tablename__ = 'task_group'
