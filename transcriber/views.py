@@ -600,7 +600,7 @@ def transcribe():
         form = form(request.form)
         if form.validate():
             image = db.session.query(ImageTaskAssignment)\
-                .filter(ImageTaskAssignment.form_id == task_dict.id)\
+                .filter(ImageTaskAssignment.form_id == task_dict['id'])\
                 .filter(ImageTaskAssignment.image_id == flask_session['image_id'])\
                 .first()
             reviewer_count = db.session.query(FormMeta).get(image.form_id).reviewer_count
@@ -631,7 +631,6 @@ def transcribe():
                 '''.format(task.table_name, 
                            ','.join([f for f in ins_args.keys()]),
                            ','.join([':{0}'.format(f) for f in ins_args.keys()]))
-                print "INS", ins
                 with engine.begin() as conn:
                     conn.execute(text(ins), **ins_args)
                 image.view_count += 1
@@ -646,7 +645,19 @@ def transcribe():
                 
                 if image.view_count >= reviewer_count:
                     print "reconcile"
-                    is_match, final_row = reconcile_rows(col_names, task.table_name, image_id)
+                    min_agree = reviewer_count*2/3+1 # need to have more than 2/3 reviewer_count to accept. make a smarter rule here?
+                    final_row = reconcile_rows(col_names, task.table_name, image_id, min_agree)
+
+                    if final_row: # if images can be reconciled
+                        final_row['is_final'] = True
+                        ins_final = ''' 
+                            INSERT INTO "{0}" ({1}) VALUES ({2})
+                        '''.format(task.table_name, 
+                                   ','.join([f for f in final_row.keys()]),
+                                   ','.join([':{0}'.format(f) for f in final_row.keys()]))
+                        with engine.begin() as conn:
+                            conn.execute(text(ins_final), **final_row)
+
                 else:
                     print "don't reconcile"
 
