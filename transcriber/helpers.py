@@ -41,7 +41,7 @@ def pretty_transcriptions(t_header, rows_all, task_id):
         meta_f = h[0]
         meta_f = re.sub(r'_', ' ', meta_f) # un-slugify
         meta_h.append(meta_f)
-    for h in t_header[4::cpf]:
+    for h in t_header[5::cpf]:
         f_slug = h[0]
         field = FormField.query.filter(FormField.form_id == task_id).filter(FormField.slug == f_slug).first().as_dict()
         field_h.append(field["name"])
@@ -63,7 +63,7 @@ def pretty_transcriptions(t_header, rows_all, task_id):
         image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
         row_pretty = [image_link]+row_pretty
 
-        row_transcribed = [row[i:i + cpf] for i in range(6, num_cols, cpf)] # transcribed fields
+        row_transcribed = [row[i:i + cpf] for i in range(7, num_cols, cpf)] # transcribed fields
         for field in row_transcribed:
             field_pretty = str(field[0])
             if field[1]:

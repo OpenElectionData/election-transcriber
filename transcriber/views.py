@@ -9,7 +9,8 @@ from werkzeug import secure_filename
 from transcriber.models import FormMeta, FormSection, FormField, \
     DocumentCloudImage, ImageTaskAssignment, TaskGroup, User
 from transcriber.database import db
-from transcriber.helpers import slugify, pretty_transcriptions, get_user_activity
+from transcriber.helpers import slugify, pretty_transcriptions, \
+    get_user_activity, reconcile_rows
 from flask_wtf import Form
 from transcriber.dynamic_form import NullableIntegerField as IntegerField, \
     NullableDateTimeField as DateTimeField, \
@@ -415,7 +416,8 @@ def form_creator():
                     server_default=text('CURRENT_TIMESTAMP')),
                 Column('transcriber', String),
                 Column('id', Integer, primary_key=True),
-                Column('image_id', Integer)
+                Column('image_id', Integer),
+                Column('is_final', Boolean, default=False)
             ]
             for field in form_meta.fields:
                 dt = DATA_TYPE.get(field.data_type, String)
@@ -597,8 +599,12 @@ def transcribe():
     if request.method == 'POST':
         form = form(request.form)
         if form.validate():
+            image = db.session.query(ImageTaskAssignment)\
+                .filter(ImageTaskAssignment.form_id == task_dict.id)\
+                .filter(ImageTaskAssignment.image_id == flask_session['image_id'])\
+                .first()
+            reviewer_count = db.session.query(FormMeta).get(image.form_id).reviewer_count
 
-            image = db.session.query(ImageTaskAssignment).get(flask_session['image_id'])
             if not image.checkout_expire or image.checkout_expire < current_time:
                 flash("Form has expired", "expired")
             else:
@@ -625,13 +631,24 @@ def transcribe():
                 '''.format(task.table_name, 
                            ','.join([f for f in ins_args.keys()]),
                            ','.join([':{0}'.format(f) for f in ins_args.keys()]))
-
+                print "INS", ins
                 with engine.begin() as conn:
                     conn.execute(text(ins), **ins_args)
                 image.view_count += 1
                 image.checkout_expire = None
                 db.session.add(image)
                 db.session.commit()
+
+                image_id = ins_args['image_id']
+                ins_args.pop('image_id')
+                ins_args.pop('transcriber')
+                col_names = [f for f in ins_args.keys()]
+                
+                if image.view_count >= reviewer_count:
+                    print "reconcile"
+                    is_match, final_row = reconcile_rows(col_names, task.table_name, image_id)
+                else:
+                    print "don't reconcile"
 
                 flash("Transcription saved!", "saved")
 
@@ -678,12 +695,18 @@ def transcribe():
 
 
     if image == None:
-        if task_dict['images_left'] == 0:
-            flash('No more documents left to transcribe for %s!' %task_dict['name'])
-            return redirect(url_for('views.index'))
-        else:
-            flash("All images associated with '%s' have been checked out" %task_dict['name'])
-            return redirect(url_for('views.index'))
+        # if task_dict['images_left'] == 0:
+        #     flash('No more documents left to transcribe for %s!' %task_dict['name'])
+        #     return redirect(url_for('views.index'))
+        # else:
+        #     flash("All images associated with '%s' have been checked out" %task_dict['name'])
+        #     return redirect(url_for('views.index'))
+
+        # ADD: check if all images have a final transcription & flash messages accordingly
+
+        flash("Nothing to transcribe for '%s'" %task_dict['name'])
+        return redirect(url_for('views.index'))
+
     else:
         # checkout image for 5 mins
         image.checkout_expire = expire_time
