@@ -84,14 +84,12 @@ def index():
         if reviewer_count == None: # clean this up
             reviewer_count = 1
 
-        docs_left = db.session.query(ImageTaskAssignment)\
-                .filter(ImageTaskAssignment.form_id == task_id)\
-                .filter(ImageTaskAssignment.view_count < reviewer_count)\
-                .count()
         docs_total = db.session.query(ImageTaskAssignment)\
                 .filter(ImageTaskAssignment.form_id == task_id)\
                 .count()
-        docs_complete = docs_total - docs_left
+        docs_complete = db.session.query(ImageTaskAssignment)\
+                .filter(ImageTaskAssignment.is_complete == True)\
+                .count()
         reviews_complete = 0
         for i in range(1, reviewer_count+1):
             n = db.session.query(ImageTaskAssignment)\
