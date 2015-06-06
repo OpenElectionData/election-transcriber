@@ -76,8 +76,10 @@ def pretty_transcriptions(t_header, rows_all, task_id):
         row_pretty = row[2:5] # transcription metadata
         # link for transcriber
         transcriber = row_pretty[1]
-        row_pretty[1] = "<a href='"+url_for('views.user', user=transcriber)+"'>"+transcriber+"</a>"
-
+        if transcriber:
+            row_pretty[1] = "<a href='"+url_for('views.user', user=transcriber)+"'>"+transcriber+"</a>"
+        else:
+            row_pretty[1] = ""
         # assumes image_id is the 4th metadata col
         image_id = row[5]
         image_url = row[1]

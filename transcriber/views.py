@@ -693,7 +693,7 @@ def transcribe():
         image = db.session.query(ImageTaskAssignment)\
                 .filter(ImageTaskAssignment.form_id == task.id)\
                 .filter(ImageTaskAssignment.checkout_expire == None)\
-                .filter(ImageTaskAssignment.view_count < task_dict['reviewer_count'])\
+                .filter(ImageTaskAssignment.is_complete == False)\
                 .order_by(ImageTaskAssignment.view_count)\
                 .first()
 
