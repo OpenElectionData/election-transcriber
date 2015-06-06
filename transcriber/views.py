@@ -650,6 +650,7 @@ def transcribe():
 
                     if final_row: # if images can be reconciled
                         final_row['is_final'] = True
+                        final_row['image_id'] = image_id
                         ins_final = ''' 
                             INSERT INTO "{0}" ({1}) VALUES ({2})
                         '''.format(task.table_name, 
@@ -657,6 +658,9 @@ def transcribe():
                                    ','.join([':{0}'.format(f) for f in final_row.keys()]))
                         with engine.begin() as conn:
                             conn.execute(text(ins_final), **final_row)
+
+                        image.is_complete = True
+                        db.session.add(image)
 
                 else:
                     print "don't reconcile"
