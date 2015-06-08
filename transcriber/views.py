@@ -140,14 +140,6 @@ def upload():
 
         doc_list = client.projects.get_by_title(project_name).document_list
 
-        # adding images document_cloud_image table
-        for doc in doc_list:
-            if db.session.query(DocumentCloudImage).filter(DocumentCloudImage.fetch_url==doc.pdf_url).first()==None:
-                new_image = DocumentCloudImage(image_type='pdf', fetch_url=doc.pdf_url)
-                db.session.add(new_image)
-        db.session.commit()
-
-
         h_str_list = [doc.data['hierarchy'] for doc in doc_list]
         h_obj = construct_hierarchy_object(h_str_list)
 
@@ -170,7 +162,6 @@ def upload():
                 return render_template('upload.html', project_list=project_list, project_name=project_name, hierarchy_filter=hierarchy_filter, h_obj=h_obj)
             else:
                 flash("No DocumentCloud images found")
-
 
     return render_template('upload.html', project_list=project_list)
 
@@ -355,7 +346,6 @@ def form_creator():
         metadata = MetaData()
 
         # if the form already exists
-
         if form_meta.table_name:
             
             #update column names
@@ -432,13 +422,38 @@ def form_creator():
             db.session.add(form_meta)
 
             for url in flask_session['doc_url_list']:
-                image_id = DocumentCloudImage.get_id_by_url(url)
-                img_task_assign = ImageTaskAssignment(image_id=image_id, 
-                              form_id=form_meta.id)
-                db.session.add(img_task_assign)
 
-            db.session.commit()
+                if request.form['is_concat'] and request.form['is_concat'] == "keep_intact":
+                    
+                    # adding images document_cloud_image table if they don't exist
+                    if db.session.query(DocumentCloudImage).filter(DocumentCloudImage.fetch_url==url).first()==None:
+                        new_image = DocumentCloudImage(image_type='pdf', fetch_url=url)
+                        db.session.add(new_image)
+                        db.session.commit()
+
+                    image_id = DocumentCloudImage.get_id_by_url(url)
+                    img_task_assign = ImageTaskAssignment(image_id=image_id, 
+                              form_id=form_meta.id)
+                    db.session.add(img_task_assign)
+                    db.session.commit()
+                else:
+                    for p in range(1, flask_session['page_count']+1):
+                        p_url = url+'#page=%s'%p
+
+                        # adding images document_cloud_image table if they don't exist
+                        if db.session.query(DocumentCloudImage).filter(DocumentCloudImage.fetch_url==p_url).first()==None:
+                            new_image = DocumentCloudImage(image_type='pdf', fetch_url=p_url)
+                            db.session.add(new_image)
+                            db.session.commit()
+
+                        image_id = DocumentCloudImage.get_id_by_url(p_url)
+                        img_task_assign = ImageTaskAssignment(image_id=image_id, 
+                                  form_id=form_meta.id)
+                        db.session.add(img_task_assign)
+                        db.session.commit()
+
         return redirect(url_for('views.index'))
+
     next_section_index = 2
     next_field_indicies = {1: 2}
     if form_meta.id:
