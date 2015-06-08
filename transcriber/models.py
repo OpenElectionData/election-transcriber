@@ -42,7 +42,11 @@ class ImageTaskAssignment(db.Model):
 
     @classmethod
     def get_unseen_images_by_task(cls, task_id):
-        return [row.image for row in db.session.query(cls).filter(cls.form_id == task_id).filter(cls.view_count == 0).all()]
+        return [row.image for row in db.session.query(cls)\
+                                    .filter(cls.form_id == task_id)\
+                                    .filter(cls.view_count == 0)\
+                                    .order_by(cls.id)\
+                                    .all()]
 
 
 class TaskGroup(db.Model):
