@@ -39,9 +39,9 @@
     <div class="col-sm-12">
         <hr>
         <h3><strong>{{images_unseen|length}}</strong> images without any transcriptions yet</h3>
-        <strong>image_id</strong>
+        <strong>image_id list</strong><br>
         {% for image in images_unseen %}
-            <br><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a>
+            <div class="unseen-image small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
         {% endfor %}
     </div>
 </div>

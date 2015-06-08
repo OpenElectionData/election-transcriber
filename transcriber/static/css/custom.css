@@ -309,3 +309,9 @@ table, label,.control-label,.help-block,.checkbox,.radio { font-size: 16px; }
     border:1px solid #94a0b4;
     color:#000
 }
+
+/* view transcriptions page */
+.unseen-image{
+  width: 40px;
+  display: inline-block;
+}
