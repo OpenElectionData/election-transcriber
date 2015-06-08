@@ -163,6 +163,7 @@ def upload():
             if len(doc_list) > 0:
                 first_doc = doc_list[0]
                 flask_session['image'] = first_doc.pdf_url
+                flask_session['page_count'] = first_doc.pages
                 flask_session['image_type'] = 'pdf'
                 flask_session['doc_url_list'] = [doc.pdf_url for doc in doc_list]
 
