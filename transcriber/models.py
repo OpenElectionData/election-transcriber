@@ -57,6 +57,56 @@ class ImageTaskAssignment(db.Model):
                                     .order_by(cls.id)\
                                     .all()]
 
+    @classmethod
+    def get_task_progress(cls, task_id):
+        progress_dict = {}
+        reviewer_count = db.session.query(FormMeta).get(task_id).reviewer_count
+        if reviewer_count == None: # clean this up
+            reviewer_count = 1
+
+        docs_total = db.session.query(cls)\
+                .filter(cls.form_id == task_id)\
+                .count()
+        docs_complete = db.session.query(cls)\
+                .filter(cls.is_complete == True)\
+                .count()
+
+        reviews_complete = 0
+        for i in range(1, reviewer_count):
+            n = db.session.query(cls)\
+                .filter(cls.form_id == task_id)\
+                .filter(cls.view_count == i).count()
+            reviews_complete+=n*i
+        done = db.session.query(cls)\
+                .filter(cls.form_id == task_id)\
+                .filter(cls.view_count >= i)\
+                .filter(cls.is_complete == True)\
+                .count()
+        need_to_reconcile = db.session.query(cls)\
+                .filter(cls.form_id == task_id)\
+                .filter(cls.view_count >= i)\
+                .filter(cls.is_complete == False)\
+                .count()
+        reviews_complete += done*reviewer_count + need_to_reconcile*(reviewer_count-1)
+
+
+        if docs_total > 0 and reviewer_count > 0:
+            doc_percent = int(float(docs_complete)/float(docs_total)*100)
+            review_percent = int(float(reviews_complete)/float(reviewer_count*docs_total)*100)
+        else:
+            doc_percent = None
+            review_percent = None
+
+        progress_dict['docs_percent'] = doc_percent
+        progress_dict['docs_complete'] = docs_complete
+        progress_dict['docs_total'] = docs_total 
+        progress_dict['reviews_complete'] = reviews_complete
+        progress_dict['reviews_total'] = reviewer_count*docs_total
+        progress_dict['review_percent'] = review_percent
+
+        return progress_dict
+
+
 class TaskGroup(db.Model):
     __tablename__ = 'task_group'
     id = Column(Integer, primary_key=True)

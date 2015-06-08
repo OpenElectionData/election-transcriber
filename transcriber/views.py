@@ -81,56 +81,15 @@ def index():
         task_dict = task.as_dict()
         reviewer_count = task_dict['reviewer_count']
         task_id = task_dict['id']
-        if reviewer_count == None: # clean this up
-            reviewer_count = 1
 
-        docs_total = db.session.query(ImageTaskAssignment)\
-                .filter(ImageTaskAssignment.form_id == task_id)\
-                .count()
-        docs_complete = db.session.query(ImageTaskAssignment)\
-                .filter(ImageTaskAssignment.is_complete == True)\
-                .count()
-        reviews_complete = 0
-        for i in range(1, reviewer_count):
-            n = db.session.query(ImageTaskAssignment)\
-                .filter(ImageTaskAssignment.form_id == task_id)\
-                .filter(ImageTaskAssignment.view_count == i).count()
-            reviews_complete+=n*i
-            print reviews_complete
+        progress_dict = ImageTaskAssignment.get_task_progress(task_id)
 
-        done = db.session.query(ImageTaskAssignment)\
-                .filter(ImageTaskAssignment.form_id == task_id)\
-                .filter(ImageTaskAssignment.view_count >= i)\
-                .filter(ImageTaskAssignment.is_complete == True)\
-                .count()
-        need_to_reconcile = db.session.query(ImageTaskAssignment)\
-                .filter(ImageTaskAssignment.form_id == task_id)\
-                .filter(ImageTaskAssignment.view_count >= i)\
-                .filter(ImageTaskAssignment.is_complete == False)\
-                .count()
-
-        reviews_complete += done*reviewer_count + need_to_reconcile*(reviewer_count-1)
-
-        if docs_total > 0 and reviewer_count > 0:
-            doc_percent = int(float(docs_complete)/float(docs_total)*100)
-            review_percent = int(float(reviews_complete)/float(reviewer_count*docs_total)*100)
-        else:
-            doc_percent = None
-            review_percent = None
-
-        if task.task_group_id not in groups and review_percent < 100:
+        if task.task_group_id not in groups and progress_dict['review_percent'] < 100:
             is_top_task = True
             groups.append(task.task_group_id)
         else:
             is_top_task = False
-
-        progress_dict = {}
-        progress_dict['docs_percent'] = doc_percent
-        progress_dict['docs_complete'] = docs_complete
-        progress_dict['docs_total'] = docs_total 
-        progress_dict['reviews_complete'] = reviews_complete
-        progress_dict['reviews_total'] = reviewer_count*docs_total
-        progress_dict['review_percent'] = review_percent
+        
         t.append([task, progress_dict, is_top_task])
         
     return render_template('index.html', tasks=t)
