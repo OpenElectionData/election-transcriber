@@ -48,6 +48,14 @@ class ImageTaskAssignment(db.Model):
                                     .order_by(cls.id)\
                                     .all()]
 
+    @classmethod
+    def get_partly_seen_images_by_task(cls, task_id):
+        return [row.image for row in db.session.query(cls)\
+                                    .filter(cls.form_id == task_id)\
+                                    .filter(cls.view_count > 0)\
+                                    .filter(cls.is_complete == False)\
+                                    .order_by(cls.id)\
+                                    .all()]
 
 class TaskGroup(db.Model):
     __tablename__ = 'task_group'

@@ -796,11 +796,13 @@ def transcriptions():
     table_name = task_dict['table_name']
 
     images_unseen = ImageTaskAssignment.get_unseen_images_by_task(task_id)
+    images_partly_seen = ImageTaskAssignment.get_partly_seen_images_by_task(task_id)
 
     q = ''' 
             SELECT * from (SELECT id, fetch_url from document_cloud_image) i
             JOIN "{0}" t 
             ON (i.id = t.image_id)
+            WHERE (t.is_final = True)
             ORDER BY i.id, t.id
         '''.format(table_name)
     h = ''' 
@@ -817,7 +819,7 @@ def transcriptions():
     if len(rows_all) > 0:
         transcriptions = pretty_transcriptions(t_header, rows_all, task_id)
 
-    return render_template('transcriptions.html', task=task_dict, transcriptions=transcriptions, images_unseen=images_unseen)
+    return render_template('transcriptions.html', task=task_dict, transcriptions=transcriptions, images_unseen=images_unseen, images_partly_seen=images_partly_seen)
 
 @views.route('/user/', methods=['GET', 'POST'])
 @login_required

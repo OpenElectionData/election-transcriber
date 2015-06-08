@@ -8,10 +8,11 @@
 <div class="row">
     <div class="col-sm-12">
         {% if transcriptions %}
+            <h3><strong>{{transcriptions|length}}</strong> images fully transcribed</h3>
             <a href="{{ url_for('views.download_transcriptions', task_id=task.id) }}" class="btn btn-default pull-right"><i class="fa fa-download fa-fw"></i> Download CSV</a>
             <div>
-                <i class="fa fa-times fa-fw"></i> Blank <br>
-                <i class="fa fa-question fa-fw"></i> Not legible <br>
+                <i class="fa fa-times fa-fw"></i> Blank &nbsp;&nbsp;&nbsp;
+                <i class="fa fa-question fa-fw"></i> Not legible &nbsp;&nbsp;&nbsp;
                 <i class="fa fa-exclamation-triangle fa-fw"></i> Looks altered <br>
             </div>
             <table class="table">
@@ -29,10 +30,23 @@
                 {% endfor %}
             </table>
         {% else %}
-            <h2>No transcriptions yet</h2>
+            <h2>No fully transcribed images yet</h2>
         {% endif %}
     </div>
 </div>
+
+{% if images_partly_seen %}
+<div class="row">
+    <div class="col-sm-12">
+        <hr>
+        <h3><strong>{{images_partly_seen|length}}</strong> images partially transcribed</h3>
+        <strong>image_id list</strong><br>
+        {% for image in images_partly_seen %}
+            <div class="unseen-image small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 
 {% if images_unseen %}
 <div class="row">
