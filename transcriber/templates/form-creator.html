@@ -78,7 +78,7 @@
                            placeholder="Task description and instructions"></textarea>
                     </div>
                 </div>
-                {% if session.page_count > 10 %}
+                {% if not form_meta.name and session.page_count > 10 %}
                 <hr>
                 <div class="form-group">
                     <div class="col-sm-10 col-sm-offset-1">
