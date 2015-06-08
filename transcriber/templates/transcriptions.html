@@ -8,7 +8,7 @@
 <div class="row">
     <div class="col-sm-12">
         {% if transcriptions %}
-            <h3><strong>{{transcriptions|length}}</strong> images fully transcribed</h3>
+            <h3><strong>{{transcriptions|length - 1}}</strong> images fully transcribed</h3>
             <a href="{{ url_for('views.download_transcriptions', task_id=task.id) }}" class="btn btn-default pull-right"><i class="fa fa-download fa-fw"></i> Download CSV</a>
             <div>
                 <i class="fa fa-times fa-fw"></i> Blank &nbsp;&nbsp;&nbsp;

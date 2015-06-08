@@ -91,11 +91,25 @@ def index():
                 .filter(ImageTaskAssignment.is_complete == True)\
                 .count()
         reviews_complete = 0
-        for i in range(1, reviewer_count+1):
+        for i in range(1, reviewer_count):
             n = db.session.query(ImageTaskAssignment)\
                 .filter(ImageTaskAssignment.form_id == task_id)\
                 .filter(ImageTaskAssignment.view_count == i).count()
             reviews_complete+=n*i
+            print reviews_complete
+
+        done = db.session.query(ImageTaskAssignment)\
+                .filter(ImageTaskAssignment.form_id == task_id)\
+                .filter(ImageTaskAssignment.view_count >= i)\
+                .filter(ImageTaskAssignment.is_complete == True)\
+                .count()
+        need_to_reconcile = db.session.query(ImageTaskAssignment)\
+                .filter(ImageTaskAssignment.form_id == task_id)\
+                .filter(ImageTaskAssignment.view_count >= i)\
+                .filter(ImageTaskAssignment.is_complete == False)\
+                .count()
+
+        reviews_complete += done*reviewer_count + need_to_reconcile*(reviewer_count-1)
 
         if docs_total > 0 and reviewer_count > 0:
             doc_percent = int(float(docs_complete)/float(docs_total)*100)
@@ -675,6 +689,7 @@ def transcribe():
 
                         image.is_complete = True
                         db.session.add(image)
+                        db.session.commit()
 
                 else:
                     print "don't reconcile"
