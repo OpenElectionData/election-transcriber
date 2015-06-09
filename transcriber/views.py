@@ -10,7 +10,7 @@ from transcriber.models import FormMeta, FormSection, FormField, \
     DocumentCloudImage, ImageTaskAssignment, TaskGroup, User
 from transcriber.database import db
 from transcriber.helpers import slugify, pretty_transcriptions, \
-    get_user_activity, reconcile_rows
+    pretty_final_transcriptions, get_user_activity, reconcile_rows
 from flask_wtf import Form
 from transcriber.dynamic_form import NullableIntegerField as IntegerField, \
     NullableDateTimeField as DateTimeField, \
@@ -758,7 +758,7 @@ def download_transcriptions():
 def transcriptions():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
-    transcriptions = None
+    transcriptions_final = None
     header = None
     task_id = request.args.get('task_id')
 
@@ -791,9 +791,9 @@ def transcriptions():
         rows_all = conn.execute(text(q)).fetchall()
 
     if len(rows_all) > 0:
-        transcriptions = pretty_transcriptions(t_header, rows_all, task_id)
+        transcriptions_final = pretty_final_transcriptions(t_header, rows_all, task_id)
 
-    return render_template('transcriptions.html', task=task_dict, transcriptions=transcriptions, images_unseen=images_unseen, images_partly_seen=images_partly_seen)
+    return render_template('transcriptions.html', task=task_dict, transcriptions_final=transcriptions_final, images_unseen=images_unseen, images_partly_seen=images_partly_seen)
 
 @views.route('/user/', methods=['GET', 'POST'])
 @login_required

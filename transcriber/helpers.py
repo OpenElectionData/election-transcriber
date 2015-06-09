@@ -100,6 +100,50 @@ def pretty_transcriptions(t_header, rows_all, task_id):
 
     return transcriptions
 
+def pretty_final_transcriptions(t_header, rows_all, task_id):
+    num_cols = len(rows_all[0])
+
+    # this code assumes that first 2 cols are info from joined image table,
+    # next 4 cols are meta info abt transcription
+    # & remaining cols are for fields
+
+    # 4 cols per field: fieldname/fieldname_blank/fieldname_not_legible/fieldname_altered
+    cpf = 4
+    # transcription field start index (first 5 fields are meta info abt transcription)
+    t_col_start = 5
+
+    meta_h = ['image id', 'date added', 'id']
+    field_h = []
+    for h in t_header[t_col_start::cpf]:
+        f_slug = h[0]
+        field = FormField.query.filter(FormField.form_id == task_id).filter(FormField.slug == f_slug).first().as_dict()
+        field_h.append(field["name"])
+    header = meta_h+field_h
+
+    transcriptions = [header]
+    for row in rows_all:
+        row = list(row)
+
+        image_id = row[5]
+        image_url = row[1]
+        image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
+                
+        row_pretty = [image_link, row[2], row[4]]
+
+        row_transcribed = [row[i:i + cpf] for i in range(7, num_cols, cpf)] # transcribed fields
+        for field in row_transcribed:
+            field_pretty = str(field[0])
+            if field[1]:
+                field_pretty = field_pretty+'<i class="fa fa-times"></i>'
+            if field[2]:
+                field_pretty = field_pretty+'<i class="fa fa-question"></i>'
+            if field[3]:
+                field_pretty = field_pretty+'<i class="fa fa-exclamation-triangle"></i>'
+            row_pretty.append(field_pretty)
+        transcriptions.append(row_pretty)
+
+    return transcriptions
+
 # given a username, returns user info & user activity
 def get_user_activity(user_name):
 

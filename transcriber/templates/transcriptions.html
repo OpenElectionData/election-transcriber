@@ -7,8 +7,8 @@
 
 <div class="row">
     <div class="col-sm-12">
-        {% if transcriptions %}
-            <h3><strong>{{transcriptions|length - 1}}</strong> images fully transcribed</h3>
+        {% if transcriptions_final %}
+            <h3><strong>{{transcriptions_final|length - 1}}</strong> images fully transcribed</h3>
             <a href="{{ url_for('views.download_transcriptions', task_id=task.id) }}" class="btn btn-default pull-right"><i class="fa fa-download fa-fw"></i> Download CSV</a>
             <div>
                 <i class="fa fa-times fa-fw"></i> Blank &nbsp;&nbsp;&nbsp;
@@ -17,11 +17,11 @@
             </div>
             <table class="table">
                 <tr>
-                    {% for h in transcriptions[0] %}
+                    {% for h in transcriptions_final[0] %}
                         <th> {{h}} </th>
                     {% endfor %}
                 </tr>
-                {% for transcription in transcriptions[1:] %}
+                {% for transcription in transcriptions_final[1:] %}
                     <tr>
                         {% for col in transcription %}
                             <td><small> {{col|safe}} </small></td>
@@ -70,7 +70,6 @@
             $('tr td:nth-child(1)').css('background-color', '#eee');
             $('tr td:nth-child(2)').css('background-color', '#eee');
             $('tr td:nth-child(3)').css('background-color', '#eee');
-            $('tr td:nth-child(4)').css('background-color', '#eee');
             $('td >> .fa-question').parent().parent().css('background-color','#fcebca');
             $('td >> .fa-times').parent().parent().css('background-color','#f9da9a');
             $('td >> .fa-exclamation-triangle').parent().parent().css('background-color','#fab0a7');
