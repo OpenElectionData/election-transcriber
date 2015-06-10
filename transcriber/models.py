@@ -97,12 +97,13 @@ class ImageTaskAssignment(db.Model):
             doc_percent = None
             review_percent = None
 
-        progress_dict['docs_percent'] = doc_percent
-        progress_dict['docs_complete'] = docs_complete
         progress_dict['docs_total'] = docs_total 
-        progress_dict['reviews_complete'] = reviews_complete
         progress_dict['reviews_total'] = reviewer_count*docs_total
-        progress_dict['review_percent'] = review_percent
+        
+        progress_dict['docs_done_perc'] = doc_percent
+        progress_dict['docs_done_ct'] = docs_complete
+        progress_dict['reviews_done_perc'] = review_percent
+        progress_dict['reviews_done_ct'] = reviews_complete
 
         return progress_dict
 

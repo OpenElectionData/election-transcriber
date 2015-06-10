@@ -84,7 +84,7 @@ def index():
 
         progress_dict = ImageTaskAssignment.get_task_progress(task_id)
 
-        if task.task_group_id not in groups and progress_dict['review_percent'] < 100:
+        if task.task_group_id not in groups and progress_dict['docs_done_ct'] < progress_dict['docs_total']:
             is_top_task = True
             groups.append(task.task_group_id)
         else:
