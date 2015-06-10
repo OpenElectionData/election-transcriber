@@ -68,6 +68,7 @@ class ImageTaskAssignment(db.Model):
                 .filter(cls.form_id == task_id)\
                 .count()
         docs_complete = db.session.query(cls)\
+                .filter(cls.form_id == task_id)\
                 .filter(cls.is_complete == True)\
                 .count()
 
@@ -82,28 +83,37 @@ class ImageTaskAssignment(db.Model):
                 .filter(cls.view_count >= i)\
                 .filter(cls.is_complete == True)\
                 .count()
-        need_to_reconcile = db.session.query(cls)\
+        in_conflict = db.session.query(cls)\
                 .filter(cls.form_id == task_id)\
-                .filter(cls.view_count >= i)\
+                .filter(cls.view_count >= reviewer_count)\
                 .filter(cls.is_complete == False)\
                 .count()
-        reviews_complete += done*reviewer_count + need_to_reconcile*(reviewer_count-1)
+        in_progress = db.session.query(cls)\
+                .filter(cls.form_id == task_id)\
+                .filter(cls.view_count > 0)\
+                .filter(cls.view_count < reviewer_count)\
+                .count()
+        unseen = db.session.query(cls)\
+                .filter(cls.form_id == task_id)\
+                .filter(cls.view_count == 0)\
+                .count()
+        reviews_complete += done*reviewer_count + in_conflict*(reviewer_count-1)
 
-
-        if docs_total > 0 and reviewer_count > 0:
-            doc_percent = int(float(docs_complete)/float(docs_total)*100)
-            review_percent = int(float(reviews_complete)/float(reviewer_count*docs_total)*100)
-        else:
-            doc_percent = None
-            review_percent = None
 
         progress_dict['docs_total'] = docs_total 
         progress_dict['reviews_total'] = reviewer_count*docs_total
-        
-        progress_dict['docs_done_perc'] = doc_percent
-        progress_dict['docs_done_ct'] = docs_complete
-        progress_dict['reviews_done_perc'] = review_percent
+
+        progress_dict['reviews_done_perc'] = percentage(reviews_complete, reviewer_count*docs_total)
         progress_dict['reviews_done_ct'] = reviews_complete
+
+        progress_dict['docs_done_perc'] = percentage(docs_complete, docs_total)
+        progress_dict['docs_done_ct'] = docs_complete
+        progress_dict['docs_inprog_perc'] = percentage(in_progress, docs_total)
+        progress_dict['docs_inprog_ct'] = in_progress
+        progress_dict['docs_conflict_perc'] = percentage(in_conflict, docs_total)
+        progress_dict['docs_conflict_ct'] = in_conflict
+        progress_dict['docs_unseen_perc'] = percentage(unseen, docs_total)
+        progress_dict['docs_unseen_ct'] = unseen
 
         return progress_dict
 
@@ -260,3 +270,15 @@ class User(db.Model, UserMixin):
     def get_auth_token(self):
         data = [str(self.id), md5(self.password)]
         return _security.remember_token_serializer.dumps(data)
+
+
+
+def percentage(int1, int2):
+    if int2 > 0:
+        percentage = int(float(int1)/float(int2)*100)
+        if percentage == 0 and int1 > 0:
+            percentage = 1
+
+        return percentage
+    else:
+        return None
