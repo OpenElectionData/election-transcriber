@@ -767,6 +767,8 @@ def transcriptions():
             .first()
     task_dict = task.as_dict()
 
+    task_dict['progress'] = ImageTaskAssignment.get_task_progress(task_id)
+
     table_name = task_dict['table_name']
 
     images_unseen = ImageTaskAssignment.get_unseen_images_by_task(task_id)

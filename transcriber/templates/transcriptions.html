@@ -6,6 +6,22 @@
 {{ render_admin_header(task.name, task, task.id, 'transcriptions') }}
 
 <div class="row">
+    <div class="col-sm-6">
+        <div class="well">
+            <h3>Progress Overview</h3>
+            <div class="progress">
+                <div class="progress-bar progress-bar-success progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_done_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images completed" style="width: {{task['progress']['docs_done_perc']}}%">
+                </div>
+                <div class="progress-bar progress-bar-info progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_inprog_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images in progress" style="width: {{task['progress']['docs_inprog_perc']}}%">
+                </div>
+                <div class="progress-bar progress-bar-warning progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_conflict_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images with conflicting transcriptions" style="width: {{task['progress']['docs_conflict_perc']}}%">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
     <div class="col-sm-12">
         {% if transcriptions_final %}
             <h3><strong>{{transcriptions_final|length - 1}}</strong> images fully transcribed</h3>
@@ -73,6 +89,7 @@
             $('td >> .fa-question').parent().parent().css('background-color','#fcebca');
             $('td >> .fa-times').parent().parent().css('background-color','#f9da9a');
             $('td >> .fa-exclamation-triangle').parent().parent().css('background-color','#fab0a7');
+            $('.progress-tooltip').tooltip();
         })
 
     </script>
