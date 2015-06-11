@@ -311,7 +311,34 @@ table, label,.control-label,.help-block,.checkbox,.radio { font-size: 16px; }
 }
 
 /* view transcriptions page */
-.unseen-image{
+.status-heading{
+  color: #444;
+  font-size: 1.6em;
+}
+
+.image_ids{
   width: 40px;
   display: inline-block;
+}
+
+.progress-bar-done{
+  background-color: #00B16A;
+}
+.done{
+  color: #00B16A;
+}
+.progress-bar-inprog{
+  background-color: #F9BF3B;
+}
+.inprog{
+  color: #F9BF3B;
+}
+.progress-bar-conflict{
+  background-color: #D35400;
+}
+.conflict{
+  color: #D35400;
+}
+.unseen{
+  color: #ccc;
 }

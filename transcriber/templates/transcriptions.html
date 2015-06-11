@@ -10,11 +10,11 @@
         <div class="well">
             <h3>Progress Overview</h3>
             <div class="progress">
-                <div class="progress-bar progress-bar-success progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_done_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images completed" style="width: {{task['progress']['docs_done_perc']}}%">
+                <div class="progress-bar progress-bar-done progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_done_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images completed" style="width: {{task['progress']['docs_done_perc']}}%">
                 </div>
-                <div class="progress-bar progress-bar-info progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_inprog_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images in progress" style="width: {{task['progress']['docs_inprog_perc']}}%">
+                <div class="progress-bar progress-bar-inprog progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_inprog_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images in progress" style="width: {{task['progress']['docs_inprog_perc']}}%">
                 </div>
-                <div class="progress-bar progress-bar-warning progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_conflict_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images with conflicting transcriptions" style="width: {{task['progress']['docs_conflict_perc']}}%">
+                <div class="progress-bar progress-bar-conflict progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_conflict_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images with conflicting transcriptions" style="width: {{task['progress']['docs_conflict_perc']}}%">
                 </div>
             </div>
         </div>
@@ -24,7 +24,10 @@
 <div class="row">
     <div class="col-sm-12">
         {% if transcriptions_final %}
-            <h3><strong>{{transcriptions_final|length - 1}}</strong> images fully transcribed</h3>
+            <p class="status-heading">
+                <i class="fa fa-pencil fa-fw done"></i>
+                <strong>{{transcriptions_final|length - 1}}</strong> images fully transcribed
+            </p>
             <a href="{{ url_for('views.download_transcriptions', task_id=task.id) }}" class="btn btn-default pull-right"><i class="fa fa-download fa-fw"></i> Download CSV</a>
             <div>
                 <i class="fa fa-times fa-fw"></i> Blank &nbsp;&nbsp;&nbsp;
@@ -46,7 +49,7 @@
                 {% endfor %}
             </table>
         {% else %}
-            <h2>No fully transcribed images yet</h2>
+            <p class="status-heading"><i class="fa fa-pencil fa-fw done"></i> No fully transcribed images yet</p>
         {% endif %}
     </div>
 </div>
@@ -55,10 +58,12 @@
 <div class="row">
     <div class="col-sm-12">
         <hr>
-        <h3><strong>{{images_inprog|length}}</strong> images partially transcribed</h3>
-        <strong>image_id list</strong><br>
+        <p class="status-heading">
+            <i class="fa fa-pencil fa-fw inprog"></i>
+            <strong>{{images_inprog|length}}</strong> images partially transcribed
+        </p>
         {% for image in images_inprog %}
-            <div class="unseen-image small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
+            <div class="image_ids small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
         {% endfor %}
     </div>
 </div>
@@ -68,10 +73,12 @@
 <div class="row">
     <div class="col-sm-12">
         <hr>
-        <h3><strong>{{images_conflict|length}}</strong> images with conflicting transcriptions</h3>
-        <strong>image_id list</strong><br>
+        <p class="status-heading">
+            <i class="fa fa-pencil fa-fw conflict"></i>
+            <strong>{{images_conflict|length}}</strong> images with conflicting transcriptions
+        </p>
         {% for image in images_conflict %}
-            <div class="unseen-image small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
+            <div class="image_ids small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
         {% endfor %}
     </div>
 </div>
@@ -81,10 +88,12 @@
 <div class="row">
     <div class="col-sm-12">
         <hr>
-        <h3><strong>{{images_unseen|length}}</strong> images without any transcriptions yet</h3>
-        <strong>image_id list</strong><br>
+        <p class="status-heading">
+            <i class="fa fa-pencil fa-fw unseen"></i>
+            <strong>{{images_unseen|length}}</strong> images without any transcriptions yet
+        </p>
         {% for image in images_unseen %}
-            <div class="unseen-image small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
+            <div class="image_ids small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
         {% endfor %}
     </div>
 </div>
@@ -96,9 +105,11 @@
 
     <script type="text/javascript">
         $(document).ready(function(){
-            $('tr td:nth-child(1)').css('background-color', '#eee');
-            $('tr td:nth-child(2)').css('background-color', '#eee');
-            $('tr td:nth-child(3)').css('background-color', '#eee');
+            $('tr th:nth-child(1)').css('color', '#aaa');
+            $('tr th:nth-child(2)').css('color', '#aaa');
+            $('tr th:nth-child(3)').css('color', '#aaa');
+            $('tr td:nth-child(2)').css('color', '#aaa');
+            $('tr td:nth-child(3)').css('color', '#aaa');
             $('td >> .fa-question').parent().parent().css('background-color','#fcebca');
             $('td >> .fa-times').parent().parent().css('background-color','#f9da9a');
             $('td >> .fa-exclamation-triangle').parent().parent().css('background-color','#fab0a7');
