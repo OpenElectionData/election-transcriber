@@ -157,13 +157,14 @@ class FormMeta(db.Model):
     last_update = Column(DateTime(timezone=True), onupdate=datetime.now)
     sample_image = Column(String)
     table_name = Column(String)
-    image_view_count = Column(Integer)
     task_group_id = Column(Integer, ForeignKey('task_group.id'))
     task_group = relationship('TaskGroup', backref=backref('tasks', 
                 cascade="all, delete-orphan"))
     reviewer_count = Column(Integer)
     deadline = Column(DateTime(timezone=True), onupdate=datetime.now)
-    image_location = Column(String)
+    dc_project = Column(String)
+    dc_filter = Column(Text)
+    split_image = Column(Boolean)
 
     def __repr__(self):
         return '<FormMeta %r>' % self.id
