@@ -131,6 +131,8 @@ def upload():
                 flask_session['page_count'] = first_doc.pages
                 flask_session['image_type'] = 'pdf'
                 flask_session['doc_url_list'] = [doc.pdf_url for doc in doc_list]
+                flask_session['dc_project'] = project_name
+                flask_session['dc_filter'] = json.dumps(hierarchy_filter)
 
                 return render_template('upload.html', project_list=project_list, project_name=project_name, hierarchy_filter=hierarchy_filter, h_obj=h_obj)
             else:
@@ -768,6 +770,7 @@ def transcriptions():
     task_dict = task.as_dict()
 
     task_dict['progress'] = ImageTaskAssignment.get_task_progress(task_id)
+    task_dict['image_count'] = ImageTaskAssignment.count_images(task_id)
 
     table_name = task_dict['table_name']
 

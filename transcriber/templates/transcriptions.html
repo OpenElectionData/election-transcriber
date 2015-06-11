@@ -6,20 +6,29 @@
 {{ render_admin_header(task.name, task, task.id, 'transcriptions') }}
 
 <div class="row">
-    <div class="col-sm-6">
-        <div class="well">
-            <h3>Progress Overview</h3>
-            <div class="progress">
-                <div class="progress-bar progress-bar-done progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_done_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images completed" style="width: {{task['progress']['docs_done_perc']}}%">
-                </div>
-                <div class="progress-bar progress-bar-inprog progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_inprog_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images in progress" style="width: {{task['progress']['docs_inprog_perc']}}%">
-                </div>
-                <div class="progress-bar progress-bar-conflict progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_conflict_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images with conflicting transcriptions" style="width: {{task['progress']['docs_conflict_perc']}}%">
-                </div>
+    <div class="col-sm-8">
+        <p class="status-heading"><strong>Progress Overview</strong></p>
+        <div class="progress">
+            <div class="progress-bar progress-bar-done progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_done_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images completed" style="width: {{task['progress']['docs_done_perc']}}%">
+            </div>
+            <div class="progress-bar progress-bar-inprog progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_inprog_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images in progress" style="width: {{task['progress']['docs_inprog_perc']}}%">
+            </div>
+            <div class="progress-bar progress-bar-conflict progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_conflict_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images with conflicting transcriptions" style="width: {{task['progress']['docs_conflict_perc']}}%">
             </div>
         </div>
     </div>
+    <div class="col-sm-4">
+        <p class="status-heading">
+            task is <strong>{{task['progress']['reviews_done_perc']}}%</strong> complete
+        </p>
+        <p>
+            {{task.image_count}} images<br>
+            {{task.reviewer_count}} reviewers each<br>
+            
+        </p>
+    </div>
 </div>
+<hr>
 
 <div class="row">
     <div class="col-sm-12">

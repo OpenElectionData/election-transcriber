@@ -41,6 +41,12 @@ class ImageTaskAssignment(db.Model):
         return '<ImageTask %r %r>' % (self.image_id, self.form_id)
 
     @classmethod
+    def count_images(cls, task_id):
+        return db.session.query(cls)\
+                .filter(cls.form_id == task_id)\
+                .count()
+
+    @classmethod
     def get_unseen_images_by_task(cls, task_id):
         return [row.image for row in db.session.query(cls)\
                                     .filter(cls.form_id == task_id)\
