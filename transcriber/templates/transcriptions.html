@@ -64,6 +64,19 @@
 </div>
 {% endif %}
 
+{% if images_conflict %}
+<div class="row">
+    <div class="col-sm-12">
+        <hr>
+        <h3><strong>{{images_conflict|length}}</strong> images with conflicting transcriptions</h3>
+        <strong>image_id list</strong><br>
+        {% for image in images_conflict %}
+            <div class="unseen-image small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 {% if images_unseen %}
 <div class="row">
     <div class="col-sm-12">

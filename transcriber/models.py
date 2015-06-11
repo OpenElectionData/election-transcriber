@@ -75,13 +75,17 @@ class ImageTaskAssignment(db.Model):
         if reviewer_count == None: # clean this up
             reviewer_count = 1
 
+        # doc counts: total = done + inprog + conflict + unseen
         docs_total = db.session.query(cls)\
                 .filter(cls.form_id == task_id)\
                 .count()
-        docs_complete = db.session.query(cls)\
+        docs_done = db.session.query(cls)\
                 .filter(cls.form_id == task_id)\
                 .filter(cls.is_complete == True)\
                 .count()
+        docs_inprog = len(cls.get_inprog_images_by_task(task_id))
+        docs_conflict = len(cls.get_conflict_images_by_task(task_id))
+        unseen = len(cls.get_unseen_images_by_task(task_id))
 
         reviews_complete = 0
         for i in range(1, reviewer_count):
@@ -89,30 +93,23 @@ class ImageTaskAssignment(db.Model):
                 .filter(cls.form_id == task_id)\
                 .filter(cls.view_count == i).count()
             reviews_complete+=n*i
-        done = db.session.query(cls)\
-                .filter(cls.form_id == task_id)\
-                .filter(cls.is_complete == True)\
-                .count()
-        in_conflict = len(cls.get_conflict_images_by_task(task_id))
-        in_progress = len(cls.get_inprog_images_by_task(task_id))
-        unseen = len(cls.get_unseen_images_by_task(task_id))
-        reviews_complete += done*reviewer_count + in_conflict*(reviewer_count-1)
+        reviews_complete += docs_done*reviewer_count + docs_conflict*(reviewer_count-1)
 
 
         progress_dict['docs_total'] = docs_total 
         progress_dict['reviews_total'] = reviewer_count*docs_total
 
-        progress_dict['reviews_done_perc'] = percentage(reviews_complete, reviewer_count*docs_total)
         progress_dict['reviews_done_ct'] = reviews_complete
+        progress_dict['reviews_done_perc'] = percentage(reviews_complete, reviewer_count*docs_total)
 
-        progress_dict['docs_done_perc'] = percentage(docs_complete, docs_total)
-        progress_dict['docs_done_ct'] = docs_complete
-        progress_dict['docs_inprog_perc'] = percentage(in_progress, docs_total)
-        progress_dict['docs_inprog_ct'] = in_progress
-        progress_dict['docs_conflict_perc'] = percentage(in_conflict, docs_total)
-        progress_dict['docs_conflict_ct'] = in_conflict
-        progress_dict['docs_unseen_perc'] = percentage(unseen, docs_total)
+        progress_dict['docs_done_ct'] = docs_done
+        progress_dict['docs_done_perc'] = percentage(docs_done, docs_total)
+        progress_dict['docs_inprog_ct'] = docs_inprog
+        progress_dict['docs_inprog_perc'] = percentage(docs_inprog, docs_total)
+        progress_dict['docs_conflict_ct'] = docs_conflict
+        progress_dict['docs_conflict_perc'] = percentage(docs_conflict, docs_total)
         progress_dict['docs_unseen_ct'] = unseen
+        progress_dict['docs_unseen_perc'] = percentage(unseen, docs_total)
 
         return progress_dict
 
