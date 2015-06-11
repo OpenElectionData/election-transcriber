@@ -51,13 +51,13 @@
     </div>
 </div>
 
-{% if images_partly_seen %}
+{% if images_inprog %}
 <div class="row">
     <div class="col-sm-12">
         <hr>
-        <h3><strong>{{images_partly_seen|length}}</strong> images partially transcribed</h3>
+        <h3><strong>{{images_inprog|length}}</strong> images partially transcribed</h3>
         <strong>image_id list</strong><br>
-        {% for image in images_partly_seen %}
+        {% for image in images_inprog %}
             <div class="unseen-image small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
         {% endfor %}
     </div>

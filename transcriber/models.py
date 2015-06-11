@@ -49,10 +49,21 @@ class ImageTaskAssignment(db.Model):
                                     .all()]
 
     @classmethod
-    def get_partly_seen_images_by_task(cls, task_id):
+    def get_inprog_images_by_task(cls, task_id):
+        reviewer_count = db.session.query(FormMeta).get(task_id).reviewer_count
         return [row.image for row in db.session.query(cls)\
                                     .filter(cls.form_id == task_id)\
                                     .filter(cls.view_count > 0)\
+                                    .filter(cls.view_count < reviewer_count)\
+                                    .order_by(cls.id)\
+                                    .all()]
+
+    @classmethod
+    def get_conflict_images_by_task(cls, task_id):
+        reviewer_count = db.session.query(FormMeta).get(task_id).reviewer_count
+        return [row.image for row in db.session.query(cls)\
+                                    .filter(cls.form_id == task_id)\
+                                    .filter(cls.view_count >= reviewer_count)\
                                     .filter(cls.is_complete == False)\
                                     .order_by(cls.id)\
                                     .all()]
@@ -80,7 +91,6 @@ class ImageTaskAssignment(db.Model):
             reviews_complete+=n*i
         done = db.session.query(cls)\
                 .filter(cls.form_id == task_id)\
-                .filter(cls.view_count >= i)\
                 .filter(cls.is_complete == True)\
                 .count()
         in_conflict = db.session.query(cls)\

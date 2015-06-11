@@ -772,7 +772,7 @@ def transcriptions():
     table_name = task_dict['table_name']
 
     images_unseen = ImageTaskAssignment.get_unseen_images_by_task(task_id)
-    images_partly_seen = ImageTaskAssignment.get_partly_seen_images_by_task(task_id)
+    images_inprog = ImageTaskAssignment.get_inprog_images_by_task(task_id)
 
     q = ''' 
             SELECT * from (SELECT id, fetch_url from document_cloud_image) i
@@ -795,7 +795,7 @@ def transcriptions():
     if len(rows_all) > 0:
         transcriptions_final = pretty_final_transcriptions(t_header, rows_all, task_id)
 
-    return render_template('transcriptions.html', task=task_dict, transcriptions_final=transcriptions_final, images_unseen=images_unseen, images_partly_seen=images_partly_seen)
+    return render_template('transcriptions.html', task=task_dict, transcriptions_final=transcriptions_final, images_unseen=images_unseen, images_inprog=images_inprog)
 
 @views.route('/user/', methods=['GET', 'POST'])
 @login_required
