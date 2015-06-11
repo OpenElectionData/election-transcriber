@@ -93,20 +93,9 @@ class ImageTaskAssignment(db.Model):
                 .filter(cls.form_id == task_id)\
                 .filter(cls.is_complete == True)\
                 .count()
-        in_conflict = db.session.query(cls)\
-                .filter(cls.form_id == task_id)\
-                .filter(cls.view_count >= reviewer_count)\
-                .filter(cls.is_complete == False)\
-                .count()
-        in_progress = db.session.query(cls)\
-                .filter(cls.form_id == task_id)\
-                .filter(cls.view_count > 0)\
-                .filter(cls.view_count < reviewer_count)\
-                .count()
-        unseen = db.session.query(cls)\
-                .filter(cls.form_id == task_id)\
-                .filter(cls.view_count == 0)\
-                .count()
+        in_conflict = len(cls.get_conflict_images_by_task(task_id))
+        in_progress = len(cls.get_inprog_images_by_task(task_id))
+        unseen = len(cls.get_unseen_images_by_task(task_id))
         reviews_complete += done*reviewer_count + in_conflict*(reviewer_count-1)
 
 
