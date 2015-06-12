@@ -10,7 +10,7 @@
                 <a href="{{ url_for('views.upload') }}" class="btn btn-info"><strong>New transcription task</strong> &raquo;</a>
             </p>
             <br>
-            <h3>Tasks in Progress</h3>
+            <h3>In progress</h3>
             {% endif %}
 
             <table class='table' id='transcription_tasks'>
@@ -90,7 +90,7 @@
             
 
             {% if current_user.has_role('admin') %}
-            <h3>Completed Tasks</h3>
+            <h3>Completed</h3>
             <table class='table' id='finished_tasks'>
                 <thead>
                     <tr>
