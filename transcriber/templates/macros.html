@@ -30,7 +30,7 @@
                     <li role="presentation"><h4><strong>{{title | safe}}</strong></h4></li>
                 {% endif %}
                 {% if task_dict %}
-                    <button type="button" data-toggle="modal" data-target="#help-modal" class="btn btn-link"><i class='fa fa-info-circle fa-lg'></i></button>
+                    <button type="button" data-toggle="modal" data-target="#help-modal" class="btn btn-link"><i class='fa fa-info-circle fa-lg'></i> Instructions</button>
                 {% endif %}
 
                 {% if task_id %}
@@ -75,7 +75,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-                    <p class="modal-title"><strong>{{task_dict.name}} - Info</strong></p>
+                    <p class="modal-title"><strong>{{task_dict.name}} - Instructions</strong></p>
                 </div>
                 <div class="modal-body">
                     {% if task_dict.description %}
@@ -89,6 +89,9 @@
                         <i class="fa fa-calendar fa-fw"></i> due {{task_dict.deadline | format_date}}<br>
                     {% endif %}
                     </p>
+                    <div class="modal-footer">
+                      <button type="button" class="btn btn-default" data-dismiss="modal">Ok</button>
+                    </div>
                 </div>
             </div><!-- /.modal-content -->
         </div><!-- /.modal-dialog -->
