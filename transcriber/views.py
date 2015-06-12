@@ -136,7 +136,7 @@ def upload():
 def grab_docs(project_name, hierarchy_filter):
     client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
     doc_list = client.projects.get_by_title(project_name).document_list
-    hierarchy_filter = json.loads(request.form.get('hierarchy_filter')) if request.form.get('hierarchy_filter') else None
+    hierarchy_filter = json.loads(hierarchy_filter) if hierarchy_filter else None
 
     if hierarchy_filter:
         try:
