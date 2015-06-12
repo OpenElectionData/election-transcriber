@@ -98,6 +98,38 @@ def index():
 def about():
     return render_template('about.html')
 
+@views.route('/update-document-cloud-images/<project_name>')
+def update_document_cloud_images(project_name):
+    import multiprocessing
+    pool = multiprocessing.Pool()
+    pool.apply_async(update_image_table, [project_name])
+    return make_response("hi")
+
+def update_image_table(project_name):
+    print "HI"
+    # grab projects
+    client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
+    
+    project = client.projects.get_by_title(project_name)
+    doc_ids = project.document_ids
+    for doc_id in doc_ids:
+        print "doc_id", doc_id
+        doc = client.documents.get(doc_id)
+
+        # adding images document_cloud_image table if they don't exist
+        if db.session.query(DocumentCloudImage).filter(DocumentCloudImage.dc_id==doc_id).first()==None:
+            new_image = DocumentCloudImage( image_type='pdf', 
+                                            fetch_url=doc.pdf_url, 
+                                            dc_project = project_name,
+                                            dc_id = doc_id,
+                                            hierarchy = doc.data['hierarchy'])
+            ##############################
+            # handle documents that are
+            # updates of exisiting documents
+            ##############################
+            db.session.add(new_image)
+            db.session.commit()
+
 @views.route('/upload/',methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')
