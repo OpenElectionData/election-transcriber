@@ -685,7 +685,7 @@ def transcribe():
                 else:
                     print "don't reconcile"
 
-                flash("Transcription saved!", "saved")
+                flash("Saved! Let's do another!", "saved")
 
             # clear form fields
             for field in form:
@@ -739,7 +739,7 @@ def transcribe():
 
         # ADD: check if all images have a final transcription & flash messages accordingly
 
-        flash("Nothing to transcribe for '%s'" %task_dict['name'])
+        flash("Thanks for helping to transcribe '%s'! Want to help out with another?" %task_dict['name'])
         return redirect(url_for('views.index'))
 
     else:
