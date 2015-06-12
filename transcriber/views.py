@@ -109,20 +109,12 @@ def upload():
     if request.method == 'POST':
 
         project_name = request.form.get('project_name')
-        hierarchy_filter = request.form.get('hierarchy_filter')
+        hierarchy_filter = request.form.get('hierarchy_filter') if request.form.get('hierarchy_filter') else None
 
-        doc_list = client.projects.get_by_title(project_name).document_list
+        doc_list = grab_docs(project_name,hierarchy_filter,False)
 
         h_str_list = [doc.data['hierarchy'] for doc in doc_list]
         h_obj = construct_hierarchy_object(h_str_list)
-
-        if hierarchy_filter:
-            try:
-                match_strings = json.loads(hierarchy_filter)
-                doc_list = [doc for doc in doc_list if string_start_match(doc.data['hierarchy'], match_strings)]
-            except:
-                flash("Invalid hierarchy filter")
-                doc_list = None
 
         if doc_list:
             if len(doc_list) > 0:
@@ -132,13 +124,29 @@ def upload():
                 flask_session['image_type'] = 'pdf'
                 flask_session['doc_url_list'] = [doc.pdf_url for doc in doc_list]
                 flask_session['dc_project'] = project_name
-                flask_session['dc_filter'] = json.dumps(hierarchy_filter)
+                flask_session['dc_filter'] = json.dumps(hierarchy_filter) if hierarchy_filter else None
 
                 return render_template('upload.html', project_list=project_list, project_name=project_name, hierarchy_filter=hierarchy_filter, h_obj=h_obj)
             else:
                 flash("No DocumentCloud images found")
 
     return render_template('upload.html', project_list=project_list)
+
+
+def grab_docs(project_name, hierarchy_filter, is_split):
+    client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
+    doc_list = client.projects.get_by_title(project_name).document_list
+    hierarchy_filter = json.loads(request.form.get('hierarchy_filter')) if request.form.get('hierarchy_filter') else None
+
+    if hierarchy_filter:
+        try:
+            doc_list = [doc for doc in doc_list if string_start_match(doc.data['hierarchy'], hierarchy_filter)]
+        except:
+            flash("Invalid hierarchy filter")
+            doc_list = None
+
+    return doc_list
+
 
 def string_start_match(full_string, match_strings):
     for match_string in match_strings:
@@ -772,8 +780,9 @@ def transcriptions():
             .first()
     task_dict = task.as_dict()
 
-    task_dict['dc_filter'] = ast.literal_eval(json.loads(task_dict['dc_filter']))
-    task_dict['dc_filter'] = [thing.decode('utf-8') for thing in task_dict['dc_filter']]
+    if task_dict['dc_filter']:
+        task_dict['dc_filter'] = ast.literal_eval(json.loads(task_dict['dc_filter']))
+        task_dict['dc_filter'] = [thing.decode('utf-8') for thing in task_dict['dc_filter']]
 
     task_dict['progress'] = ImageTaskAssignment.get_task_progress(task_id)
     task_dict['image_count'] = ImageTaskAssignment.count_images(task_id)
