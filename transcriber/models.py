@@ -19,6 +19,9 @@ class DocumentCloudImage(db.Model):
     id = Column(Integer, primary_key=True)
     image_type = Column(String)
     fetch_url = Column(String)
+    dc_project = Column(String)
+    dc_id = Column(String)
+    hierarchy = Column(String)
 
     def __repr__(self):
         return '<DocumentCloudImage %r>' % self.fetch_url
