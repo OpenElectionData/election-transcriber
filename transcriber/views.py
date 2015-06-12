@@ -253,7 +253,7 @@ def form_creator():
         form_meta.reviewer_count = request.form['reviewer_count']
         form_meta.dc_project = flask_session['dc_project']
         form_meta.dc_filter = flask_session['dc_filter']
-        form_meta.split_image = False if request.form['is_concat'] == "keep_intact" else True
+        form_meta.split_image = False if request.form.get('is_concat') == "keep_intact" else True
         db.session.add(form_meta)
         db.session.commit()
         section_fields = {}
