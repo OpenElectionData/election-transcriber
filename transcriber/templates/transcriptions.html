@@ -6,7 +6,7 @@
 {{ render_admin_header(task.name, task, task.id, 'transcriptions') }}
 
 <div class="row">
-    <div class="col-sm-8">
+    <div class="col-sm-6">
         <p class="status-heading"><strong>Progress Overview</strong></p>
         <div class="progress">
             <div class="progress-bar progress-bar-done progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_done_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="images completed" style="width: {{task['progress']['docs_done_perc']}}%">
@@ -17,15 +17,32 @@
             </div>
         </div>
     </div>
-    <div class="col-sm-4">
+    <div class="col-sm-3">
         <p class="status-heading">
             task is <strong>{{task['progress']['reviews_done_perc']}}%</strong> complete
         </p>
         <p>
             {{task.image_count}} images<br>
             {{task.reviewer_count}} reviewers each<br>
-            
         </p>
+    </div>
+    <div class="col-sm-3">
+        <div class="well well-sm">
+            <p><strong>Image Source</strong></p>
+            <p>
+                Project: {{task.dc_project}}<br>
+                {% if task.dc_filter|length == 1%}
+                    1 Filter: {{task.dc_filter[0]}}
+                {% elif task.dc_filter|length > 1 %}
+                    {{task.dc_filter|length}} Filters
+                    <small><ul>
+                        {% for filter in task.dc_filter %}
+                        <li>{{filter}}</li>
+                        {% endfor %}
+                    </ul></small>
+                {% endif %}
+            </p>
+        </div>
     </div>
 </div>
 <hr>

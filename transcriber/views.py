@@ -243,6 +243,9 @@ def form_creator():
         form_meta.task_group = task_group
         form_meta.deadline = request.form['deadline']
         form_meta.reviewer_count = request.form['reviewer_count']
+        form_meta.dc_project = flask_session['dc_project']
+        form_meta.dc_filter = flask_session['dc_filter']
+        form_meta.split_image = False if request.form['is_concat'] == "keep_intact" else True
         db.session.add(form_meta)
         db.session.commit()
         section_fields = {}
@@ -768,6 +771,9 @@ def transcriptions():
             .filter(FormMeta.id == task_id)\
             .first()
     task_dict = task.as_dict()
+
+    task_dict['dc_filter'] = ast.literal_eval(json.loads(task_dict['dc_filter']))
+    task_dict['dc_filter'] = [thing.decode('utf-8') for thing in task_dict['dc_filter']]
 
     task_dict['progress'] = ImageTaskAssignment.get_task_progress(task_id)
     task_dict['image_count'] = ImageTaskAssignment.count_images(task_id)
