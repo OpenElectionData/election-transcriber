@@ -11,6 +11,10 @@ a:hover, a:focus, a:active {
   color: #93321c;
 }
 
+.panel-default > .panel-heading {
+  cursor: pointer;
+}
+
 .navbar-default{
   background-color: #003C7D;
   height: 50px;

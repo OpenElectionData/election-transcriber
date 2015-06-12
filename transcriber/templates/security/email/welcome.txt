@@ -1,0 +1,5 @@
+You have registered with the Open Election Data Initiative with the National Democratic Institute. Welcome!
+
+Please confirm your email through the link below:
+
+{{ confirmation_link }}

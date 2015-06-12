@@ -1,15 +1,15 @@
 {% extends 'base.html' %}
-{% block title %}Task Creator - Upload{% endblock %}
+{% block title %}Task Creator - New Task{% endblock %}
 {% block content %}
 <div class="row">
     <div class='col-sm-8'>
-        <h3>Start a new transcription task</h3>
-        <p>Specify the documents to be transcribed</p>
+        <h3>New transcription task</h3>
+        <p>Specify the collection of documents you want transcribed for this task. <br />All documents are stored in <a href='https://www.documentcloud.org' target='_blank'>DocumentCloud</a> under the NDI account.</p>
         <div class='well'>
           <form role="form" class="form" method="POST" action="" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <div class="form-group">
-              <label for="project_name" class="control-label">Select a document cloud project</label>
+              <label for="project_name" class="control-label">Select a DocumentCloud project</label>
 
 
               <select class="form-control" id="project_name" name="project_name">
@@ -27,11 +27,12 @@
                   {% endfor %}
                 {% endif %}
               </select>
+              <br />
               <span id="spinner"></span>
               {% if session.doc_url_list and not hierarchy_filter%}
-                <span class="post-button-text">
+                <p>
                   <strong>{{ session.doc_url_list|length }}</strong> images found for {{ project_name }}
-                </span><br>
+                </p>
               {% endif %}
 
               <br>
@@ -43,7 +44,7 @@
                 <div class="panel panel-default">
                   <div class="panel-heading" role="tab" id="headingOne" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
                     <h4 class="panel-title">
-                        <i class="fa fa-plus"></i> Advanced Options
+                        <i class="fa fa-plus"></i> Filter documents
                     </h4>
                   </div>
 
@@ -100,7 +101,7 @@
       $('#project_name').change(function() {
         $(".post-button-text").empty()
         $("#accordion").remove()
-        $("#spinner").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>searching DocumentCloud...</small>')
+        $("#spinner").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>Searching DocumentCloud...</small>')
         this.form.submit();
       });
 
@@ -108,7 +109,7 @@
         $(".post-button-text").empty()
         $(".post-button-text-2").empty()
         $("#next-step").hide()
-        $("#spinner-2").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>searching DocumentCloud...</small>')
+        $("#spinner-2").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>Searching DocumentCloud...</small>')
       });
 
 
@@ -118,7 +119,7 @@
       {% endif %}
 
       function makeHTML(h_obj){
-        var box = '<input type="checkbox"/>'
+        var box = ' <label><input type="checkbox"/> select</label>'
 
         for (var h0 in h_obj) {
           if (h_obj.hasOwnProperty(h0)) {
