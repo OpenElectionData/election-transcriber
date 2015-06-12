@@ -113,11 +113,11 @@ def update_image_table(project_name):
     project = client.projects.get_by_title(project_name)
     doc_ids = project.document_ids
     for doc_id in doc_ids:
-        print "doc_id", doc_id
-        doc = client.documents.get(doc_id)
 
         # adding images document_cloud_image table if they don't exist
         if db.session.query(DocumentCloudImage).filter(DocumentCloudImage.dc_id==doc_id).first()==None:
+            print "doc_id", doc_id
+            doc = client.documents.get(doc_id)
             new_image = DocumentCloudImage( image_type='pdf', 
                                             fetch_url=doc.pdf_url, 
                                             dc_project = project_name,
@@ -135,26 +135,31 @@ def update_image_table(project_name):
 @roles_required('admin')
 def upload():
     flask_session['doc_url_list']=None
-    client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
-    project_list = [project.title for project in client.projects.all()]
+    
+    q = 'SELECT distinct dc_project from document_cloud_image'
+    engine = db.session.bind
+    with engine.begin() as conn:
+        result = conn.execute(q).fetchall()
+
+    project_list = [thing[0] for thing in result]
 
     if request.method == 'POST':
 
         project_name = request.form.get('project_name')
         hierarchy_filter = request.form.get('hierarchy_filter') if request.form.get('hierarchy_filter') else None
 
-        doc_list = grab_docs(project_name,hierarchy_filter)
+        doc_list = DocumentCloudImage.grab_relevant_images(project_name,hierarchy_filter)
 
-        h_str_list = [doc.data['hierarchy'] for doc in doc_list]
+        h_str_list = [doc.hierarchy for doc in doc_list]
         h_obj = construct_hierarchy_object(h_str_list)
 
         if doc_list:
             if len(doc_list) > 0:
                 first_doc = doc_list[0]
-                flask_session['image'] = first_doc.pdf_url
-                flask_session['page_count'] = first_doc.pages
+                flask_session['image'] = first_doc.fetch_url
+                flask_session['page_count'] = 10 ##### CHANGE THIS
                 flask_session['image_type'] = 'pdf'
-                flask_session['doc_url_list'] = [doc.pdf_url for doc in doc_list]
+                flask_session['doc_url_list'] = [doc.fetch_url for doc in doc_list]
                 flask_session['dc_project'] = project_name
                 flask_session['dc_filter'] = json.dumps(hierarchy_filter) if hierarchy_filter else None
 
@@ -164,27 +169,6 @@ def upload():
 
     return render_template('upload.html', project_list=project_list)
 
-
-def grab_docs(project_name, hierarchy_filter):
-    client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
-    doc_list = client.projects.get_by_title(project_name).document_list
-    hierarchy_filter = json.loads(hierarchy_filter) if hierarchy_filter else None
-
-    if hierarchy_filter:
-        try:
-            doc_list = [doc for doc in doc_list if string_start_match(doc.data['hierarchy'], hierarchy_filter)]
-        except:
-            flash("Invalid hierarchy filter")
-            doc_list = None
-
-    return doc_list
-
-
-def string_start_match(full_string, match_strings):
-    for match_string in match_strings:
-        if match_string in full_string:
-            return True
-    return False
 
 def construct_hierarchy_object(str_list):
     h_obj = {}
@@ -487,19 +471,13 @@ def update_task_images(task_id):
     task = db.session.query(FormMeta).get(task_id)
     task_dict = task.as_dict()
 
-    doc_list = grab_docs(task_dict['dc_project'],task_dict['dc_filter'])
+    doc_list = DocumentCloudImage.grab_relevant_images(task_dict['dc_project'],task_dict['dc_filter'])
 
     for doc in doc_list:
-        url = doc.pdf_url
+        url = doc.fetch_url
 
         if task_dict['split_image'] == False:
             
-            # adding images document_cloud_image table if they don't exist
-            if db.session.query(DocumentCloudImage).filter(DocumentCloudImage.fetch_url==url).first()==None:
-                new_image = DocumentCloudImage(image_type='pdf', fetch_url=url)
-                db.session.add(new_image)
-                db.session.commit()
-
             image_id = DocumentCloudImage.get_id_by_url(url)
 
             if db.session.query(ImageTaskAssignment).filter(ImageTaskAssignment.form_id==task_id).filter(ImageTaskAssignment.image_id==image_id).first()==None:
@@ -510,12 +488,6 @@ def update_task_images(task_id):
         else:
             for p in range(1, doc.pages+1):
                 p_url = url+'#page=%s'%p
-
-                # adding images document_cloud_image table if they don't exist
-                if db.session.query(DocumentCloudImage).filter(DocumentCloudImage.fetch_url==p_url).first()==None:
-                    new_image = DocumentCloudImage(image_type='pdf', fetch_url=p_url)
-                    db.session.add(new_image)
-                    db.session.commit()
 
                 image_id = DocumentCloudImage.get_id_by_url(p_url)
 

@@ -8,6 +8,7 @@ from werkzeug.local import LocalProxy
 from flask import current_app
 from datetime import datetime
 from transcriber.database import db
+import json
 
 _security = LocalProxy(lambda: current_app.extensions['security'])
 
@@ -29,6 +30,25 @@ class DocumentCloudImage(db.Model):
     @classmethod
     def get_id_by_url(cls, url):
         return db.session.query(cls).filter(cls.fetch_url == url).first().id
+
+    @classmethod
+    def grab_relevant_images(cls, project_name, hierarchy_filter):
+        
+        hierarchy_filter = json.loads(hierarchy_filter) if hierarchy_filter else None
+
+        doc_list = [row for row in db.session.query(cls)\
+                        .filter(cls.dc_project == project_name)\
+                        .all()]
+        if hierarchy_filter:
+            doc_list = [row for row in doc_list if string_start_match(row.hierarchy, hierarchy_filter)]
+
+        return doc_list
+
+def string_start_match(full_string, match_strings):
+    for match_string in match_strings:
+        if match_string in full_string:
+            return True
+    return False
 
 class ImageTaskAssignment(db.Model):
     __tablename__ = 'image_task_assignment'
