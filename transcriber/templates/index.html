@@ -67,9 +67,8 @@
                                     </span>
                                 </td>
                                 <td class='progress-info' data-container="body" data-toggle="popover" data-placement="top" data-content="
-                                {{t[1]['reviews_done_ct']}} / {{t[1]['reviews_total']}} transcriptions complete<br>
                                 {{t[1]['docs_total']}} documents<br /> {{t[0]['reviewer_count']}} reviewer(s) each">
-                                    {{t[1]['reviews_done_ct']}} / {{t[1]['reviews_total']}} transcriptions
+                                    {{t[1]['reviews_done_perc']}}% transcribed
                                     <div class="progress">
                                         <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{{t[1]['reviews_done_perc']}}" aria-valuemin="0" aria-valuemax="100" style="width: {{t[1]['reviews_done_perc']}}%;">
                                         </div>
@@ -77,7 +76,7 @@
                                 </td>
                                 <td>
                                     {% if t[1]['reviews_done_ct'] < t[1]['reviews_total'] %}
-                                    <a href='{{ url_for('views.transcribe_intro', task_id=t[0].id )}}'><i class="fa fa-pencil fa-fw"></i> <strong>Start transcribing!</strong></a>
+                                    <a href='{{ url_for('views.transcribe_intro', task_id=t[0].id )}}' class="btn btn-info btn-lg"><i class="fa fa-pencil fa-fw"></i> <strong>Start transcribing!</strong></a>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -88,9 +87,10 @@
             </table>
 
             <br>
-            <h3>Completed Tasks</h3>
+            
 
             {% if current_user.has_role('admin') %}
+            <h3>Completed Tasks</h3>
             <table class='table' id='finished_tasks'>
                 <thead>
                     <tr>
