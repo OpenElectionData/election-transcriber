@@ -13,7 +13,7 @@ security = Security()
 sentry = None
 try:
   from raven.contrib.flask import Sentry
-  from parserator_api.app_config import SENTRY_DSN
+  from transcriber.app_config import SENTRY_DSN
   if SENTRY_DSN:
     sentry = Sentry(dsn=SENTRY_DSN)
 except ImportError:
