@@ -159,7 +159,10 @@
                 $zoomRange: $('input[type="range"]')
             });
             $('.fade-out').show().delay(700).fadeOut(500);
-            $('.pretend-new').hide().delay(1100).fadeIn(700);
+            $('.pretend-new').hide().delay(1100).fadeIn(700, function(){
+                // put cursor in first field
+                $('form:first *:input[type!=hidden]:first').focus();
+            });
 
             $('.check-blank').change(function(){
                 // when blank is checked, clear field content & uncheck not legible checkbox
