@@ -681,7 +681,7 @@ def transcribe():
                 ins = ''' 
                     INSERT INTO "{0}" ({1}) VALUES ({2})
                 '''.format(task.table_name, 
-                           ','.join([f for f in ins_args.keys()]),
+                           ','.join(["%s" % f for f in ins_args.keys()]),
                            ','.join([':{0}'.format(f) for f in ins_args.keys()]))
                 with engine.begin() as conn:
                     conn.execute(text(ins), **ins_args)
