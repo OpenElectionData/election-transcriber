@@ -9,6 +9,7 @@ from flask import current_app
 from datetime import datetime
 from transcriber.database import db
 import json
+import ast
 
 _security = LocalProxy(lambda: current_app.extensions['security'])
 
@@ -37,22 +38,21 @@ class DocumentCloudImage(db.Model):
     def grab_relevant_images(cls, project_name, hierarchy_filter):
         # this only grabs image urls without page numbers
         
-        hierarchy_filter = json.loads(hierarchy_filter) if hierarchy_filter else None
-
+        hierarchy_filter = ast.literal_eval(json.loads(hierarchy_filter)) if hierarchy_filter else None
+        
         doc_list = [row for row in db.session.query(cls)\
                         .filter(cls.dc_project == project_name)\
                         .filter(cls.is_page_url == False)
                         .all()]
         if hierarchy_filter:
             doc_list = [row for row in doc_list if string_start_match(row.hierarchy, hierarchy_filter)]
-
         return doc_list
 
     @classmethod
     def grab_relevant_image_pages(cls, project_name, hierarchy_filter):
         # this only grabs image urls with page numbers
         
-        hierarchy_filter = json.loads(hierarchy_filter) if hierarchy_filter else None
+        hierarchy_filter = ast.literal_eval(json.loads(hierarchy_filter)) if hierarchy_filter else None
 
         doc_list = [row for row in db.session.query(cls)\
                         .filter(cls.dc_project == project_name)\

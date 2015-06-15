@@ -162,8 +162,7 @@ def upload():
     if request.method == 'POST':
 
         project_name = request.form.get('project_name')
-        hierarchy_filter = request.form.get('hierarchy_filter') if request.form.get('hierarchy_filter') else None
-
+        hierarchy_filter = json.dumps(request.form.get('hierarchy_filter')) if request.form.get('hierarchy_filter') else None
         doc_list = DocumentCloudImage.grab_relevant_images(project_name,hierarchy_filter)
 
         h_str_list = [doc.hierarchy for doc in doc_list]
@@ -180,7 +179,7 @@ def upload():
                 flask_session['image_type'] = 'pdf'
                 flask_session['doc_url_list'] = [doc.fetch_url for doc in doc_list]
                 flask_session['dc_project'] = project_name
-                flask_session['dc_filter'] = json.dumps(hierarchy_filter) if hierarchy_filter else None
+                flask_session['dc_filter'] = hierarchy_filter if hierarchy_filter else None
 
                 return render_template('upload.html', project_list=project_list, project_name=project_name, hierarchy_filter=hierarchy_filter, h_obj=h_obj)
             else:
