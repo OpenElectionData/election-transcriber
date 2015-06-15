@@ -815,6 +815,8 @@ def transcriptions():
     header = None
     task_id = request.args.get('task_id')
 
+    update_task_images(task_id)
+
     task = db.session.query(FormMeta)\
             .filter(FormMeta.id == task_id)\
             .first()
