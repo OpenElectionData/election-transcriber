@@ -10,6 +10,17 @@ from flask.ext.sqlalchemy import SQLAlchemy
 mail = Mail()
 security = Security()
 
+sentry = None
+try:
+  from raven.contrib.flask import Sentry
+  from transcriber.app_config import SENTRY_DSN
+  if SENTRY_DSN:
+    sentry = Sentry(dsn=SENTRY_DSN)
+except ImportError:
+  pass
+except KeyError:
+  pass
+
 def create_app():
     app = Flask(__name__)
     app.config.from_object('transcriber.app_config')
@@ -52,4 +63,10 @@ def create_app():
         else:
             return '0'
     
+    app.config['sentry'] = None
+    
+    if sentry:
+        sentry.init_app(app)
+        app.config['sentry'] = sentry
+
     return app
