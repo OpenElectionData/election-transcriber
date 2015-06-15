@@ -577,9 +577,6 @@ def transcribe_intro():
     task_dict = task.as_dict()
     return render_template('transcribe-intro.html', task=task_dict)
 
-class DynamicForm(Form):
-    pass
-
 @views.route('/transcribe/', methods=['GET', 'POST'])
 def transcribe():
     if not request.args.get('task_id'):
@@ -600,6 +597,10 @@ def transcribe():
             .join(field_sq)\
             .filter(FormMeta.id == request.args['task_id'])\
             .first()
+    
+    class DynamicForm(Form):
+        pass
+
     form = DynamicForm
     task_dict = task.as_dict()
     task_dict['sections'] = []
@@ -709,7 +710,7 @@ def transcribe():
                         ins_final = ''' 
                             INSERT INTO "{0}" ({1}) VALUES ({2})
                         '''.format(task.table_name, 
-                                   ','.join([f for f in final_row.keys()]),
+                                   ','.join(['"%s"' % f for f in final_row.keys()]),
                                    ','.join([':{0}'.format(f) for f in final_row.keys()]))
                         with engine.begin() as conn:
                             conn.execute(text(ins_final), **final_row)
@@ -728,6 +729,7 @@ def transcribe():
                 if field.type != 'CSRFTokenField':
                     field.data = None
         else:
+            print(form.errors)
             return render_template('transcribe.html', form=form, task=task_dict, is_new=False)
 
     else:
