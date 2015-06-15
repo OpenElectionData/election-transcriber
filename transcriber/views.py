@@ -267,6 +267,8 @@ def form_creator():
             form_meta = form
             flask_session['image'] = form.sample_image
             flask_session['image_type'] = form.sample_image.rsplit('.', 1)[1].lower()
+            flask_session['dc_project'] = form.dc_project
+            flask_session['dc_filter'] = form.dc_filter
     if not flask_session.get('image'):
         return redirect(url_for('views.upload'))
     engine = db.session.bind
