@@ -150,7 +150,6 @@ def update_image_table(project_name):
 @login_required
 @roles_required('admin')
 def upload():
-    flask_session['doc_url_list']=None
     
     q = 'SELECT distinct dc_project from document_cloud_image'
     engine = db.session.bind
@@ -171,6 +170,7 @@ def upload():
 
         client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
         sample_page_count = client.documents.get(doc_list[0].dc_id).pages
+        print(sample_page_count)
 
         if doc_list:
             if len(doc_list) > 0:
@@ -178,10 +178,10 @@ def upload():
                 flask_session['image'] = first_doc.fetch_url
                 flask_session['page_count'] = sample_page_count
                 flask_session['image_type'] = 'pdf'
-                flask_session['doc_url_list'] = [doc.fetch_url for doc in doc_list]
                 flask_session['dc_project'] = project_name
-                flask_session['dc_filter'] = json.dumps(hierarchy_filter) if hierarchy_filter else None
-
+                flask_session['dc_filter'] = None
+                if hierarchy_filter:
+                    flask_session['dc_filter'] = json.dumps(hierarchy_filter)
                 return render_template('upload.html', project_list=project_list, project_name=project_name, hierarchy_filter=hierarchy_filter, h_obj=h_obj)
             else:
                 flash("No DocumentCloud images found")
