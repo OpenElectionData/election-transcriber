@@ -169,11 +169,14 @@ def upload():
         h_str_list = [doc.hierarchy for doc in doc_list]
         h_obj = construct_hierarchy_object(h_str_list)
 
+        client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
+        sample_page_count = client.documents.get(doc_list[0].dc_id).pages
+
         if doc_list:
             if len(doc_list) > 0:
                 first_doc = doc_list[0]
                 flask_session['image'] = first_doc.fetch_url
-                flask_session['page_count'] = 10 ##### CHANGE THIS
+                flask_session['page_count'] = sample_page_count
                 flask_session['image_type'] = 'pdf'
                 flask_session['doc_url_list'] = [doc.fetch_url for doc in doc_list]
                 flask_session['dc_project'] = project_name
@@ -506,9 +509,6 @@ def update_task_images(task_id):
 
         for doc in doc_list:
             url = doc.fetch_url
-
-            # for p in range(1, doc.pages+1):
-            #     p_url = url+'#page=%s'%p
 
             image_id = DocumentCloudImage.get_id_by_url(url)
 
