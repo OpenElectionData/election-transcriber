@@ -159,6 +159,15 @@ class ImageTaskAssignment(db.Model):
         progress_dict['docs_unseen_ct'] = unseen
         progress_dict['docs_unseen_perc'] = percentage(unseen, docs_total)
 
+        # hacky fix for progress bar chart rounding down percentages
+        remainder = 100 - progress_dict['docs_done_perc'] - progress_dict['docs_inprog_perc'] - progress_dict['docs_conflict_perc'] - progress_dict['docs_unseen_perc']
+        print remainder
+        if remainder > 0:
+            if progress_dict['docs_done_perc'] >= progress_dict['docs_inprog_perc'] and progress_dict['docs_done_perc'] > 0:
+                progress_dict['docs_done_perc'] += remainder
+            elif progress_dict['docs_inprog_perc'] > 0:
+                progress_dict['docs_inprog_perc'] += remainder
+
         return progress_dict
 
 
