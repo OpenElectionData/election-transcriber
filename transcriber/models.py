@@ -319,6 +319,8 @@ class User(db.Model, UserMixin):
 
 
 def percentage(int1, int2):
+    if int1 == 0:
+        return 0
     if int2 > 0:
         percentage = int(float(int1)/float(int2)*100)
         if percentage == 0 and int1 > 0:
