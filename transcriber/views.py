@@ -637,27 +637,39 @@ def transcribe():
             db.session.commit()
             
     if request.method == 'POST':
+        print "*************************"
+        print "*POSTING A TRANSCRIPTION*"
         form = form(request.form)
+        print "form:", form
         if form.validate():
+            print "*FORM VALIDATED*"
             image = db.session.query(ImageTaskAssignment)\
                 .filter(ImageTaskAssignment.form_id == task_dict['id'])\
                 .filter(ImageTaskAssignment.image_id == flask_session['image_id'])\
                 .first()
+            print "image: ", image
             reviewer_count = db.session.query(FormMeta).get(image.form_id).reviewer_count
 
             if not image.checkout_expire or image.checkout_expire < current_time:
+                print "*FORM NOT EXPIRED*"
                 flash("Form has expired", "expired")
             else:
+                print "*FORM EXPIRED*"
                 if current_user.is_anonymous():
                     username = request.remote_addr
                 else:
                     username = current_user.name
 
+                print "username:", username
+
                 ins_args = {
                     'transcriber': username,
                     'image_id': flask_session['image_id'],
                 }
+                print "ins_args:", ins_args
                 for k,v in request.form.items():
+                    print "k:",k
+                    print "v:",v
                     if k != 'csrf_token':
                         if v:
                             ins_args[k] = v
@@ -679,6 +691,7 @@ def transcribe():
                 db.session.commit()
 
                 image_id = ins_args['image_id']
+                print "image_id:", image_id
                 ins_args.pop('image_id')
                 ins_args.pop('transcriber')
                 col_names = [f for f in ins_args.keys()]
