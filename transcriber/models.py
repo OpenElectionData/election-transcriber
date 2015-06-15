@@ -23,6 +23,8 @@ class DocumentCloudImage(db.Model):
     dc_project = Column(String)
     dc_id = Column(String)
     hierarchy = Column(String)
+    is_page_url = Column(Boolean)
+    is_current = Column(Boolean)
 
     def __repr__(self):
         return '<DocumentCloudImage %r>' % self.fetch_url
@@ -33,11 +35,28 @@ class DocumentCloudImage(db.Model):
 
     @classmethod
     def grab_relevant_images(cls, project_name, hierarchy_filter):
+        # this only grabs image urls without page numbers
         
         hierarchy_filter = json.loads(hierarchy_filter) if hierarchy_filter else None
 
         doc_list = [row for row in db.session.query(cls)\
                         .filter(cls.dc_project == project_name)\
+                        .filter(cls.is_page_url == False)
+                        .all()]
+        if hierarchy_filter:
+            doc_list = [row for row in doc_list if string_start_match(row.hierarchy, hierarchy_filter)]
+
+        return doc_list
+
+    @classmethod
+    def grab_relevant_image_pages(cls, project_name, hierarchy_filter):
+        # this only grabs image urls with page numbers
+        
+        hierarchy_filter = json.loads(hierarchy_filter) if hierarchy_filter else None
+
+        doc_list = [row for row in db.session.query(cls)\
+                        .filter(cls.dc_project == project_name)\
+                        .filter(cls.is_page_url == True)
                         .all()]
         if hierarchy_filter:
             doc_list = [row for row in doc_list if string_start_match(row.hierarchy, hierarchy_filter)]
