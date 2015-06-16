@@ -577,9 +577,7 @@ def edit_task_group():
 def transcribe_intro():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
-    task = db.session.query(FormMeta)\
-            .filter(FormMeta.id == request.args['task_id'])\
-            .first()
+    task = db.session.query(FormMeta).get(request.args.get('task_id'))
     task_dict = task.as_dict()
     return render_template('transcribe-intro.html', task=task_dict)
 
@@ -782,9 +780,7 @@ def download_transcriptions():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
 
-    task = db.session.query(FormMeta)\
-            .filter(FormMeta.id == request.args['task_id'])\
-            .first()
+    task = db.session.query(FormMeta).get(request.args['task_id'])
     task_dict = task.as_dict()
     table_name = task_dict['table_name']
 
@@ -818,9 +814,7 @@ def transcriptions():
 
     update_task_images(task_id)
 
-    task = db.session.query(FormMeta)\
-            .filter(FormMeta.id == task_id)\
-            .first()
+    task = db.session.query(FormMeta).get(task_id)
     task_dict = task.as_dict()
 
     if task_dict['dc_filter']:
