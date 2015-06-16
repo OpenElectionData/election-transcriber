@@ -49,42 +49,27 @@ def reconcile_rows(col_names, table_name, image_id, min_agree):
 def pretty_transcriptions(t_header, rows_all, task_id):
     num_cols = len(rows_all[0])
 
-    # this code assumes that first 2 cols are info from joined image table,
-    # next 4 cols are meta info abt transcription
-    # & remaining cols are for fields
-
     # 4 cols per field: fieldname/fieldname_blank/fieldname_not_legible/fieldname_altered
     cpf = 4
+    # transcription field start index (first 5 fields are meta info abt transcription)
+    t_col_start = 5
 
-    meta_h = []
+    meta_h = ['image id', 'date added', 'id']
     field_h = []
-    for h in t_header[:4]:
-        meta_f = h[0]
-        meta_f = re.sub(r'_', ' ', meta_f) # un-slugify
-        meta_h.append(meta_f)
-    for h in t_header[5::cpf]:
+    for h in t_header[t_col_start::cpf]:
         f_slug = h[0]
         field = FormField.query.filter(FormField.form_id == task_id).filter(FormField.slug == f_slug).first().as_dict()
         field_h.append(field["name"])
-    # move image_id to first col
-    meta_h.insert(0, meta_h.pop())
     header = meta_h+field_h
 
     transcriptions = [header]
     for row in rows_all:
         row = list(row)
-        row_pretty = row[2:5] # transcription metadata
-        # link for transcriber
-        transcriber = row_pretty[1]
-        if transcriber:
-            row_pretty[1] = "<a href='"+url_for('views.user', user=transcriber)+"'>"+transcriber+"</a>"
-        else:
-            row_pretty[1] = ""
-        # assumes image_id is the 4th metadata col
+
         image_id = row[5]
         image_url = row[1]
         image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
-        row_pretty = [image_link]+row_pretty
+        row_pretty = [image_link, row[2], row[4]]
 
         row_transcribed = [row[i:i + cpf] for i in range(7, num_cols, cpf)] # transcribed fields
         for field in row_transcribed:
