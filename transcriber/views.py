@@ -837,7 +837,7 @@ def transcriptions():
     images_conflict = ImageTaskAssignment.get_conflict_images_by_task(task_id)
 
     q = ''' 
-            SELECT * from (SELECT id, fetch_url from document_cloud_image) i
+            SELECT * from (SELECT id, fetch_url, hierarchy from document_cloud_image) i
             JOIN "{0}" t 
             ON (i.id = t.image_id)
             WHERE (t.is_final = True)

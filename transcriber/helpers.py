@@ -112,7 +112,7 @@ def pretty_final_transcriptions(t_header, rows_all, task_id):
     # transcription field start index (first 5 fields are meta info abt transcription)
     t_col_start = 5
 
-    meta_h = ['image id', 'date added', 'id']
+    meta_h = ['image id', 'date added', 'source hierarchy', 'id']
     field_h = []
     for h in t_header[t_col_start::cpf]:
         f_slug = h[0]
@@ -124,13 +124,14 @@ def pretty_final_transcriptions(t_header, rows_all, task_id):
     for row in rows_all:
         row = list(row)
 
-        image_id = row[5]
+        image_id = row[0]
         image_url = row[1]
         image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
-                
-        row_pretty = [image_link, row[2], row[4]]
+        
+        print row
+        row_pretty = [image_link, row[3], row[2], row[5]]
 
-        row_transcribed = [row[i:i + cpf] for i in range(7, num_cols, cpf)] # transcribed fields
+        row_transcribed = [row[i:i + cpf] for i in range(8, num_cols, cpf)] # transcribed fields
         for field in row_transcribed:
             field_pretty = str(field[0])
             if field[1]:
