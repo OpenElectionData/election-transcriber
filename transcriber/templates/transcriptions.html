@@ -62,12 +62,15 @@
                 <i class="fa fa-question fa-fw"></i> Not legible &nbsp;&nbsp;&nbsp;
                 <i class="fa fa-exclamation-triangle fa-fw"></i> Looks altered <br>
             </div>
-            <table class="table">
-                <tr>
-                    {% for h in transcriptions_final[0] %}
-                        <th> {{h}} </th>
-                    {% endfor %}
-                </tr>
+            <table class="table" id="final_transcriptions">
+                <thead>
+                    <tr>
+                        {% for h in transcriptions_final[0] %}
+                            <th> {{h}} </th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
                 {% for transcription in transcriptions_final[1:] %}
                     <tr>
                         {% for col in transcription %}
@@ -75,6 +78,7 @@
                         {% endfor %}
                     </tr>
                 {% endfor %}
+                </tbody>
             </table>
         {% else %}
             <p class="status-heading"><i class="fa fa-pencil fa-fw done"></i> No fully transcribed images yet</p>
@@ -130,7 +134,8 @@
 
 {% endblock %}
 {% block extra_javascript %}
-
+    <script src="{{ url_for('static', filename='js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jquery.dataTables.sorting.js') }}"></script>
     <script type="text/javascript">
         $(document).ready(function(){
             $('tr th:nth-child(1)').css('color', '#aaa');
@@ -142,6 +147,13 @@
             $('td >> .fa-times').parent().parent().css('background-color','#f9da9a');
             $('td >> .fa-exclamation-triangle').parent().parent().css('background-color','#fab0a7');
             $('.progress-tooltip').tooltip();
+
+            $('#final_transcriptions').DataTable( {
+                "aaSorting": [ [0,'asc'] ],
+                "paging": false,
+                "searching": false,
+                "info": false
+            } );
         })
 
     </script>
