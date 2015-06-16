@@ -730,10 +730,6 @@ def transcribe():
 
                 flash("Saved! Let's do another!", "saved")
 
-            # clear form fields
-            for field in form:
-                if field.type != 'CSRFTokenField':
-                    field.data = None
         else:
             print(form.errors)
             return render_template('transcribe.html', form=form, task=task_dict, is_new=False)
@@ -742,11 +738,7 @@ def transcribe():
         form = form(meta={})
 
     # This is where we put in the image. 
-    # Right now it's just always loading the example image
-    # flask_session['image'] = task.sample_image
-    # flask_session['image_type'] = task.sample_image.rsplit('.', 1)[1].lower()
     image_id = request.args.get('image_id')
-
     image = None
 
     if image_id:
