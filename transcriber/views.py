@@ -786,7 +786,11 @@ def download_transcriptions():
 
     copy = '''
         COPY (
-          SELECT * from "{0}"
+            SELECT t.*, i.hierarchy as image_hierarchy, i.fetch_url as image_url 
+            from "{0}" as t 
+            join document_cloud_image as i 
+            on t.image_id = i.id 
+            order by t.image_id, is_final
         ) TO STDOUT WITH CSV HEADER DELIMITER ','
     '''.format(table_name)
 
