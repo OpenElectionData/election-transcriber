@@ -603,6 +603,11 @@ def transcribe():
             .join(field_sq)\
             .filter(FormMeta.id == request.args['task_id'])\
             .first()
+
+    if current_user.is_anonymous():
+        username = request.remote_addr
+    else:
+        username = current_user.name
     
     class DynamicForm(Form):
         pass
@@ -664,10 +669,6 @@ def transcribe():
                 flash("Form has expired", "expired")
             else:
                 print "*FORM EXPIRED*"
-                if current_user.is_anonymous():
-                    username = request.remote_addr
-                else:
-                    username = current_user.name
 
                 print "username:", username
 
@@ -744,19 +745,8 @@ def transcribe():
     if image_id:
         image = db.session.query(ImageTaskAssignment).get(int(image_id))
     else:
-        # add in a filter so that one user does not review the same image multiple times
-        # images left & images total (for progress bar) should be specific to the user
-        image = db.session.query(ImageTaskAssignment)\
-                .filter(ImageTaskAssignment.form_id == task.id)\
-                .filter(ImageTaskAssignment.checkout_expire == None)\
-                .filter(ImageTaskAssignment.is_complete == False)\
-                .order_by(ImageTaskAssignment.view_count)\
-                .first()
+        image = ImageTaskAssignment.get_next_image_to_transcribe(task.id, username)
 
-    if current_user.is_anonymous():
-        username = request.remote_addr
-    else:
-        username = current_user.name
     q = ''' 
         SELECT * from "{0}" where transcriber = '{1}'
         '''.format(task_dict['table_name'], username)
@@ -766,17 +756,13 @@ def transcribe():
 
 
     if image == None:
-        # if task_dict['images_left'] == 0:
-        #     flash('No more documents left to transcribe for %s!' %task_dict['name'])
-        #     return redirect(url_for('views.index'))
-        # else:
-        #     flash("All images associated with '%s' have been checked out" %task_dict['name'])
-        #     return redirect(url_for('views.index'))
 
-        # ADD: check if all images have a final transcription & flash messages accordingly
-
-        flash("Thanks for helping to transcribe '%s'! Want to help out with another?" %task_dict['name'])
-        return redirect(url_for('views.index'))
+        if ImageTaskAssignment.is_task_complete(task.id): # if task is done
+            flash("Thanks for helping to transcribe '%s'! Want to help out with another?" %task_dict['name'])
+            return redirect(url_for('views.index'))
+        else: # if task is not done
+            flash("All images associated with '%s' have been checked out" %task_dict['name'])
+            return redirect(url_for('views.index'))
 
     else:
         # checkout image for 5 mins
