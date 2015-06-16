@@ -53,7 +53,8 @@
                             </tr>
                             {% endif %}
                         {% endfor %}
-                    {% else %}
+
+                    {% else %} {# if current user is not admin #}
                         {% for t in tasks %}
                             {% if t[2] %}
                             <tr>
@@ -88,8 +89,7 @@
 
             <br>
             
-
-            {% if current_user.has_role('admin') %}
+            {% if current_user.has_role('admin') and has_complete_tasks == True %}
             <h3>Completed</h3>
             <table class='table' id='finished_tasks'>
                 <thead>
@@ -127,7 +127,7 @@
 
 
 
-        {% else %}
+        {% else %} {# no tasks #}
             {% if current_user.has_role('admin') %}
             <p>
                 <a href="{{ url_for('views.upload') }}" class="btn btn-info btn-lg"><i class='fa fa-plus'></i> Create your first transcription task</a>

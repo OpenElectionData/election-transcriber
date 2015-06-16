@@ -76,6 +76,9 @@ def index():
             # order by due date here
     t = []
     groups = []
+    has_complete_tasks = False
+    has_inprog_tasks = False
+
     for task in tasks:
         # make the progress bar depend on reviews (#docs * #reviewers) instead of documents?
         task_dict = task.as_dict()
@@ -89,10 +92,15 @@ def index():
             groups.append(task.task_group_id)
         else:
             is_top_task = False
+
+        if progress_dict['docs_done_ct'] < progress_dict['docs_total']:
+            has_inprog_tasks = True
+        else:
+            has_complete_tasks = True
         
         t.append([task, progress_dict, is_top_task])
         
-    return render_template('index.html', tasks=t)
+    return render_template('index.html', tasks=t, has_inprog_tasks=has_inprog_tasks, has_complete_tasks=has_complete_tasks)
 
 @views.route('/about/')
 def about():
@@ -179,8 +187,8 @@ def upload():
                 flask_session['image_type'] = 'pdf'
                 flask_session['dc_project'] = project_name
                 flask_session['dc_filter'] = hierarchy_filter if hierarchy_filter else None
-                
-                return render_template('upload.html', project_list=project_list, project_name=project_name, hierarchy_filter=hierarchy_filter, h_obj=h_obj)
+
+                return render_template('upload.html', project_list=project_list, project_name=project_name, hierarchy_filter=hierarchy_filter, h_obj=h_obj, doc_count=len(doc_list))
             else:
                 flash("No DocumentCloud images found")
 
