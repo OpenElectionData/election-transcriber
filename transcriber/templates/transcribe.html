@@ -85,6 +85,17 @@
                                         {% endif %}
                                         <div class="col-sm-offset-9">
                                             <div class="checkbox field-checks">
+                                            {% if is_new %}
+                                                <label>
+                                                    {{ form_blank(class='check-blank clear-checkbox', tabindex="-1") }} <small>Blank?</small>
+                                                </label>
+                                                <label>
+                                                    {{ form_not_legible(class='check-nl clear-checkbox', tabindex="-1") }} <small>Not legible?</small>
+                                                </label>
+                                                <label>
+                                                    {{ form_altered(class='check-altered clear-checkbox', tabindex="-1") }} <small>Looks altered?</small>
+                                                </label>
+                                            {% else %}
                                                 <label>
                                                     {{ form_blank(class='check-blank', tabindex="-1") }} <small>Blank?</small>
                                                 </label>
@@ -94,6 +105,7 @@
                                                 <label>
                                                     {{ form_altered(class='check-altered', tabindex="-1") }} <small>Looks altered?</small>
                                                 </label>
+                                            {% endif %}
                                             </div>
                                         </div>
                                     </div>
@@ -190,6 +202,7 @@
 
             // clear form fields
             $('.clear-field').val('');
+            $('.clear-checkbox').attr('checked', false)
         })
 
         //dynamically set the size of the image iframe
