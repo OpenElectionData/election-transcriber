@@ -106,54 +106,6 @@ def index():
 def about():
     return render_template('about.html')
 
-@views.route('/update-document-cloud-images/<project_name>')
-def update_document_cloud_images(project_name):
-    import multiprocessing
-    pool = multiprocessing.Pool()
-    pool.apply_async(update_image_table, [project_name])
-    return make_response("Updating images for %s" %project_name)
-
-def update_image_table(project_name):
-    # grab projects
-    client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
-    
-    project = client.projects.get_by_title(project_name)
-    doc_ids = project.document_ids
-    for doc_id in doc_ids:
-
-        # adding images document_cloud_image table if they don't exist
-        if db.session.query(DocumentCloudImage).filter(DocumentCloudImage.dc_id==doc_id).first()==None:
-            doc = client.documents.get(doc_id)
-            new_image = DocumentCloudImage( image_type='pdf', 
-                                            fetch_url=doc.pdf_url, 
-                                            dc_project = project_name,
-                                            dc_id = doc_id,
-                                            hierarchy = doc.data['hierarchy'],
-                                            is_page_url = False,
-                                            is_current = True)
-            db.session.add(new_image)
-            db.session.commit()
-
-            for p in range(1, doc.pages+1):
-                p_url = doc.pdf_url+'#page=%s'%p
-
-                new_image_page = DocumentCloudImage( image_type='pdf', 
-                                            fetch_url=p_url, 
-                                            dc_project = project_name,
-                                            dc_id = doc_id,
-                                            hierarchy = doc.data['hierarchy'],
-                                            is_page_url = True,
-                                            is_current = True)
-
-                db.session.add(new_image_page)
-                db.session.commit()
-
-
-            ##############################
-            # handle documents that are
-            # updates of exisiting documents
-            ##############################
-
 @views.route('/upload/',methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')
