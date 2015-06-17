@@ -862,6 +862,22 @@ def transcriptions():
                             images_inprog=images_inprog,
                             images_conflict=images_conflict)
 
+@views.route('/all-users/', methods=['GET', 'POST'])
+@login_required
+@roles_required('admin')
+def all_users():
+
+    table_names = FormMeta.grab_active_table_names()
+
+    sels = ['SELECT transcriber from "{0}" where (is_final != True or is_final is null)'.format(table_name) 
+            for table_name in table_names]
+
+    q = ' UNION ALL '.join(sels)
+    print q
+
+    return render_template('all-users.html')
+
+
 @views.route('/user/', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')

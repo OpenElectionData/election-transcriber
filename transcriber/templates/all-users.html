@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+{% from 'macros.html' import render_image, render_header %}
+{% block title %}Users{% endblock %}
+{% block content %}
+
+{{ render_header("Transcriber Users", None) }}
+
+<div class="row">
+    <div class="col-sm-12">
+    </div>
+</div>
+
+<br /><br />
+
+{% endblock %}
+{% block extra_javascript %}
+
+    <script type="text/javascript">
+        $(document).ready(function(){
+
+        })
+
+    </script>
+{% endblock %}
