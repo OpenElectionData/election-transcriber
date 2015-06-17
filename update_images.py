@@ -1,4 +1,3 @@
-from transcriber.views import update_image_table
 from documentcloud import DocumentCloud
 from transcriber.app_config import DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW, DB_CONN
 import sqlalchemy as sa
@@ -113,7 +112,7 @@ def create_update_assign(task):
 
         params = {
             'task_id': task.id,
-            'image_id': doc.id.
+            'image_id': doc.id,
         }
 
         image_task_assign = engine.execute(sa.text(image_task_assign), **params).first()
@@ -131,6 +130,7 @@ def create_update_assign(task):
 
             with engine.begin() as conn:
                 conn.execute(sa.text(image_task_assign), **params)
+            print '%s updated image_task' % (datetime.utcnow().strftime('%Y-%m-%d %H:%M%S'))
 
 
 def update_task_images():
