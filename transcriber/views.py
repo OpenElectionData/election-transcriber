@@ -106,54 +106,6 @@ def index():
 def about():
     return render_template('about.html')
 
-@views.route('/update-document-cloud-images/<project_name>')
-def update_document_cloud_images(project_name):
-    import multiprocessing
-    pool = multiprocessing.Pool()
-    pool.apply_async(update_image_table, [project_name])
-    return make_response("Updating images for %s" %project_name)
-
-def update_image_table(project_name):
-    # grab projects
-    client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
-    
-    project = client.projects.get_by_title(project_name)
-    doc_ids = project.document_ids
-    for doc_id in doc_ids:
-
-        # adding images document_cloud_image table if they don't exist
-        if db.session.query(DocumentCloudImage).filter(DocumentCloudImage.dc_id==doc_id).first()==None:
-            doc = client.documents.get(doc_id)
-            new_image = DocumentCloudImage( image_type='pdf', 
-                                            fetch_url=doc.pdf_url, 
-                                            dc_project = project_name,
-                                            dc_id = doc_id,
-                                            hierarchy = doc.data['hierarchy'],
-                                            is_page_url = False,
-                                            is_current = True)
-            db.session.add(new_image)
-            db.session.commit()
-
-            for p in range(1, doc.pages+1):
-                p_url = doc.pdf_url+'#page=%s'%p
-
-                new_image_page = DocumentCloudImage( image_type='pdf', 
-                                            fetch_url=p_url, 
-                                            dc_project = project_name,
-                                            dc_id = doc_id,
-                                            hierarchy = doc.data['hierarchy'],
-                                            is_page_url = True,
-                                            is_current = True)
-
-                db.session.add(new_image_page)
-                db.session.commit()
-
-
-            ##############################
-            # handle documents that are
-            # updates of exisiting documents
-            ##############################
-
 @views.route('/upload/',methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')
@@ -451,8 +403,6 @@ def form_creator():
             db.session.add(form_meta)
             db.session.commit()
 
-            update_task_images(form_meta.id)
-
         return redirect(url_for('views.index'))
 
     next_section_index = 2
@@ -493,39 +443,6 @@ def form_creator():
                            form_meta=form_meta,
                            next_section_index=next_section_index,
                            next_field_index=next_field_indicies)
-
-def update_task_images(task_id):
-    task = db.session.query(FormMeta).get(task_id)
-    task_dict = task.as_dict()
-
-    if task_dict['split_image'] == False:
-        doc_list = DocumentCloudImage.grab_relevant_images(task_dict['dc_project'],task_dict['dc_filter'])
-    
-        for doc in doc_list:
-            url = doc.fetch_url
-                
-            image_id = DocumentCloudImage.get_id_by_url(url)
-
-            if db.session.query(ImageTaskAssignment).filter(ImageTaskAssignment.form_id==task_id).filter(ImageTaskAssignment.image_id==image_id).first()==None:
-                img_task_assign = ImageTaskAssignment(image_id=image_id, 
-                      form_id=task_id)
-                db.session.add(img_task_assign)
-                db.session.commit()
-
-    else:
-        doc_list = DocumentCloudImage.grab_relevant_image_pages(task_dict['dc_project'], task_dict['dc_filter'])
-
-        for doc in doc_list:
-            url = doc.fetch_url
-
-            image_id = DocumentCloudImage.get_id_by_url(url)
-
-            if db.session.query(ImageTaskAssignment).filter(ImageTaskAssignment.form_id==task_id).filter(ImageTaskAssignment.image_id==image_id).first()==None:
-                img_task_assign = ImageTaskAssignment(image_id=image_id, 
-                          form_id=task_id)
-                db.session.add(img_task_assign)
-                db.session.commit()
-
 
 @views.route('/get-task-group/')
 @login_required
@@ -815,8 +732,6 @@ def transcriptions():
     transcriptions_final = None
     header = None
     task_id = request.args.get('task_id')
-
-    update_task_images(task_id)
 
     task = db.session.query(FormMeta).get(task_id)
     task_dict = task.as_dict()
