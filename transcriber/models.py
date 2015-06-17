@@ -1,6 +1,7 @@
 from flask_bcrypt import Bcrypt
 from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
     DateTime, text, Text
+from sqlalchemy import or_
 from sqlalchemy.orm import synonym, backref, relationship
 from flask.ext.security import UserMixin, RoleMixin
 from flask.ext.security.utils import md5
@@ -252,6 +253,12 @@ class FormMeta(db.Model):
         if self.task_group:
             base_d['task_group'] = self.task_group.simple_dict()
         return base_d
+
+    @classmethod
+    def grab_active_table_names(cls):
+        return [row.table_name for row in db.session.query(cls)\
+                        .filter(or_(FormMeta.status != 'deleted', FormMeta.status == None))\
+                        .all()]
 
 class FormSection(db.Model):
     __tablename__ = 'form_section'
