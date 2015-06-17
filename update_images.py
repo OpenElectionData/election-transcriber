@@ -3,12 +3,14 @@ from documentcloud import DocumentCloud
 from transcriber.app_config import DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW, DB_CONN
 import sqlalchemy as sa
 from datetime import datetime
+from transcriber.models import DocumentCloudImage
+import json
 
 engine = sa.create_engine(DB_CONN, 
                        convert_unicode=True, 
                        server_side_cursors=True)
 
-def update_all():
+def update_from_document_cloud():
     client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
     projects = client.projects.all()
     
@@ -74,5 +76,72 @@ def update_all():
                 # updates of exisiting documents
                 ##############################
 
+def string_start_match(full_string, match_strings):
+    for match_string in match_strings:
+        if match_string in full_string:
+            return True
+    return False
+
+def create_update_assign(task):
+    
+    hierarchy_filter = None
+
+    if task.hierarchy_filter != None:
+        hierarchy_filter = json.loads(task.hierarchy_filter)
+    
+    doc_list = ''' 
+        SELECT * FROM document_cloud_image
+        WHERE dc_project = :project 
+          AND is_page_url = :page_url_flag
+    '''
+
+    doc_list = engine.execute(sa.text(doc_list), 
+                              project=task.project,
+                              page_url_flag=task.split_image)
+    
+    if hierarchy_filter:
+        doc_list = [r for r in doc_list \
+                    if string_start_match(r.hierarchy, hierarchy_filter)]
+
+    for doc in doc_list:
+        
+        image_task_assign = ''' 
+            SELECT * FROM image_task_assignment
+            WHERE form_id = :task_id
+              AND image_id = :image_id
+        '''
+
+        params = {
+            'task_id': task.id,
+            'image_id': doc.id.
+        }
+
+        image_task_assign = engine.execute(sa.text(image_task_assign), **params).first()
+
+        if image_task_assign == None:
+            image_task_assign = ''' 
+                INSERT INTO image_task_assignment (
+                  image_id, 
+                  form_id
+                ) VALUES (
+                  :image_id,
+                  :task_id
+                )
+            '''
+
+            with engine.begin() as conn:
+                conn.execute(sa.text(image_task_assign), **params)
+
+
+def update_task_images():
+
+    tasks = ''' 
+        SELECT * FROM form_meta
+    '''
+
+    for task in engine.execute(tasks):
+        create_update_assign(task)
+
 if __name__ == "__main__":
-    update_all()
+    update_from_document_cloud()
+    update_task_images()
