@@ -35,7 +35,11 @@
                     {% endif %}
                     </td>
                     <td>{{user[3]}}</td>
-                    <td>{{user[4]}}</td>
+                    <td>
+                    {% if user[4] %}
+                        {{user[4]}}
+                    {% endif %}
+                    </td>
                 </tr>
             {% endfor %}
             </tbody>
@@ -48,10 +52,16 @@
 
 {% endblock %}
 {% block extra_javascript %}
-
+    <script src="{{ url_for('static', filename='js/jquery.dataTables.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/jquery.dataTables.sorting.js') }}"></script>
     <script type="text/javascript">
         $(document).ready(function(){
-
+            $('#transcriber_users').DataTable( {
+                "aaSorting": [ [3,'desc'] ],
+                "paging": false,
+                "searching": false,
+                "info": false
+            } );
         })
 
     </script>
