@@ -76,11 +76,12 @@
                   <span class="caret"></span>
                 </a>
                 <ul class="dropdown-menu" role="menu">
+                  {% if current_user.has_role('admin') %}
                   <li role="presentation" class="dropdown-header">
-                    {% if current_user.has_role('admin') %}
                       <span class="badge">Admin User</span>
-                    {% endif %}
                   </li>
+                  <li><a href="{{ url_for('views.all_users') }}">Manage Users</a></li>
+                  {% endif %}
                   <li><a href="{{ url_for('views.view_activity') }}">Your Activity</a></li>
                   <li class="divider"></li>
                   <li><a href="{{ url_for_security('logout') }}"><i class='fa fa-sign-out'></i> Logout</a></li>
