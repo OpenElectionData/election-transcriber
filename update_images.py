@@ -85,7 +85,7 @@ def create_update_assign(task):
     
     hierarchy_filter = None
 
-    if task.hierarchy_filter != None:
+    if task.dc_filter != None:
         hierarchy_filter = json.loads(task.hierarchy_filter)
     
     doc_list = ''' 
@@ -95,7 +95,7 @@ def create_update_assign(task):
     '''
 
     doc_list = engine.execute(sa.text(doc_list), 
-                              project=task.project,
+                              project=task.dc_project,
                               page_url_flag=task.split_image)
     
     if hierarchy_filter:
