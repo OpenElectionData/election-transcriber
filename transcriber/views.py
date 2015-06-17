@@ -790,7 +790,7 @@ def all_users():
     all_t = 'SELECT transcriber, max(date_added) as last_seen, count(*) as total_transcriptions FROM ({0}) as t GROUP BY transcriber'.format(sel_all)
     user_q = 'SELECT t.transcriber, t.last_seen, t.total_transcriptions, u.id as user_id, u.email FROM ({0}) as t LEFT JOIN ndi_user as u ON t.transcriber = u.name'.format(all_t)
     role_q = 'SELECT ru.user_id, array_agg(r.name) as roles FROM roles_users as ru JOIN ndi_role as r ON ru.role_id = r.id GROUP BY ru.user_id'
-    q = 'SELECT u.transcriber, u.last_seen, u.total_transcriptions, u.email, r.roles FROM ({0}) as u LEFT JOIN ({1}) as r ON u.user_id = r.user_id'.format(user_q, role_q)
+    q = 'SELECT u.transcriber, u.email, r.roles, u.total_transcriptions, u.last_seen FROM ({0}) as u LEFT JOIN ({1}) as r ON u.user_id = r.user_id ORDER BY u.total_transcriptions DESC'.format(user_q, role_q)
 
     engine = db.session.bind
     with engine.begin() as conn:
@@ -798,7 +798,7 @@ def all_users():
 
     print user_info
 
-    return render_template('all-users.html')
+    return render_template('all-users.html', user_info=user_info)
 
 
 @views.route('/user/', methods=['GET', 'POST'])

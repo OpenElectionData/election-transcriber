@@ -7,6 +7,40 @@
 
 <div class="row">
     <div class="col-sm-12">
+        {% if user_info %}
+        <table class='table' id='transcriber_users'>
+            <thead>
+                <tr>
+                    <th>Transcriber</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Total Transcriptions</th>
+                    <th>Last Seen</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for user in user_info %}
+                <tr>
+                    <td>
+                        <a href="{{url_for('views.user', user=user[0])}}">{{user[0]}}</a>
+                    </td>
+                    <td>
+                    {% if user[1] %}
+                        {{user[1]}}
+                    {% endif %}
+                    </td>
+                    <td>
+                    {% if user[2] %}
+                        {{", ".join(user[2])}}
+                    {% endif %}
+                    </td>
+                    <td>{{user[3]}}</td>
+                    <td>{{user[4]}}</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
     </div>
 </div>
 
