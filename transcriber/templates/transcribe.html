@@ -40,13 +40,21 @@
                                         {% if form_field.type == 'StringField' %}
                                             <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }}</label>
                                             <div class='col-sm-6'>
+                                            {% if is_new %}
+                                                {{ form_field(class_='form-control clear-field') }}
+                                            {% else %}
                                                 {{ form_field(class_='form-control') }}
+                                            {% endif %}
                                             </div>
 
                                         {% elif form_field.type == 'NullableIntegerField' %}
                                             <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }} (number)</label>
                                             <div class='col-sm-6'>
+                                            {% if is_new %}
+                                                {{ form_field(class_='form-control clear-field') }}
+                                            {% else %}
                                                 {{ form_field(class_='form-control') }}
+                                            {% endif %}
                                             </div>
 
                                         {% elif form_field.type == 'BooleanField' %}
@@ -181,7 +189,7 @@
             });
 
             // clear form fields
-            $('.form-control').val('');
+            $('.clear-field').val('');
         })
 
         //dynamically set the size of the image iframe
