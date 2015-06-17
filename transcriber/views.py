@@ -784,11 +784,19 @@ def all_users():
 
     table_names = FormMeta.grab_active_table_names()
 
-    sels = ['SELECT transcriber from "{0}" where (is_final != True or is_final is null)'.format(table_name) 
+    sels = ['SELECT transcriber, date_added FROM "{0}" WHERE (is_final != True or is_final is null)'.format(table_name) 
             for table_name in table_names]
+    sel_all = ' UNION ALL '.join(sels)
+    all_t = 'SELECT transcriber, max(date_added) as last_seen, count(*) as total_transcriptions FROM ({0}) as t GROUP BY transcriber'.format(sel_all)
+    user_q = 'SELECT t.transcriber, t.last_seen, t.total_transcriptions, u.id as user_id, u.email FROM ({0}) as t LEFT JOIN ndi_user as u ON t.transcriber = u.name'.format(all_t)
+    role_q = 'SELECT ru.user_id, array_agg(r.name) as roles FROM roles_users as ru JOIN ndi_role as r ON ru.role_id = r.id GROUP BY ru.user_id'
+    q = 'SELECT u.transcriber, u.last_seen, u.total_transcriptions, u.email, r.roles FROM ({0}) as u LEFT JOIN ({1}) as r ON u.user_id = r.user_id'.format(user_q, role_q)
 
-    q = ' UNION ALL '.join(sels)
-    print q
+    engine = db.session.bind
+    with engine.begin() as conn:
+        user_info = conn.execute(text(q)).fetchall()
+
+    print user_info
 
     return render_template('all-users.html')
 
