@@ -787,16 +787,17 @@ def all_users():
     sels = ['SELECT transcriber, date_added FROM "{0}" WHERE (is_final != True or is_final is null)'.format(table_name) 
             for table_name in table_names]
     sel_all = ' UNION ALL '.join(sels)
-    all_t = 'SELECT transcriber, max(date_added) as last_seen, count(*) as total_transcriptions FROM ({0}) as t GROUP BY transcriber'.format(sel_all)
-    user_q = 'SELECT t.transcriber, t.last_seen, t.total_transcriptions, u.id as user_id, u.email FROM ({0}) as t LEFT JOIN ndi_user as u ON t.transcriber = u.name'.format(all_t)
+    users_t = 'select t.transcriber from ({0}) as t'.format(sel_all)
+    users_u = 'select name as transcriber from ndi_user'
+    all_usernames = users_t+' UNION '+users_u
+    all_users = 'select n.transcriber, u.id as user_id, u.email from ({0}) as n LEFT JOIN ndi_user as u on n.transcriber = u.name'.format(all_usernames)
+    user_q = 'SELECT u.transcriber, u.user_id, u.email, max(t.date_added) as last_seen, count(t.*) as total_transcriptions from ({0}) as u LEFT JOIN ({1}) as t on u.transcriber = t.transcriber GROUP BY u.transcriber, u.user_id, u.email'.format(all_users, sel_all)
     role_q = 'SELECT ru.user_id, array_agg(r.name) as roles FROM roles_users as ru JOIN ndi_role as r ON ru.role_id = r.id GROUP BY ru.user_id'
-    q = 'SELECT u.transcriber, u.email, r.roles, u.total_transcriptions, u.last_seen FROM ({0}) as u LEFT JOIN ({1}) as r ON u.user_id = r.user_id ORDER BY u.total_transcriptions DESC'.format(user_q, role_q)
+    q = 'SELECT u.transcriber, u.email, r.roles, u.total_transcriptions, u.last_seen FROM ({0}) as u LEFT JOIN ({1}) as r ON u.user_id = r.user_id'.format(user_q, role_q)
 
     engine = db.session.bind
     with engine.begin() as conn:
         user_info = conn.execute(text(q)).fetchall()
-
-    print user_info
 
     return render_template('all-users.html', user_info=user_info)
 
