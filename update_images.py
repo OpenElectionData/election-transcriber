@@ -86,7 +86,7 @@ def create_update_assign(task):
     hierarchy_filter = None
 
     if task.dc_filter != None:
-        hierarchy_filter = json.loads(task.hierarchy_filter)
+        hierarchy_filter = json.loads(task.dc_filter)
     
     doc_list = ''' 
         SELECT * FROM document_cloud_image
