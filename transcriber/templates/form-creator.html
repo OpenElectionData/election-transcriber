@@ -13,9 +13,9 @@
 {% block content %}
 
 {% if form_meta.name %}
-    {{ render_admin_header(form_meta.name, None, form_meta.id, 'form-creator') }}
+    {{ render_admin_header(form_meta.name, None, form_meta.id, 'form-creator', current_user) }}
 {% else %}
-    {{ render_admin_header('New Transcription Task', None, None, 'form-creator') }}
+    {{ render_admin_header('New Transcription Task', None, None, 'form-creator', current_user) }}
 {% endif %}
 
 <div class="row">

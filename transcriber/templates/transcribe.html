@@ -3,8 +3,8 @@
 {% block title %}{{task.name}}{% endblock %}
 {% block content %}
 
-{% if current_user.has_role('admin') %}
-    {{ render_admin_header(task.name, task, task.id, 'transcribe') }}
+{% if current_user.has_role('admin') or current_user.has_role('manager') %}
+    {{ render_admin_header(task.name, task, task.id, 'transcribe', current_user) }}
 {% else %}
     {{ render_header(task.name, task) }}
 {% endif %}

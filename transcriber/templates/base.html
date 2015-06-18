@@ -81,6 +81,11 @@
                       <span class="badge">Admin User</span>
                   </li>
                   <li><a href="{{ url_for('views.all_users') }}">Manage Users</a></li>
+                  {% elif current_user.has_role('manager') %}
+                  <li role="presentation" class="dropdown-header">
+                      <span class="badge">Manager</span>
+                  </li>
+                  <li><a href="{{ url_for('views.all_users') }}">Manage Users</a></li>
                   {% endif %}
                   <li><a href="{{ url_for('views.view_activity') }}">Your Activity</a></li>
                   <li class="divider"></li>

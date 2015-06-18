@@ -3,7 +3,7 @@
 {% block title %}{{task.name}}{% endblock %}
 {% block content %}
 
-{{ render_admin_header(task.name, task, task.id, 'transcriptions') }}
+{{ render_admin_header(task.name, task, task.id, 'transcriptions', current_user) }}
 
 <div class="row">
     <div class="col-sm-6">
