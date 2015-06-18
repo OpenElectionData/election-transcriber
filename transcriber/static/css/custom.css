@@ -89,10 +89,16 @@ h1, h2, h3, h4, h5{
 
 .progress{
   border-radius: 0px;
+  margin-bottom: 0px;
 }
 
 .progress-bar-success {
   background-color: #003C7D;
+}
+
+.encouragement {
+  font-size: .8em;
+  color: #619bc6;
 }
 
 .well{

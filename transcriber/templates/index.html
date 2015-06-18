@@ -46,6 +46,12 @@
                                         <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{{t[1]['reviews_done_perc']}}" aria-valuemin="0" aria-valuemax="100" style="width: {{t[1]['reviews_done_perc']}}%;">
                                         </div>
                                     </div>
+                                    {% set reviews_left = t[1]['reviews_total'] - t[1]['reviews_done_ct'] %}
+                                    {% if reviews_left < 100 and t[1]['reviews_done_perc'] > 50 %}
+                                        <span class="encouragement">
+                                            so close! <strong>{{reviews_left}}</strong> entries left
+                                        </span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if current_user.has_role('admin') %}
