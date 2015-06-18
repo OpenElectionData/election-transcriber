@@ -30,7 +30,7 @@ A tool for digitizing election results data in the form of handwritten digits.
 
   You will need to change, at minimum, `DB_USER` and `DB_PW` (to reflect your PostgreSQL username/password)
 
-  You can also change the username, email and password for `DEFAULT_USER` - this is the administrator account you will use locally
+  You can also change the username, email and password for `ADMIN_USER` - this is the administrator account you will use locally
   
 5. **Create your own `alembic.ini` file**
 

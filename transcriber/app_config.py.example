@@ -2,15 +2,28 @@ from pytz import timezone
 import os
 
 TIME_ZONE = timezone('America/Chicago')
-DEFAULT_USER = {
-    'name': 'eric',
-    'email': 'eric@eric.com',
+
+# 2 possible roles: 'admin' & 'manager'
+# admins have access to everything
+# managers have access to everything except editing tasks
+# clerks are only able to transcribe. anyone without a role is a clerk
+ADMIN_USER = {
+    'name': 'admin_username',
+    'email': 'admin@foo.com',
     'password': 'really-secret',
+    'role': 'admin',
+}
+MANAGER_USER = {
+    'name': 'manager_username',
+    'email': 'manager@foo.com',
+    'password': 'so-secret',
+    'role': 'manager',
 }
 CLERK_USER = {
     'name': 'person',
-    'email': 'person@person.com',
+    'email': 'person@foo.com',
     'password': 'secrets',
+    'role': None,
 }
 
 DB_USER = ''
