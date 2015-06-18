@@ -1,9 +1,8 @@
 from flask import Blueprint, make_response, request, render_template, \
     url_for, send_from_directory, session as flask_session, redirect, flash
-import json
-import os
 from flask_security.decorators import login_required, roles_required
 from flask_security.core import current_user
+from flask.ext.principal import Permission, RoleNeed
 from transcriber.app_config import UPLOAD_FOLDER
 from werkzeug import secure_filename
 from transcriber.models import FormMeta, FormSection, FormField, \
@@ -33,6 +32,8 @@ import ast
 from documentcloud import DocumentCloud
 from .app_config import DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW
 import re
+import json
+import os
 
 views = Blueprint('views', __name__)
 
@@ -61,6 +62,10 @@ FORM_TYPE = {
     'datetime': DateTimeField,
     'date': DateField
 }
+
+# Create a permission for manager & admin users
+manager_permission = Permission(RoleNeed('admin'), RoleNeed('manager'))
+
 
 def allowed_file(filename):
     return '.' in filename and \
@@ -459,7 +464,7 @@ def get_task_group():
 
 @views.route('/edit-task-group/', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@manager_permission.require()
 def edit_task_group():
     if not request.args.get('group_id'):
         flash('Group ID is required')
@@ -692,7 +697,7 @@ def transcribe():
 
 @views.route('/download-transcriptions/', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@manager_permission.require()
 def download_transcriptions():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
@@ -725,7 +730,7 @@ def download_transcriptions():
 
 @views.route('/transcriptions/', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@manager_permission.require()
 def transcriptions():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
@@ -779,7 +784,7 @@ def transcriptions():
 
 @views.route('/all-users/', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@manager_permission.require()
 def all_users():
 
     table_names = FormMeta.grab_active_table_names()
@@ -804,7 +809,7 @@ def all_users():
 
 @views.route('/user/', methods=['GET', 'POST'])
 @login_required
-@roles_required('admin')
+@manager_permission.require()
 def user():
     if not request.args.get('user'):
         return redirect(url_for('views.index'))
