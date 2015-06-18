@@ -408,6 +408,8 @@ def form_creator():
             db.session.add(form_meta)
             db.session.commit()
 
+            update_task_images(form_meta.id)
+
         return redirect(url_for('views.index'))
 
     next_section_index = 2
@@ -448,6 +450,38 @@ def form_creator():
                            form_meta=form_meta,
                            next_section_index=next_section_index,
                            next_field_index=next_field_indicies)
+
+def update_task_images(task_id):
+    task = db.session.query(FormMeta).get(task_id)
+    task_dict = task.as_dict()
+
+    if task_dict['split_image'] == False:
+        doc_list = DocumentCloudImage.grab_relevant_images(task_dict['dc_project'],task_dict['dc_filter'])
+    
+        for doc in doc_list:
+            url = doc.fetch_url
+                
+            image_id = DocumentCloudImage.get_id_by_url(url)
+
+            if db.session.query(ImageTaskAssignment).filter(ImageTaskAssignment.form_id==task_id).filter(ImageTaskAssignment.image_id==image_id).first()==None:
+                img_task_assign = ImageTaskAssignment(image_id=image_id, 
+                      form_id=task_id)
+                db.session.add(img_task_assign)
+                db.session.commit()
+
+    else:
+        doc_list = DocumentCloudImage.grab_relevant_image_pages(task_dict['dc_project'], task_dict['dc_filter'])
+
+        for doc in doc_list:
+            url = doc.fetch_url
+
+            image_id = DocumentCloudImage.get_id_by_url(url)
+
+            if db.session.query(ImageTaskAssignment).filter(ImageTaskAssignment.form_id==task_id).filter(ImageTaskAssignment.image_id==image_id).first()==None:
+                img_task_assign = ImageTaskAssignment(image_id=image_id, 
+                          form_id=task_id)
+                db.session.add(img_task_assign)
+                db.session.commit()
 
 @views.route('/get-task-group/')
 @login_required
