@@ -392,7 +392,8 @@ def form_creator():
                 Column('transcriber', String),
                 Column('id', Integer, primary_key=True),
                 Column('image_id', Integer),
-                Column('is_final', Boolean, default=False)
+                Column('is_final', Boolean, default=False),
+                Column('flag_irrelevant', Boolean)
             ]
             for field in form_meta.fields:
                 dt = DATA_TYPE.get(field.data_type, String)
@@ -588,6 +589,8 @@ def transcribe():
             bools.extend([blank, not_legible, altered])
             section_dict['fields'].append(field)
         task_dict['sections'].append(section_dict)
+    # adding field for marking docs as irrelevant
+    setattr(form, 'flag_irrelevant', BooleanField())
 
     all_fields = set([f.slug for f in section_dict['fields']])
     for field in all_fields:
