@@ -99,6 +99,12 @@ def pretty_final_transcriptions(t_header, rows_all, task_id):
 
     meta_h = ['image id', 'date added', 'source hierarchy', 'id', 'irrelevant?']
     field_h = []
+
+    swap = False
+    if t_header[-1][0] == 'flag_irrelevant':
+        swap = True
+        t_header = t_header[0:5]+[t_header[-1]]+t_header[5:-1]
+
     for h in t_header[t_col_start::cpf]:
         f_slug = h[0]
         field = FormField.query.filter(FormField.form_id == task_id).filter(FormField.slug == f_slug).first().as_dict()
@@ -109,11 +115,13 @@ def pretty_final_transcriptions(t_header, rows_all, task_id):
     for row in rows_all:
         row = list(row)
 
+        if swap:
+            row = row[0:7]+[row[-1]]+row[7:-1]
+
         image_id = row[0]
         image_url = row[1]
         image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
         
-        print row
         row_pretty = [image_link, row[3], row[2], row[5], row[7]]
 
         row_transcribed = [row[i:i + cpf] for i in range(t_col_start+3, num_cols, cpf)] # transcribed fields
