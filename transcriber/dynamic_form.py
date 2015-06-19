@@ -65,12 +65,14 @@ class NullableDateField(NullableDateTimeField):
 def validate_blank_not_legible(form, field):
     blank = form.data['{0}_blank'.format(field.name)]
     not_legible = form.data['{0}_not_legible'.format(field.name)]
-    if not field.data and not blank and not not_legible:
-        message = u'If the "{0}" field is either blank or not legible, \
-                please mark the appropriate checkbox'.format(field.name)
-        raise ValidationError(message)
-    if blank and field.data:
-        message = u'The "{0}" field does not look blank -\
-                either clear content or uncheck the blank checkbox'.format(field.name)
-        raise ValidationError(message)
+    irrelevant = form.data['flag_irrelevant']
+    if not irrelevant:
+        if not field.data and not blank and not not_legible:
+            message = u'If the "{0}" field is either blank or not legible, \
+                    please mark the appropriate checkbox'.format(field.name)
+            raise ValidationError(message)
+        if blank and field.data:
+            message = u'The "{0}" field does not look blank -\
+                    either clear content or uncheck the blank checkbox'.format(field.name)
+            raise ValidationError(message)
     return True

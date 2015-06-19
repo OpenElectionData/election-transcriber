@@ -52,7 +52,7 @@ def pretty_transcriptions(t_header, rows_all, task_id):
     # 4 cols per field: fieldname/fieldname_blank/fieldname_not_legible/fieldname_altered
     cpf = 4
     # transcription field start index (first 5 fields are meta info abt transcription)
-    t_col_start = 5
+    t_col_start = 6
 
     meta_h = ['image id', 'date added', 'id']
     field_h = []
@@ -71,7 +71,7 @@ def pretty_transcriptions(t_header, rows_all, task_id):
         image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
         row_pretty = [image_link, row[2], row[4]]
 
-        row_transcribed = [row[i:i + cpf] for i in range(7, num_cols, cpf)] # transcribed fields
+        row_transcribed = [row[i:i + cpf] for i in range(t_col_start+2, num_cols, cpf)] # transcribed fields
         for field in row_transcribed:
             field_pretty = str(field[0])
             if field[1]:
@@ -95,10 +95,16 @@ def pretty_final_transcriptions(t_header, rows_all, task_id):
     # 4 cols per field: fieldname/fieldname_blank/fieldname_not_legible/fieldname_altered
     cpf = 4
     # transcription field start index (first 5 fields are meta info abt transcription)
-    t_col_start = 5
+    t_col_start = 6
 
-    meta_h = ['image id', 'date added', 'source hierarchy', 'id']
+    meta_h = ['image id', 'date added', 'source hierarchy', 'id', 'irrelevant?']
     field_h = []
+
+    swap = False
+    if t_header[-1][0] == 'flag_irrelevant':
+        swap = True
+        t_header = t_header[0:5]+[t_header[-1]]+t_header[5:-1]
+
     for h in t_header[t_col_start::cpf]:
         f_slug = h[0]
         field = FormField.query.filter(FormField.form_id == task_id).filter(FormField.slug == f_slug).first().as_dict()
@@ -109,14 +115,16 @@ def pretty_final_transcriptions(t_header, rows_all, task_id):
     for row in rows_all:
         row = list(row)
 
+        if swap:
+            row = row[0:7]+[row[-1]]+row[7:-1]
+
         image_id = row[0]
         image_url = row[1]
         image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
         
-        print row
-        row_pretty = [image_link, row[3], row[2], row[5]]
+        row_pretty = [image_link, row[3], row[2], row[5], row[7]]
 
-        row_transcribed = [row[i:i + cpf] for i in range(8, num_cols, cpf)] # transcribed fields
+        row_transcribed = [row[i:i + cpf] for i in range(t_col_start+3, num_cols, cpf)] # transcribed fields
         for field in row_transcribed:
             field_pretty = str(field[0])
             if field[1]:
