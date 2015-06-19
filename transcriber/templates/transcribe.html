@@ -150,6 +150,7 @@
             <div class="alert alert-success fade-out" role="alert">
               {{ saved[0] }}
             </div>
+            <img class="robot-cheer" height="300px" width="300px" src="{{ url_for('static', filename='images/robot_cheer.gif') }}"></img>
             {% endif %}
         {% endwith %}
         {% with expired = get_flashed_messages(category_filter=["expired"]) %}
@@ -183,6 +184,7 @@
                 // put cursor in first field
                 $('form:first *:input[type!=hidden]:first').focus();
             });
+            $('.robot-cheer').delay(800).fadeOut(200);
 
             $('.check-blank').change(function(){
                 // when blank is checked, clear field content & uncheck not legible checkbox
