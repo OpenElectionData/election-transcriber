@@ -28,9 +28,11 @@ A tool for digitizing election results data in the form of handwritten digits.
   cp transcriber/app_config.py.example transcriber/app_config.py
   ```
 
-  You will need to change, at minimum, `DB_USER` and `DB_PW` (to reflect your PostgreSQL username/password)
+  You will need to change, at minimum:
+  - `DB_USER` and `DB_PW` to reflect your PostgreSQL username/password (by default, the username is your computer name & the password is '')
+  - `DOCUMENTCLOUD_USER` and `DOCUMENTCLOUD_PW` to reflect your DocumentCloud credentials
 
-  You can also change the username, email and password for `ADMIN_USER` - this is the administrator account you will use locally
+  You can also change the username, email and password for the initial user roles, defined by `ADMIN_USER`, `MANAGER_USER`, and `CLERK_USER`
   
 5. **Create your own `alembic.ini` file**
 
