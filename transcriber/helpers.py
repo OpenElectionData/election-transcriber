@@ -31,7 +31,7 @@ def reconcile_rows(col_names, table_name, image_id, min_agree):
     final_transcription = {}
     for col_name in col_names:
         q = '''
-            SELECT "{0}", COUNT(*) as c FROM "{1}" WHERE image_id = {2} GROUP BY "{0}" ORDER BY c DESC
+            SELECT "{0}", COUNT(*) as c FROM "{1}" WHERE image_id = {2} and transcription_status = 'raw' GROUP BY "{0}" ORDER BY c DESC
             '''.format( col_name,
                         table_name,
                         image_id
