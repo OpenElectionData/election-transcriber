@@ -48,7 +48,7 @@ def reconcile_rows(col_names, table_name, image_id, min_agree):
 # given all rows, produce pretty rows to display in html table
 # this is used to display transcriptions on the user transcriptions page (user view)
 # includes a delete link to delete a transcription
-def pretty_transcriptions(t_header, rows_all, task_id):
+def pretty_transcriptions(t_header, rows_all, task_id, user_name):
     num_cols = len(rows_all[0])
 
     # 4 cols per field: fieldname/fieldname_blank/fieldname_not_legible/fieldname_altered
@@ -86,8 +86,9 @@ def pretty_transcriptions(t_header, rows_all, task_id):
             if field[3]:
                 field_pretty = field_pretty+'<i class="fa fa-exclamation-triangle"></i>'
             row_pretty.append(field_pretty)
-        # adding a button to delete
-        row_pretty.append('<a href="'+str(transcription_id)+'"><i class="fa fa-trash-o"></i></a>')
+        # adding a link to delete
+        delete_html = '<a href="/delete-transcription/?user='+user_name+'&transcription_id='+str(transcription_id)+'&task_id='+str(task_id)+'"><i class="fa fa-trash-o"></i></a>'
+        row_pretty.append(delete_html)
         transcriptions.append(row_pretty)
 
     return transcriptions
@@ -180,7 +181,7 @@ def get_user_activity(user_name):
                 SELECT * from (SELECT id, fetch_url from document_cloud_image) i
                 JOIN "{0}" t 
                 ON (i.id = t.image_id)
-                WHERE transcriber = '{1}'
+                WHERE transcriber = '{1}' and transcription_status = 'raw'
             '''.format(table_name, user['name'])
         h = ''' 
             SELECT column_name
@@ -193,7 +194,7 @@ def get_user_activity(user_name):
             rows_all = conn.execute(text(q)).fetchall()
 
         if len(rows_all) > 0:
-            transcriptions = pretty_transcriptions(t_header, rows_all, task_info["id"])
+            transcriptions = pretty_transcriptions(t_header, rows_all, task_info["id"], user['name'])
             user_transcriptions.append((task_info, transcriptions))
 
     return (user, user_transcriptions)

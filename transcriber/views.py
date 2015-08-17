@@ -219,6 +219,66 @@ def delete_part():
     response.headers['Content-Type'] = 'application/json'
     return response
 
+@views.route('/delete-transcription/', methods=['GET','POST'])
+@login_required
+@roles_required('admin')
+def delete_transcription():
+    transcription_id = request.args.get('transcription_id')
+    task_id = request.args.get('task_id')
+    user = request.args.get('user')
+
+    engine = db.session.bind
+
+    task = db.session.query(FormMeta)\
+        .filter(FormMeta.id == task_id)\
+        .first()
+
+    q = ''' 
+        SELECT image_id from "{0}" where id = '{1}'
+        '''.format(task.table_name, transcription_id)
+    with engine.begin() as conn:
+        result = conn.execute(text(q)).fetchall()
+    image_id = result[0][0]
+
+
+    # set status on transcription as deleted
+    update_status = ''' 
+                    UPDATE {0}
+                    SET transcription_status = 'raw_deleted'
+                    WHERE id = {1}
+                '''.format(task.table_name, transcription_id)
+    # if the image has a final transcription, delete final transcription
+    update_remove_final =   '''
+                    DELETE from {0}
+                    WHERE transcription_status = 'final' and image_id = '{1}'
+                '''.format(task.table_name, image_id)
+    with engine.begin() as conn:
+        conn.execute(text(update_status))
+        conn.execute(text(update_remove_final))
+
+    q = '''
+        SELECT * from {0}
+        WHERE image_id = {1} and transcription_status = 'raw'
+        '''.format(task.table_name, image_id)
+    with engine.begin() as conn:
+        result = conn.execute(text(q)).fetchall()
+    updated_view_count = len(result)
+
+    # updating the view count and status in image_task_assignment
+    assignment = db.session.query(ImageTaskAssignment)\
+                    .filter(ImageTaskAssignment.form_id == task.id)\
+                    .filter(ImageTaskAssignment.image_id == image_id)\
+                    .first()
+    assignment.view_count = updated_view_count
+    assignment.is_complete = False
+    db.session.add(assignment)
+    db.session.commit()
+
+    flash("Transcription deleted")
+
+    return redirect(url_for('views.user', user=user))
+
+
 @views.route('/form-creator/', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')
