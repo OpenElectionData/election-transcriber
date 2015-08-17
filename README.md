@@ -47,7 +47,12 @@ A tool for digitizing election results data in the form of handwritten digits.
   python init_db.py
   ```
 
-7. **Finally, run the app**  
+7. **Import document cloud images**
+  ```bash
+  python update_images.py
+  ```
+
+8. **Finally, run the app**  
 
   ```bash
   python runserver.py
