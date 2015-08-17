@@ -46,6 +46,8 @@ def reconcile_rows(col_names, table_name, image_id, min_agree):
     return final_transcription
 
 # given all rows, produce pretty rows to display in html table
+# this is used to display transcriptions on the user transcriptions page (user view)
+# includes a delete link to delete a transcription
 def pretty_transcriptions(t_header, rows_all, task_id):
     num_cols = len(rows_all[0])
 
@@ -60,7 +62,8 @@ def pretty_transcriptions(t_header, rows_all, task_id):
         f_slug = h[0]
         field = FormField.query.filter(FormField.form_id == task_id).filter(FormField.slug == f_slug).first().as_dict()
         field_h.append(field["name"])
-    header = meta_h+field_h
+    # meta fields + transcription fields + space for delete button
+    header = meta_h+field_h+[""]
 
     transcriptions = [header]
     for row in rows_all:
@@ -69,7 +72,9 @@ def pretty_transcriptions(t_header, rows_all, task_id):
         image_id = row[5]
         image_url = row[1]
         image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
-        row_pretty = [image_link, row[2], row[4]]
+
+        transcription_id = row[4]
+        row_pretty = [image_link, row[2], transcription_id]
 
         row_transcribed = [row[i:i + cpf] for i in range(t_col_start+2, num_cols, cpf)] # transcribed fields
         for field in row_transcribed:
@@ -81,6 +86,8 @@ def pretty_transcriptions(t_header, rows_all, task_id):
             if field[3]:
                 field_pretty = field_pretty+'<i class="fa fa-exclamation-triangle"></i>'
             row_pretty.append(field_pretty)
+        # adding a button to delete
+        row_pretty.append('<a href="'+str(transcription_id)+'"><i class="fa fa-trash-o"></i></a>')
         transcriptions.append(row_pretty)
 
     return transcriptions

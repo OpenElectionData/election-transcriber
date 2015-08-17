@@ -622,16 +622,17 @@ def transcribe():
             reviewer_count = db.session.query(FormMeta).get(image.form_id).reviewer_count
 
             if not image.checkout_expire or image.checkout_expire < current_time:
-                print "*FORM NOT EXPIRED*"
+                print "*FORM EXPIRED*"
                 flash("Form has expired", "expired")
             else:
-                print "*FORM EXPIRED*"
+                print "*FORM NOT EXPIRED*"
 
                 print "username:", username
 
                 ins_args = {
                     'transcriber': username,
                     'image_id': flask_session['image_id'],
+                    'transcription_status': 'raw',
                 }
                 print "ins_args:", ins_args
                 for k,v in request.form.items():
