@@ -392,7 +392,7 @@ def form_creator():
                 Column('transcriber', String),
                 Column('id', Integer, primary_key=True),
                 Column('image_id', Integer),
-                Column('is_final', Boolean, default=False),
+                Column('transcription_status', String, default="raw"),
                 Column('flag_irrelevant', Boolean)
             ]
             for field in form_meta.fields:
@@ -669,7 +669,7 @@ def transcribe():
                     final_row = reconcile_rows(col_names, task.table_name, image_id, min_agree)
 
                     if final_row: # if images can be reconciled
-                        final_row['is_final'] = True
+                        final_row['transcription_status'] = 'final'
                         final_row['image_id'] = image_id
                         ins_final = ''' 
                             INSERT INTO "{0}" ({1}) VALUES ({2})
@@ -749,7 +749,7 @@ def download_transcriptions():
             from "{0}" as t 
             join document_cloud_image as i 
             on t.image_id = i.id 
-            order by t.image_id, is_final
+            order by t.image_id, transcription_status
         ) TO STDOUT WITH CSV HEADER DELIMITER ','
     '''.format(table_name)
 
@@ -795,7 +795,7 @@ def transcriptions():
             SELECT * from (SELECT id, fetch_url, hierarchy from document_cloud_image) i
             JOIN "{0}" t 
             ON (i.id = t.image_id)
-            WHERE (t.is_final = True)
+            WHERE (t.transcription_status = 'final')
             ORDER BY i.id, t.id
         '''.format(table_name)
     h = ''' 
@@ -825,8 +825,8 @@ def transcriptions():
 def all_users():
 
     table_names = FormMeta.grab_active_table_names()
-
-    sels = ['SELECT transcriber, date_added FROM "{0}" WHERE (is_final != True or is_final is null)'.format(table_name) 
+    
+    sels = ['SELECT transcriber, date_added FROM "{0}" WHERE (transcription_status = \'raw\')'.format(table_name) 
             for table_name in table_names]
     sel_all = ' UNION ALL '.join(sels)
     users_t = 'select t.transcriber from ({0}) as t'.format(sel_all)
