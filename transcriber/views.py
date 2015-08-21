@@ -886,21 +886,33 @@ def transcriptions():
 def all_users():
 
     table_names = FormMeta.grab_active_table_names()
-    
-    sels = ['SELECT transcriber, date_added FROM "{0}" WHERE (transcription_status = \'raw\')'.format(table_name) 
-            for table_name in table_names]
-    sel_all = ' UNION ALL '.join(sels)
-    users_t = 'select t.transcriber from ({0}) as t'.format(sel_all)
-    users_u = 'select name as transcriber from ndi_user'
-    all_usernames = users_t+' UNION '+users_u
-    all_users = 'select n.transcriber, u.id as user_id, u.email from ({0}) as n LEFT JOIN ndi_user as u on n.transcriber = u.name'.format(all_usernames)
-    user_q = 'SELECT u.transcriber, u.user_id, u.email, max(t.date_added) as last_seen, count(t.*) as total_transcriptions from ({0}) as u LEFT JOIN ({1}) as t on u.transcriber = t.transcriber GROUP BY u.transcriber, u.user_id, u.email'.format(all_users, sel_all)
-    role_q = 'SELECT ru.user_id, array_agg(r.name) as roles FROM roles_users as ru JOIN ndi_role as r ON ru.role_id = r.id GROUP BY ru.user_id'
-    q = 'SELECT u.transcriber, u.email, r.roles, u.total_transcriptions, u.last_seen FROM ({0}) as u LEFT JOIN ({1}) as r ON u.user_id = r.user_id'.format(user_q, role_q)
 
-    engine = db.session.bind
-    with engine.begin() as conn:
-        user_info = conn.execute(text(q)).fetchall()
+    if table_names:
+        # get anonymous transcribers as well as registered users
+        sels = ['SELECT transcriber, date_added FROM "{0}" WHERE (transcription_status = \'raw\')'.format(table_name) 
+                for table_name in table_names]
+        sel_all = ' UNION ALL '.join(sels)
+        users_t = 'SELECT t.transcriber from ({0}) as t'.format(sel_all)
+        users_u = 'SELECT name as transcriber FROM ndi_user'
+        all_usernames = users_t+' UNION '+users_u
+        all_users = 'SELECT n.transcriber, u.id as user_id, u.email from ({0}) as n LEFT JOIN ndi_user as u on n.transcriber = u.name'.format(all_usernames)
+        user_q = 'SELECT u.transcriber, u.user_id, u.email, max(t.date_added) as last_seen, count(t.*) as total_transcriptions from ({0}) as u LEFT JOIN ({1}) as t on u.transcriber = t.transcriber GROUP BY u.transcriber, u.user_id, u.email'.format(all_users, sel_all)
+        role_q = 'SELECT ru.user_id, array_agg(r.name) as roles FROM roles_users as ru JOIN ndi_role as r ON ru.role_id = r.id GROUP BY ru.user_id'
+        q = 'SELECT u.transcriber, u.email, r.roles, u.total_transcriptions, u.last_seen FROM ({0}) as u LEFT JOIN ({1}) as r ON u.user_id = r.user_id'.format(user_q, role_q)
+
+        engine = db.session.bind
+        with engine.begin() as conn:
+            user_info = conn.execute(text(q)).fetchall()
+    else:
+        # get registered users
+        user_q = 'SELECT name as transcriber, id as user_id, email, NULL as last_seen, 0 as total_transcriptions FROM ndi_user'
+        role_q = 'SELECT ru.user_id, array_agg(r.name) as roles FROM roles_users as ru JOIN ndi_role as r ON ru.role_id = r.id GROUP BY ru.user_id'
+        q = 'SELECT u.transcriber, u.email, r.roles, u.total_transcriptions, u.last_seen FROM ({0}) as u LEFT JOIN ({1}) as r ON u.user_id = r.user_id'.format(user_q, role_q)
+
+        engine = db.session.bind
+        with engine.begin() as conn:
+            user_info = conn.execute(text(q)).fetchall()
+
 
     return render_template('all-users.html', user_info=user_info)
 
