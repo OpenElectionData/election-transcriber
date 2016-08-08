@@ -10,7 +10,11 @@ A tool for digitizing election results data in the form of handwritten digits.
 
 2. **Clone this repo & install app requirements**
 
+  We recommend using [virtualenv](http://virtualenv.readthedocs.org/en/latest/virtualenv.html) and [virtualenvwrapper](http://virtualenvwrapper.readthedocs.org/en/latest/install.html) for working in a virtualized development environment. [Read how to set up virtualenv](http://docs.python-guide.org/en/latest/dev/virtualenvs/).
+
+  Once you have virtualenvwrapper set up,
   ```bash
+  mkvirtualenv et
   git clone git@github.com:datamade/election-transcriber.git
   cd election-transcriber
   pip install -r requirements.txt
