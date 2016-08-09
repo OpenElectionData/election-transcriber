@@ -11,7 +11,7 @@ a:hover, a:focus, a:active {
   color: #93321c;
 }
 
-.panel-default > .panel-heading {
+.panel-group > .panel-default > .panel-heading {
   cursor: pointer;
 }
 
@@ -87,6 +87,13 @@ h1, h2, h3, h4, h5{
   font-weight: 700;
 }
 
+.text-dark {
+  color: #444;
+}
+.text-xs {
+  font-size: 80%;
+}
+
 .progress{
   border-radius: 0px;
   margin-bottom: 0px;
@@ -106,6 +113,20 @@ h1, h2, h3, h4, h5{
   border: none;
   background-color: #F1F2F2;
 }
+
+
+
+.panel-well {
+  background-color: #F1F2F2;
+  border-radius: 0px;
+}
+.panel-well .panel-heading {
+  background-color: #F1F2F2;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  font-size: 14px;
+}
+
 
 /* Space out content a bit */
 body {
