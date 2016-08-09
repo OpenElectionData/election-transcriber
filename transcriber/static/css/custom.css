@@ -379,6 +379,9 @@ table, label,.control-label,.help-block,.checkbox,.radio { font-size: 16px; }
 .conflict{
   color: #D35400;
 }
+.progress-bar-unseen{
+  background-color: #ccc;
+}
 .unseen{
   color: #ccc;
 }
