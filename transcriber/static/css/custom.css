@@ -94,6 +94,12 @@ h1, h2, h3, h4, h5{
   font-size: 80%;
 }
 
+
+ul.bullet-list {
+  padding-left: 12px;
+}
+
+
 .progress{
   border-radius: 0px;
   margin-bottom: 0px;
@@ -108,10 +114,13 @@ h1, h2, h3, h4, h5{
   color: #619bc6;
 }
 
-.well{
+.well {
   border-radius: 0px;
   border: none;
   background-color: #F1F2F2;
+}
+.well-info {
+  background-color: #ccc;
 }
 
 

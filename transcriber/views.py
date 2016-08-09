@@ -144,6 +144,9 @@ def upload():
                 flask_session['image_type'] = 'pdf'
                 flask_session['dc_project'] = project_name
                 flask_session['dc_filter'] = hierarchy_filter if hierarchy_filter else None
+                dc_filter_list = ast.literal_eval(json.loads(hierarchy_filter)) if hierarchy_filter else None
+                dc_filter_list = [thing.decode('utf-8') for thing in dc_filter_list] if dc_filter_list else []
+                flask_session['dc_filter_list'] = dc_filter_list
 
                 return render_template('upload.html', project_list=project_list, project_name=project_name, hierarchy_filter=hierarchy_filter, h_obj=h_obj, doc_count=len(doc_list))
             else:
@@ -292,6 +295,10 @@ def form_creator():
             flask_session['image_type'] = form.sample_image.rsplit('.', 1)[1].lower()
             flask_session['dc_project'] = form.dc_project
             flask_session['dc_filter'] = form.dc_filter
+            dc_filter_list = ast.literal_eval(json.loads(form.dc_filter)) if form.dc_filter else None
+            dc_filter_list = [thing.decode('utf-8') for thing in dc_filter_list] if dc_filter_list else []
+            flask_session['dc_filter_list'] = dc_filter_list
+
     if not flask_session.get('image'):
         return redirect(url_for('views.upload'))
     engine = db.session.bind

@@ -23,6 +23,25 @@
         {{ render_image() }}
     </div>
     <div class="col-md-6 form-fit" id="form-wrapper">
+        <div class='well well-sm well-info'>
+            <p>Image source</p>
+            <div class="row">
+                <div class="col-xs-4 text-xs">
+                    <strong>Project</strong><br>
+                    {{session.dc_project}}
+                </div>
+                {% if session.dc_filter_list %}
+                <div class="col-xs-8 text-xs">
+                    <strong>Filters </strong>({{session.dc_filter_list|length}})<br>
+                    <ul class="bullet-list">
+                        {% for filter in session.dc_filter_list %}
+                        <li class="small">{{filter}}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </div>
         <form id="task-form" role="form" class="form form-horizontal" method="POST" action="">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
             <div class='well'>
