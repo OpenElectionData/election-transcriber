@@ -888,6 +888,9 @@ def transcriptions():
 
     if len(rows_all) > 0:
         transcription_tbl_header, transcriptions_all_raw = pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses)
+    else:
+        transcription_tbl_header = []
+        transcriptions_all_raw = []
 
     return render_template('transcriptions.html',
                             task=task_dict,
