@@ -116,6 +116,14 @@ class ImageTaskAssignment(db.Model):
             return True
 
     @classmethod
+    def get_completed_images_by_task(cls, task_id):
+        return [row.image for row in db.session.query(cls)\
+                                    .filter(cls.form_id == task_id)\
+                                    .filter(cls.is_complete == True)\
+                                    .order_by(cls.id)\
+                                    .all()]
+
+    @classmethod
     def get_unseen_images_by_task(cls, task_id):
         return [row.image for row in db.session.query(cls)\
                                     .filter(cls.form_id == task_id)\

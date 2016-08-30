@@ -48,7 +48,7 @@ def reconcile_rows(col_names, table_name, image_id, min_agree):
 # given all rows, produce pretty rows to display in html table
 # this is used to display transcriptions on the user transcriptions page (user view)
 # includes a delete link to delete a transcription
-def pretty_transcriptions(t_header, rows_all, task_id, user_name):
+def pretty_user_transcriptions(t_header, rows_all, task_id, user_name):
     num_cols = len(rows_all[0])
 
     # 4 cols per field: fieldname/fieldname_blank/fieldname_not_legible/fieldname_altered
@@ -93,6 +93,66 @@ def pretty_transcriptions(t_header, rows_all, task_id, user_name):
 
     return transcriptions
 
+
+# given all rows, produce pretty rows to display in html table
+# this is used to display transcriptions on the 'review' transcriptions' page
+# colors rows based on transcription status & includes a delete link to delete a transcription
+def pretty_task_transcriptions(t_header, rows_all, task_id):
+    num_cols = len(rows_all[0])
+
+    # 4 cols per field: fieldname/fieldname_blank/fieldname_not_legible/fieldname_altered
+    cpf = 4
+    # transcription field start index (first 5 fields are meta info abt transcription)
+    t_col_start = 6
+
+    meta_h = ['image id', 'date added', 'source hierarchy', 'id', 'transcriber', 'irrelevant?'] #TODO: add transcriber
+    field_h = []
+
+    swap = False
+    if t_header[-1][0] == 'flag_irrelevant':
+        swap = True
+        t_header = t_header[0:5]+[t_header[-1]]+t_header[5:-1]
+
+    for h in t_header[t_col_start::cpf]:
+        f_slug = h[0]
+        field = FormField.query.filter(FormField.form_id == task_id).filter(FormField.slug == f_slug).first().as_dict()
+        field_h.append(field["name"])
+    # meta fields + transcription fields + space for delete button
+    header = meta_h+field_h+[""]
+
+    transcriptions = [header]
+    for row in rows_all:
+        row = list(row)
+        if swap:
+            row = row[0:7]+[row[-1]]+row[7:-1]
+
+        image_id = row[0]
+        image_url = row[1]
+        image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
+
+        transcription_id = row[4]
+        user_name = row[4]
+        row_pretty = [image_link, row[3], row[2], row[5], user_name, row[8]]
+
+        row_transcribed = [row[i:i + cpf] for i in range(t_col_start+3, num_cols, cpf)] # transcribed fields
+        for field in row_transcribed:
+            field_pretty = str(field[0])
+            if field[1]:
+                field_pretty = field_pretty+'<i class="fa fa-times"></i>'
+            if field[2]:
+                field_pretty = field_pretty+'<i class="fa fa-question"></i>'
+            if field[3]:
+                field_pretty = field_pretty+'<i class="fa fa-exclamation-triangle"></i>'
+            row_pretty.append(field_pretty)
+        # adding a link to delete
+        delete_html = '<a href="/delete-transcription/?user='+user_name+'&transcription_id='+str(transcription_id)+'&task_id='+str(task_id)+'"><i class="fa fa-trash-o"></i></a>'
+        row_pretty.append(delete_html)
+        transcriptions.append(row_pretty)
+
+    return transcriptions
+
+
+# TODO: get rid of this
 def pretty_final_transcriptions(t_header, rows_all, task_id):
     num_cols = len(rows_all[0])
 
@@ -194,7 +254,7 @@ def get_user_activity(user_name):
             rows_all = conn.execute(text(q)).fetchall()
 
         if len(rows_all) > 0:
-            transcriptions = pretty_transcriptions(t_header, rows_all, task_info["id"], user['name'])
+            transcriptions = pretty_user_transcriptions(t_header, rows_all, task_info["id"], user['name'])
             user_transcriptions.append((task_info, transcriptions))
 
     return (user, user_transcriptions)

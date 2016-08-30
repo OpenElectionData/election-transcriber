@@ -57,7 +57,7 @@
                                     {% if current_user.has_role('admin') %}
                                     <a href="{{ url_for('views.form_creator', form_id=t[0].id) }}"><i class="fa fa-cog fa-fw"></i> Task setup</a><br />
                                     {% endif %}
-                                    <a href="{{ url_for('views.transcriptions', task_id=t[0].id) }}"><i class="fa fa-eye fa-fw"></i> View transcriptions</a><br />
+                                    <a href="{{ url_for('views.transcriptions', task_id=t[0].id) }}"><i class="fa fa-eye fa-fw"></i> Review transcriptions</a><br />
                                     <a href='{{ url_for('views.transcribe_intro', task_id=t[0].id )}}'><i class="fa fa-pencil fa-fw"></i> <strong>Start transcribing!</strong></a>
                                 </td>
                             </tr>
@@ -127,7 +127,7 @@
                                 {% if current_user.has_role('admin') %}
                                     <a href="{{ url_for('views.form_creator', form_id=t[0].id) }}"><i class="fa fa-cog fa-fw"></i> Task setup</a><br />
                                 {% endif %}
-                                    <a href="{{ url_for('views.transcriptions', task_id=t[0].id) }}"><i class="fa fa-eye fa-fw"></i> View transcriptions</a><br />
+                                    <a href="{{ url_for('views.transcriptions', task_id=t[0].id) }}"><i class="fa fa-eye fa-fw"></i> Review transcriptions</a><br />
                                 </td>
                             </tr>
                         {% endif %}

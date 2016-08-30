@@ -83,28 +83,24 @@
 
 <div class="row">
     <div class="col-sm-12">
-        <p class="status-heading"><strong>View Transcriptions</strong></p>
-        {% if transcriptions_final %}
-            <p class="status-heading">
-                <i class="fa fa-pencil fa-fw done"></i>
-                <strong>{{transcriptions_final|length - 1}}</strong> images fully transcribed
-            </p>
-            <a href="{{ url_for('views.download_transcriptions', task_id=task.id) }}" class="btn btn-default pull-right"><i class="fa fa-download fa-fw"></i> Download CSV</a>
-            <div>
-                <i class="fa fa-times fa-fw"></i> Blank &nbsp;&nbsp;&nbsp;
-                <i class="fa fa-question fa-fw"></i> Not legible &nbsp;&nbsp;&nbsp;
-                <i class="fa fa-exclamation-triangle fa-fw"></i> Looks altered <br>
-            </div>
+        <p class="status-heading"><strong>All transcriptions</strong></p>
+        <a href="{{ url_for('views.download_transcriptions', task_id=task.id) }}" class="btn btn-default pull-right"><i class="fa fa-download fa-fw"></i> Download CSV</a>
+        <div>
+            <i class="fa fa-times fa-fw"></i> Blank &nbsp;&nbsp;&nbsp;
+            <i class="fa fa-question fa-fw"></i> Not legible &nbsp;&nbsp;&nbsp;
+            <i class="fa fa-exclamation-triangle fa-fw"></i> Looks altered <br>
+        </div>
+        {% if transcriptions_all_raw %}
             <table class="table" id="final_transcriptions">
                 <thead>
                     <tr>
-                        {% for h in transcriptions_final[0] %}
+                        {% for h in transcriptions_all_raw[0] %}
                             <th> {{h}} </th>
                         {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
-                {% for transcription in transcriptions_final[1:] %}
+                {% for transcription in transcriptions_all_raw[1:] %}
                     <tr>
                         {% for col in transcription %}
                             <td><small> {{col|safe}} </small></td>
@@ -113,6 +109,23 @@
                 {% endfor %}
                 </tbody>
             </table>
+        {% else %}
+        <p>No transcriptions yet</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-12">
+        <p class="status-heading"><strong>Browse Images</strong></p>
+        {% if images_completed %}
+            <p class="status-heading">
+                <i class="fa fa-pencil fa-fw done"></i>
+                <strong>{{images_completed|length}}</strong> images fully transcribed
+            </p>
+            {% for image in images_completed %}
+                <div class="image_ids small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
+            {% endfor %}
         {% else %}
             <p class="status-heading"><i class="fa fa-pencil fa-fw done"></i> No fully transcribed images yet</p>
         {% endif %}
@@ -176,10 +189,12 @@
             $('tr th:nth-child(3)').css('color', '#aaa');
             $('tr th:nth-child(4)').css('color', '#aaa');
             $('tr th:nth-child(5)').css('color', '#aaa');
+            $('tr th:nth-child(6)').css('color', '#aaa');
             $('tr td:nth-child(2)').css('color', '#aaa');
             $('tr td:nth-child(3)').css('color', '#aaa');
             $('tr td:nth-child(4)').css('color', '#aaa');
             $('tr td:nth-child(5)').css('color', '#aaa');
+            $('tr td:nth-child(6)').css('color', '#aaa');
             $('td >> .fa-question').parent().parent().css('background-color','#fcebca');
             $('td >> .fa-times').parent().parent().css('background-color','#f9da9a');
             $('td >> .fa-exclamation-triangle').parent().parent().css('background-color','#fab0a7');

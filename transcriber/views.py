@@ -8,7 +8,7 @@ from werkzeug import secure_filename
 from transcriber.models import FormMeta, FormSection, FormField, \
     DocumentCloudImage, ImageTaskAssignment, TaskGroup, User
 from transcriber.database import db
-from transcriber.helpers import slugify, pretty_transcriptions, \
+from transcriber.helpers import slugify, pretty_task_transcriptions, \
     pretty_final_transcriptions, get_user_activity, reconcile_rows
 from flask_wtf import Form
 from transcriber.dynamic_form import NullableIntegerField as IntegerField, \
@@ -855,6 +855,7 @@ def transcriptions():
 
     table_name = task_dict['table_name']
 
+    images_completed = ImageTaskAssignment.get_completed_images_by_task(task_id)
     images_unseen = ImageTaskAssignment.get_unseen_images_by_task(task_id)
     images_inprog = ImageTaskAssignment.get_inprog_images_by_task(task_id)
     images_conflict = ImageTaskAssignment.get_conflict_images_by_task(task_id)
@@ -863,7 +864,7 @@ def transcriptions():
             SELECT * from (SELECT id, fetch_url, hierarchy from document_cloud_image) i
             JOIN "{0}" t 
             ON (i.id = t.image_id)
-            WHERE (t.transcription_status = 'final')
+            WHERE (t.transcription_status = 'raw')
             ORDER BY i.id, t.id
         '''.format(table_name)
     h = ''' 
@@ -872,17 +873,19 @@ def transcriptions():
             WHERE table_name = '{0}'
         '''.format(table_name)
 
+
     engine = db.session.bind
     with engine.begin() as conn:
         t_header = conn.execute(text(h)).fetchall()
         rows_all = conn.execute(text(q)).fetchall()
 
     if len(rows_all) > 0:
-        transcriptions_final = pretty_final_transcriptions(t_header, rows_all, task_id)
+        transcriptions_all_raw = pretty_task_transcriptions(t_header, rows_all, task_id)
 
     return render_template('transcriptions.html',
                             task=task_dict,
-                            transcriptions_final=transcriptions_final,
+                            transcriptions_all_raw=transcriptions_all_raw,
+                            images_completed=images_completed,
                             images_unseen=images_unseen,
                             images_inprog=images_inprog,
                             images_conflict=images_conflict)
