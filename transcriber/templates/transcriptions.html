@@ -83,14 +83,14 @@
 
 <div class="row">
     <div class="col-sm-12">
-        <p class="status-heading"><strong>All transcriptions</strong></p>
-        <a href="{{ url_for('views.download_transcriptions', task_id=task.id) }}" class="btn btn-default pull-right"><i class="fa fa-download fa-fw"></i> Download CSV</a>
-        <div>
-            <i class="fa fa-times fa-fw"></i> Blank &nbsp;&nbsp;&nbsp;
-            <i class="fa fa-question fa-fw"></i> Not legible &nbsp;&nbsp;&nbsp;
-            <i class="fa fa-exclamation-triangle fa-fw"></i> Looks altered <br>
-        </div>
         {% if transcriptions_all_raw %}
+            <p class="status-heading"><strong>All transcriptions</strong></p>
+            <a href="{{ url_for('views.download_transcriptions', task_id=task.id) }}" class="btn btn-default pull-right"><i class="fa fa-download fa-fw"></i> Download CSV</a>
+            <div>
+                <i class="fa fa-times fa-fw"></i> Blank &nbsp;&nbsp;&nbsp;
+                <i class="fa fa-question fa-fw"></i> Not legible &nbsp;&nbsp;&nbsp;
+                <i class="fa fa-exclamation-triangle fa-fw"></i> Looks altered <br>
+            </div>
             <table class="table" id="final_transcriptions">
                 <thead>
                     <tr>
@@ -114,7 +114,7 @@
                 </tbody>
             </table>
         {% else %}
-        <p>No transcriptions yet</p>
+            <p class="status-heading"><strong>No transcriptions yet</strong></p>
         {% endif %}
         <br/><br/>
     </div>
