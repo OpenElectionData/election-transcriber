@@ -94,14 +94,18 @@
             <table class="table" id="final_transcriptions">
                 <thead>
                     <tr>
-                        {% for h in transcriptions_all_raw[0] %}
+                        <th></th>
+                        {% for h in transcription_tbl_header %}
                             <th> {{h}} </th>
                         {% endfor %}
                     </tr>
                 </thead>
                 <tbody>
-                {% for transcription in transcriptions_all_raw[1:] %}
+                {% for cls, transcription in transcriptions_all_raw %}
                     <tr>
+                        <td>
+                            <span class="{{cls}} small"><i class="fa fa-circle fa-fw" aria-hidden="true"></i></span>
+                        </td>
                         {% for col in transcription %}
                             <td><small> {{col|safe}} </small></td>
                         {% endfor %}
@@ -112,70 +116,10 @@
         {% else %}
         <p>No transcriptions yet</p>
         {% endif %}
+        <br/><br/>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-sm-12">
-        <p class="status-heading"><strong>Browse Images</strong></p>
-        {% if images_completed %}
-            <p class="status-heading">
-                <i class="fa fa-pencil fa-fw done"></i>
-                <strong>{{images_completed|length}}</strong> images fully transcribed
-            </p>
-            {% for image in images_completed %}
-                <div class="image_ids small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
-            {% endfor %}
-        {% else %}
-            <p class="status-heading"><i class="fa fa-pencil fa-fw done"></i> No fully transcribed images yet</p>
-        {% endif %}
-    </div>
-</div>
-
-{% if images_inprog %}
-<div class="row">
-    <div class="col-sm-12">
-        <hr>
-        <p class="status-heading">
-            <i class="fa fa-pencil fa-fw inprog"></i>
-            <strong>{{images_inprog|length}}</strong> images partially transcribed
-        </p>
-        {% for image in images_inprog %}
-            <div class="image_ids small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
-{% if images_conflict %}
-<div class="row">
-    <div class="col-sm-12">
-        <hr>
-        <p class="status-heading">
-            <i class="fa fa-pencil fa-fw conflict"></i>
-            <strong>{{images_conflict|length}}</strong> images with conflicting transcriptions
-        </p>
-        {% for image in images_conflict %}
-            <div class="image_ids small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
-
-{% if images_unseen %}
-<div class="row">
-    <div class="col-sm-12">
-        <hr>
-        <p class="status-heading">
-            <i class="fa fa-pencil fa-fw unseen"></i>
-            <strong>{{images_unseen|length}}</strong> images without any transcriptions yet
-        </p>
-        {% for image in images_unseen %}
-            <div class="image_ids small"><a href="{{image.fetch_url}}" target="_blank"> {{image.id}} </a></div>
-        {% endfor %}
-    </div>
-</div>
-{% endif %}
 
 
 {% endblock %}
@@ -189,19 +133,17 @@
             $('tr th:nth-child(3)').css('color', '#aaa');
             $('tr th:nth-child(4)').css('color', '#aaa');
             $('tr th:nth-child(5)').css('color', '#aaa');
-            $('tr th:nth-child(6)').css('color', '#aaa');
             $('tr td:nth-child(2)').css('color', '#aaa');
             $('tr td:nth-child(3)').css('color', '#aaa');
             $('tr td:nth-child(4)').css('color', '#aaa');
             $('tr td:nth-child(5)').css('color', '#aaa');
-            $('tr td:nth-child(6)').css('color', '#aaa');
             $('td >> .fa-question').parent().parent().css('background-color','#fcebca');
             $('td >> .fa-times').parent().parent().css('background-color','#f9da9a');
             $('td >> .fa-exclamation-triangle').parent().parent().css('background-color','#fab0a7');
             $('.progress-tooltip').tooltip();
 
             $('#final_transcriptions').DataTable( {
-                "aaSorting": [ [0,'asc'] ],
+                "aaSorting": [ [1,'asc'] ],
                 "paging": false,
                 "searching": false,
                 "info": false

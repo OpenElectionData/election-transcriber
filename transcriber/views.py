@@ -9,7 +9,7 @@ from transcriber.models import FormMeta, FormSection, FormField, \
     DocumentCloudImage, ImageTaskAssignment, TaskGroup, User
 from transcriber.database import db
 from transcriber.helpers import slugify, pretty_task_transcriptions, \
-    pretty_final_transcriptions, get_user_activity, reconcile_rows
+    get_user_activity, reconcile_rows
 from flask_wtf import Form
 from transcriber.dynamic_form import NullableIntegerField as IntegerField, \
     NullableDateTimeField as DateTimeField, \
@@ -879,11 +879,19 @@ def transcriptions():
         t_header = conn.execute(text(h)).fetchall()
         rows_all = conn.execute(text(q)).fetchall()
 
+    img_statuses = {
+        'done': images_completed,
+        'inprog': images_inprog,
+        'unseen': images_unseen,
+        'conflict': images_conflict
+    }
+
     if len(rows_all) > 0:
-        transcriptions_all_raw = pretty_task_transcriptions(t_header, rows_all, task_id)
+        transcription_tbl_header, transcriptions_all_raw = pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses)
 
     return render_template('transcriptions.html',
                             task=task_dict,
+                            transcription_tbl_header=transcription_tbl_header,
                             transcriptions_all_raw=transcriptions_all_raw,
                             images_completed=images_completed,
                             images_unseen=images_unseen,
