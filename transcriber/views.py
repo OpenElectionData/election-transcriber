@@ -611,7 +611,11 @@ def transcribe_intro():
 
 @views.route('/transcribe/', methods=['GET', 'POST'])
 def transcribe():
-    if not request.args.get('task_id'):
+    # TODO: get rid of this & add task_id as argument
+    if request.args.get('task_id'):
+        task_id = request.args.get('task_id')
+
+    if not task_id:
         return redirect(url_for('views.index'))
     engine = db.session.bind
     section_sq = db.session.query(FormSection)\
@@ -759,6 +763,7 @@ def transcribe():
                     print "don't reconcile"
 
                 flash("Saved! Let's do another!", "saved")
+                return redirect(url_for('views.transcribe', task_id=task_id))
 
         else:
             print(form.errors)
@@ -769,12 +774,12 @@ def transcribe():
 
     # This is where we put in the image. 
     image_id = request.args.get('image_id')
-    image = None
+    ita = None
 
     if image_id:
-        image = db.session.query(ImageTaskAssignment).get(int(image_id))
+        ita = db.session.query(ImageTaskAssignment).filter(ImageTaskAssignment.image_id == int(image_id)).first()
     else:
-        image = ImageTaskAssignment.get_next_image_to_transcribe(task.id, username)
+        ita = ImageTaskAssignment.get_next_image_to_transcribe(task.id, username)
 
     q = ''' 
         SELECT * from "{0}" where transcriber = '{1}'
@@ -784,7 +789,7 @@ def transcribe():
     task_dict['user_transcriptions'] = len(user_transcriptions)
 
 
-    if image == None:
+    if ita == None:
 
         if ImageTaskAssignment.is_task_complete(task.id): # if task is done
             flash("Thanks for helping to transcribe '%s'! Want to help out with another?" %task_dict['name'])
@@ -795,10 +800,10 @@ def transcribe():
 
     else:
         # checkout image for 5 mins
-        image.checkout_expire = expire_time
-        db.session.add(image)
+        ita.checkout_expire = expire_time
+        db.session.add(ita)
         db.session.commit()
-        dc_image = db.session.query(DocumentCloudImage).get(image.image_id)
+        dc_image = db.session.query(DocumentCloudImage).get(ita.image_id)
         flask_session['image'] = dc_image.fetch_url
         flask_session['image_type'] = dc_image.image_type
         flask_session['image_id'] = dc_image.id
