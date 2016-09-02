@@ -601,22 +601,24 @@ def edit_task_group():
     task_group = db.session.query(TaskGroup).get(request.args['group_id'])
     return render_template('edit-task-group.html',task_group=task_group)
 
-@views.route('/transcribe-intro/', methods=['GET', 'POST'])
-def transcribe_intro():
-    if not request.args.get('task_id'):
+@views.route('/transcribe-intro/<task_id>', methods=['GET', 'POST'])
+def transcribe_intro(task_id):
+
+    task_id = int(task_id)
+    if not task_id:
         return redirect(url_for('views.index'))
-    task = db.session.query(FormMeta).get(request.args.get('task_id'))
+
+    task = db.session.query(FormMeta).get(task_id)
     task_dict = task.as_dict()
     return render_template('transcribe-intro.html', task=task_dict)
 
-@views.route('/transcribe/', methods=['GET', 'POST'])
-def transcribe():
-    # TODO: get rid of this & add task_id as argument
-    if request.args.get('task_id'):
-        task_id = request.args.get('task_id')
+@views.route('/transcribe/<task_id>', methods=['GET', 'POST'])
+def transcribe(task_id):
 
+    task_id = int(task_id)
     if not task_id:
         return redirect(url_for('views.index'))
+
     engine = db.session.bind
     section_sq = db.session.query(FormSection)\
             .filter(or_(FormSection.status != 'deleted', 
@@ -631,7 +633,7 @@ def transcribe():
     task = db.session.query(FormMeta)\
             .join(section_sq)\
             .join(field_sq)\
-            .filter(FormMeta.id == request.args['task_id'])\
+            .filter(FormMeta.id == task_id)\
             .first()
 
     if current_user.is_anonymous():
