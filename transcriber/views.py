@@ -229,6 +229,7 @@ def delete_transcription():
     transcription_id = request.args.get('transcription_id')
     task_id = request.args.get('task_id')
     user = request.args.get('user')
+    next = request.args.get('next')
 
     engine = db.session.bind
 
@@ -277,7 +278,10 @@ def delete_transcription():
     db.session.add(assignment)
     db.session.commit()
 
-    flash("Transcription deleted")
+    flash("Transcription deleted: image <strong>%s</strong> by user <strong>%s</strong>" %(image_id, user))
+
+    if next == 'task':
+        return redirect(url_for('views.transcriptions', task_id=task_id))
 
     return redirect(url_for('views.user', user=user))
 

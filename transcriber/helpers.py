@@ -147,7 +147,7 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses):
                 field_pretty = field_pretty+'<i class="fa fa-exclamation-triangle"></i>'
             row_pretty.append(field_pretty)
         # adding a link to delete
-        delete_html = '<a href="/delete-transcription/?user='+user_name+'&transcription_id='+str(transcription_id)+'&task_id='+str(task_id)+'"><i class="fa fa-trash-o"></i></a>'
+        delete_html = '<a href="/delete-transcription/?user='+user_name+'&transcription_id='+str(transcription_id)+'&task_id='+str(task_id)+'&next=task"><i class="fa fa-trash-o"></i></a>'
         row_pretty.append(delete_html)
 
         # TODO: a less hacky & more elegant way to get image task assignment status
