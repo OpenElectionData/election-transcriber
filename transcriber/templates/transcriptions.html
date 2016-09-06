@@ -86,12 +86,26 @@
         {% if transcriptions_all_raw %}
             <p class="status-heading"><strong>All transcriptions</strong></p>
             <a href="{{ url_for('views.download_transcriptions', task_id=task.id) }}" class="btn btn-default pull-right"><i class="fa fa-download fa-fw"></i> Download CSV</a>
-            <div>
-                <i class="fa fa-times fa-fw"></i> Blank &nbsp;&nbsp;&nbsp;
-                <i class="fa fa-question fa-fw"></i> Not legible &nbsp;&nbsp;&nbsp;
-                <i class="fa fa-exclamation-triangle fa-fw"></i> Looks altered <br>
-            </div>
-            <table class="table" id="final_transcriptions">
+
+            <strong>Filter</strong>: 
+            <label class="radio-inline" id="row_filters">
+                <input type="radio" name="row_filters" id="conflict" value="conflict"> In-conflict
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="row_filters" id="irrelevant" value="irrelevant"> Irrelevant
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="row_filters" id="blank" value="blank"> <i class="fa fa-times fa-fw"></i> Blank
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="row_filters" id="illegible" value="illegible"> <i class="fa fa-question fa-fw"></i> Illegible
+            </label>
+            <label class="radio-inline">
+                <input type="radio" name="row_filters" id="altered" value="altered"> <i class="fa fa-exclamation-triangle fa-fw"></i> Looks altered
+            </label>
+
+
+            <table class="table" id="all_transcriptions">
                 <thead>
                     <tr>
                         <th></th>
@@ -104,10 +118,10 @@
                 {% for cls, transcription in transcriptions_all_raw %}
                     <tr>
                         <td>
-                            <span class="{{cls}} small"><i class="fa fa-circle fa-fw" aria-hidden="true"></i></span>
+                            <span class="{{cls}} t_status small"><i class="fa fa-circle fa-fw" aria-hidden="true"></i></span>
                         </td>
                         {% for col in transcription %}
-                            <td><small> {{col|safe}} </small></td>
+                            <td class="small">{{col|safe}}</td>
                         {% endfor %}
                     </tr>
                 {% endfor %}
@@ -142,12 +156,38 @@
             $('td >> .fa-exclamation-triangle').parent().parent().css('background-color','#fab0a7');
             $('.progress-tooltip').tooltip();
 
-            $('#final_transcriptions').DataTable( {
+            var my_table = $('#all_transcriptions').DataTable( {
                 "aaSorting": [ [1,'asc'] ],
                 "paging": false,
                 "searching": false,
                 "info": false
             } );
+
+            $rows = $('#all_transcriptions > tbody > tr')
+            function filter_by_status(status){
+
+                $rows.each(function(i, row){
+                    status_cell = $(row).children().first().find('.t_status')
+                    if(status_cell.hasClass(status)){
+                        $(row).removeClass('row-hidden');
+                    } else {
+                        $(row).addClass('row-hidden');
+                    }
+                });
+            };
+
+
+
+            $("input[name='row_filters']").change(function(){
+                var val = this.value;
+
+                if(val == 'conflict'){
+                    filter_by_status('conflict');
+                };
+
+            });
+
+
         })
 
     </script>

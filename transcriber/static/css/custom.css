@@ -386,3 +386,11 @@ table, label,.control-label,.help-block,.checkbox,.radio { font-size: 16px; }
   color: #ccc;
 }
 
+
+/* table stuff on view transcriptions page */
+.row-hidden {
+  display: none;
+}
+
+
+
