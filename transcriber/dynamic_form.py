@@ -67,7 +67,7 @@ def validate_blank_not_legible(form, field):
     not_legible = form.data['{0}_not_legible'.format(field.name)]
     irrelevant = form.data['flag_irrelevant']
     if not irrelevant:
-        if not field.data and not blank and not not_legible:
+        if (field.data==None or field.data=='') and not blank and not not_legible:
             message = u'If the "{0}" field is either blank or not legible, \
                     please mark the appropriate checkbox'.format(field.name)
             raise ValidationError(message)
