@@ -163,9 +163,10 @@
                 "info": false
             } );
 
+            // TODO: less logic that relies on front-end stuff
+            // perhaps add to url param & move logic to views?
             $rows = $('#all_transcriptions > tbody > tr')
             function filter_by_status(status){
-
                 $rows.each(function(i, row){
                     status_cell = $(row).children().first().find('.t_status')
                     if(status_cell.hasClass(status)){
@@ -175,7 +176,31 @@
                     }
                 });
             };
-
+            function filter_irrelevant(){
+                $rows.each(function(i, row){
+                    var cell = $(row).children()[5];
+                    var is_irr = $(cell).text();
+                    if(is_irr == 'True'){
+                        $(row).removeClass('row-hidden');
+                    } else {
+                        $(row).addClass('row-hidden');
+                    };
+                });
+            };
+            function filter_by_issue(issue){
+                issue_map = {
+                    'blank': 'fa-times',
+                    'illegible': 'fa-question',
+                    'altered': 'fa-exclamation-triangle'
+                };
+                $rows.each(function(i, row){
+                    if($(row).find('.'+issue_map[issue]).length>0){
+                        $(row).removeClass('row-hidden');
+                    } else {
+                        $(row).addClass('row-hidden');
+                    };
+                });
+            }
 
 
             $("input[name='row_filters']").change(function(){
@@ -183,6 +208,10 @@
 
                 if(val == 'conflict'){
                     filter_by_status('conflict');
+                } else if (val == 'irrelevant'){
+                    filter_irrelevant();
+                } else {
+                    filter_by_issue(val);
                 };
 
             });
