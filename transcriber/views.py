@@ -903,6 +903,8 @@ def transcriptions():
         transcription_tbl_header = []
         transcriptions_all_raw = []
 
+    row_filter = request.args.get('filter')
+
     return render_template('transcriptions.html',
                             task=task_dict,
                             transcription_tbl_header=transcription_tbl_header,
@@ -910,7 +912,8 @@ def transcriptions():
                             images_completed=images_completed,
                             images_unseen=images_unseen,
                             images_inprog=images_inprog,
-                            images_conflict=images_conflict)
+                            images_conflict=images_conflict,
+                            row_filter=row_filter)
 
 @views.route('/all-users/', methods=['GET', 'POST'])
 @login_required

@@ -391,6 +391,14 @@ table, label,.control-label,.help-block,.checkbox,.radio { font-size: 16px; }
 .row-hidden {
   display: none;
 }
-
+#row-filters .btn {
+  background: transparent;
+  color: #CC4627;
+  border: 1px solid #CC4627;
+}
+#row-filters .btn.selected {
+  background: #CC4627;
+  color: #fff;
+}
 
 

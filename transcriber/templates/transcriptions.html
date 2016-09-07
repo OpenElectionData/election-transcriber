@@ -84,25 +84,25 @@
 <div class="row">
     <div class="col-sm-12">
         {% if transcriptions_all_raw %}
-            <p class="status-heading"><strong>All transcriptions</strong></p>
+            <p class="status-heading"><strong>Manage transcriptions</strong></p>
             <a href="{{ url_for('views.download_transcriptions', task_id=task.id) }}" class="btn btn-default pull-right"><i class="fa fa-download fa-fw"></i> Download CSV</a>
 
-            <strong>Filter</strong>: 
-            <label class="radio-inline" id="row_filters">
-                <input type="radio" name="row_filters" id="conflict" value="conflict"> In-conflict
-            </label>
-            <label class="radio-inline">
-                <input type="radio" name="row_filters" id="irrelevant" value="irrelevant"> Irrelevant
-            </label>
-            <label class="radio-inline">
-                <input type="radio" name="row_filters" id="blank" value="blank"> <i class="fa fa-times fa-fw"></i> Blank
-            </label>
-            <label class="radio-inline">
-                <input type="radio" name="row_filters" id="illegible" value="illegible"> <i class="fa fa-question fa-fw"></i> Illegible
-            </label>
-            <label class="radio-inline">
-                <input type="radio" name="row_filters" id="altered" value="altered"> <i class="fa fa-exclamation-triangle fa-fw"></i> Looks altered
-            </label>
+
+            <div id="row-filters">
+                <strong>Viewing:</strong> 
+
+                <a type="button" class="btn btn-default btn-sm {% if not row_filter %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id) }}">All</a>
+
+                <div class="btn-group" role="group">
+                    <a type="button" class="btn btn-default btn-sm {% if row_filter=='conflict' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='conflict') }}">In-conflict</a>
+                    <a type="button" class="btn btn-default btn-sm {% if row_filter=='irrelevant' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='irrelevant') }}">Irrelevant</a>
+                    <a type="button" class="btn btn-default btn-sm {% if row_filter=='blank' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='blank') }}">Blank</a>
+                    <a type="button" class="btn btn-default btn-sm {% if row_filter=='illegible' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='illegible') }}">Illegible</a>
+                    <a type="button" class="btn btn-default btn-sm {% if row_filter=='altered' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='altered') }}">Altered</a>
+                </div>
+            </div>
+
+
 
 
             <table class="table" id="all_transcriptions">
@@ -158,63 +158,11 @@
 
             var my_table = $('#all_transcriptions').DataTable( {
                 "aaSorting": [ [1,'asc'] ],
-                "paging": false,
+                "pagingType": "full_numbers",
+                "lengthMenu": [ 25, 100, 200 ],
                 "searching": false,
                 "info": false
             } );
-
-            // TODO: less logic that relies on front-end stuff
-            // perhaps add to url param & move logic to views?
-            $rows = $('#all_transcriptions > tbody > tr')
-            function filter_by_status(status){
-                $rows.each(function(i, row){
-                    status_cell = $(row).children().first().find('.t_status')
-                    if(status_cell.hasClass(status)){
-                        $(row).removeClass('row-hidden');
-                    } else {
-                        $(row).addClass('row-hidden');
-                    }
-                });
-            };
-            function filter_irrelevant(){
-                $rows.each(function(i, row){
-                    var cell = $(row).children()[5];
-                    var is_irr = $(cell).text();
-                    if(is_irr == 'True'){
-                        $(row).removeClass('row-hidden');
-                    } else {
-                        $(row).addClass('row-hidden');
-                    };
-                });
-            };
-            function filter_by_issue(issue){
-                issue_map = {
-                    'blank': 'fa-times',
-                    'illegible': 'fa-question',
-                    'altered': 'fa-exclamation-triangle'
-                };
-                $rows.each(function(i, row){
-                    if($(row).find('.'+issue_map[issue]).length>0){
-                        $(row).removeClass('row-hidden');
-                    } else {
-                        $(row).addClass('row-hidden');
-                    };
-                });
-            }
-
-
-            $("input[name='row_filters']").change(function(){
-                var val = this.value;
-
-                if(val == 'conflict'){
-                    filter_by_status('conflict');
-                } else if (val == 'irrelevant'){
-                    filter_irrelevant();
-                } else {
-                    filter_by_issue(val);
-                };
-
-            });
 
 
         })
