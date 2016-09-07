@@ -247,13 +247,13 @@ def delete_transcription():
 
     # set status on transcription as deleted
     update_status = ''' 
-                    UPDATE {0}
+                    UPDATE "{0}"
                     SET transcription_status = 'raw_deleted'
                     WHERE id = {1}
                 '''.format(task.table_name, transcription_id)
     # if the image has a final transcription, delete final transcription
     update_remove_final =   '''
-                    DELETE from {0}
+                    DELETE from "{0}"
                     WHERE transcription_status = 'final' and image_id = '{1}'
                 '''.format(task.table_name, image_id)
     with engine.begin() as conn:
@@ -261,7 +261,7 @@ def delete_transcription():
         conn.execute(text(update_remove_final))
 
     q = '''
-        SELECT * from {0}
+        SELECT * from "{0}"
         WHERE image_id = {1} and transcription_status = 'raw'
         '''.format(task.table_name, image_id)
     with engine.begin() as conn:
