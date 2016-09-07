@@ -96,9 +96,18 @@
                 <div class="btn-group" role="group">
                     <a type="button" class="btn btn-default btn-sm {% if row_filter=='conflict' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='conflict') }}">In-conflict</a>
                     <a type="button" class="btn btn-default btn-sm {% if row_filter=='irrelevant' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='irrelevant') }}">Irrelevant</a>
-                    <a type="button" class="btn btn-default btn-sm {% if row_filter=='blank' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='blank') }}">Blank</a>
-                    <a type="button" class="btn btn-default btn-sm {% if row_filter=='illegible' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='illegible') }}">Illegible</a>
-                    <a type="button" class="btn btn-default btn-sm {% if row_filter=='altered' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='altered') }}">Altered</a>
+                    <a type="button" class="btn btn-default btn-sm {% if row_filter=='blank' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='blank') }}">
+                        <i class="fa fa-times fa-fw"></i>
+                        Blank
+                    </a>
+                    <a type="button" class="btn btn-default btn-sm {% if row_filter=='illegible' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='illegible') }}">
+                        <i class="fa fa-question fa-fw"></i>
+                        Illegible
+                    </a>
+                    <a type="button" class="btn btn-default btn-sm {% if row_filter=='altered' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='altered') }}">
+                        <i class="fa fa-exclamation-triangle fa-fw"></i>
+                        Altered
+                    </a>
                 </div>
             </div>
 

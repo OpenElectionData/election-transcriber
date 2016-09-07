@@ -97,7 +97,7 @@ def pretty_user_transcriptions(t_header, rows_all, task_id, user_name):
 # given all rows, produce pretty rows to display in html table
 # this is used to display transcriptions on the 'review' transcriptions' page
 # colors rows based on transcription status & includes a delete link to delete a transcription
-def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses):
+def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_filter):
     num_cols = len(rows_all[0])
 
     # 4 cols per field: fieldname/fieldname_blank/fieldname_not_legible/fieldname_altered
@@ -137,14 +137,26 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses):
         row_pretty = [image_link, dt_formatted, row[5], user_link, row[8]] # include source hierarchy? row[2]
 
         row_transcribed = [row[i:i + cpf] for i in range(t_col_start+3, num_cols, cpf)] # transcribed fields
+        
+        if not row_filter:
+            include_row = True
+        else:
+            include_row = False
+
         for field in row_transcribed:
             field_pretty = str(field[0])
             if field[1]:
-                field_pretty = field_pretty+'<i class="fa fa-times"></i>'
+                if row_filter=='blank':
+                    include_row = True
+                field_pretty = field_pretty+'<i class="fa fa-times fa-fw"></i>'
             if field[2]:
-                field_pretty = field_pretty+'<i class="fa fa-question"></i>'
+                if row_filter=='illegible':
+                    include_row = True
+                field_pretty = field_pretty+'<i class="fa fa-question fa-fw"></i>'
             if field[3]:
-                field_pretty = field_pretty+'<i class="fa fa-exclamation-triangle"></i>'
+                if row_filter=='altered':
+                    include_row = True
+                field_pretty = field_pretty+'<i class="fa fa-exclamation-triangle fa-fw"></i>'
             row_pretty.append(field_pretty)
         
         # adding a link to delete, link to transcribe
@@ -158,7 +170,13 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses):
             if image_id in [i.id for i in img_statuses[s]]:
                 cls = s
 
-        transcriptions.append((cls, row_pretty))
+        if row_filter=='conflict' and cls=='conflict':
+            include_row = True
+        if row_filter=='irrelevant' and row[8]:
+            include_row = True
+
+        if include_row:
+            transcriptions.append((cls, row_pretty))
 
     return (header, transcriptions)
 
