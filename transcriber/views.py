@@ -685,7 +685,91 @@ def transcribe(task_id):
             db.session.commit()
             
     if request.method == 'POST':
-        post_transcription(request, form, task_dict, current_time, username, bools, task, engine, task_id)
+        print "*************************"
+        print "*POSTING A TRANSCRIPTION*"
+        form = form(request.form)
+        print "form:", form
+        if form.validate():
+            print "*FORM VALIDATED*"
+            image = db.session.query(ImageTaskAssignment)\
+                .filter(ImageTaskAssignment.form_id == task_dict['id'])\
+                .filter(ImageTaskAssignment.image_id == flask_session['image_id'])\
+                .first()
+            print "image: ", image
+            reviewer_count = db.session.query(FormMeta).get(image.form_id).reviewer_count
+
+            if not image.checkout_expire or image.checkout_expire < current_time:
+                print "*FORM EXPIRED*"
+                flash("Form has expired", "expired")
+            else:
+                print "*FORM NOT EXPIRED*"
+
+                print "username:", username
+
+                ins_args = {
+                    'transcriber': username,
+                    'image_id': flask_session['image_id'],
+                    'transcription_status': 'raw',
+                }
+                print "ins_args:", ins_args
+                for k,v in request.form.items():
+                    print "k:",k
+                    print "v:",v
+                    if k != 'csrf_token':
+                        if v:
+                            ins_args[k] = v
+                        else:
+                            ins_args[k] = None
+                if not set(bools).intersection(set(ins_args.keys())):
+                    for f in bools:
+                        ins_args[f] = False
+                ins = ''' 
+                    INSERT INTO "{0}" ({1}) VALUES ({2})
+                '''.format(task.table_name, 
+                           ','.join(['"%s"' % f for f in ins_args.keys()]),
+                           ','.join([':{0}'.format(f) for f in ins_args.keys()]))
+                with engine.begin() as conn:
+                    conn.execute(text(ins), **ins_args)
+                image.view_count += 1
+                image.checkout_expire = None
+                db.session.add(image)
+                db.session.commit()
+
+                image_id = ins_args['image_id']
+                print "image_id:", image_id
+                ins_args.pop('image_id')
+                ins_args.pop('transcriber')
+                col_names = [f for f in ins_args.keys()]
+                
+                if image.view_count >= reviewer_count:
+                    print "reconcile"
+                    min_agree = reviewer_count*2/3+1 # need to have more than 2/3 reviewer_count to accept. make a smarter rule here?
+                    final_row = reconcile_rows(col_names, task.table_name, image_id, min_agree)
+
+                    if final_row: # if images can be reconciled
+                        final_row['transcription_status'] = 'final'
+                        final_row['image_id'] = image_id
+                        ins_final = ''' 
+                            INSERT INTO "{0}" ({1}) VALUES ({2})
+                        '''.format(task.table_name, 
+                                   ','.join(['"%s"' % f for f in final_row.keys()]),
+                                   ','.join([':{0}'.format(f) for f in final_row.keys()]))
+                        with engine.begin() as conn:
+                            conn.execute(text(ins_final), **final_row)
+
+                        image.is_complete = True
+                        db.session.add(image)
+                        db.session.commit()
+
+                else:
+                    print "don't reconcile"
+
+                flash("Saved! Let's do another!", "saved")
+                return redirect(url_for('views.transcribe', task_id=task_id))
+
+        else:
+            print(form.errors)
+            return render_template('transcribe.html', form=form, task=task_dict, is_new=False)
 
     else:
         form = form(meta={})
@@ -726,94 +810,6 @@ def transcribe(task_id):
         flask_session['image_type'] = dc_image.image_type
         flask_session['image_id'] = dc_image.id
         return render_template('transcribe.html', form=form, task=task_dict, is_new = True)
-
-def post_transcription(request, form, task_dict, current_time, username, bools, task, engine, task_id):
-    print "*************************"
-    print "*POSTING A TRANSCRIPTION*"
-    form = form(request.form)
-    print "form:", form
-    if form.validate():
-        print "*FORM VALIDATED*"
-        image = db.session.query(ImageTaskAssignment)\
-            .filter(ImageTaskAssignment.form_id == task_dict['id'])\
-            .filter(ImageTaskAssignment.image_id == flask_session['image_id'])\
-            .first()
-        print "image: ", image
-        reviewer_count = db.session.query(FormMeta).get(image.form_id).reviewer_count
-
-        if not image.checkout_expire or image.checkout_expire < current_time:
-            print "*FORM EXPIRED*"
-            flash("Form has expired", "expired")
-        else:
-            print "*FORM NOT EXPIRED*"
-
-            print "username:", username
-
-            ins_args = {
-                'transcriber': username,
-                'image_id': flask_session['image_id'],
-                'transcription_status': 'raw',
-            }
-            print "ins_args:", ins_args
-            for k,v in request.form.items():
-                print "k:",k
-                print "v:",v
-                if k != 'csrf_token':
-                    if v:
-                        ins_args[k] = v
-                    else:
-                        ins_args[k] = None
-            if not set(bools).intersection(set(ins_args.keys())):
-                for f in bools:
-                    ins_args[f] = False
-            ins = ''' 
-                INSERT INTO "{0}" ({1}) VALUES ({2})
-            '''.format(task.table_name, 
-                       ','.join(['"%s"' % f for f in ins_args.keys()]),
-                       ','.join([':{0}'.format(f) for f in ins_args.keys()]))
-            with engine.begin() as conn:
-                conn.execute(text(ins), **ins_args)
-            image.view_count += 1
-            image.checkout_expire = None
-            db.session.add(image)
-            db.session.commit()
-
-            image_id = ins_args['image_id']
-            print "image_id:", image_id
-            ins_args.pop('image_id')
-            ins_args.pop('transcriber')
-            col_names = [f for f in ins_args.keys()]
-            
-            if image.view_count >= reviewer_count:
-                print "reconcile"
-                min_agree = reviewer_count*2/3+1 # need to have more than 2/3 reviewer_count to accept. make a smarter rule here?
-                final_row = reconcile_rows(col_names, task.table_name, image_id, min_agree)
-
-                if final_row: # if images can be reconciled
-                    final_row['transcription_status'] = 'final'
-                    final_row['image_id'] = image_id
-                    ins_final = ''' 
-                        INSERT INTO "{0}" ({1}) VALUES ({2})
-                    '''.format(task.table_name, 
-                               ','.join(['"%s"' % f for f in final_row.keys()]),
-                               ','.join([':{0}'.format(f) for f in final_row.keys()]))
-                    with engine.begin() as conn:
-                        conn.execute(text(ins_final), **final_row)
-
-                    image.is_complete = True
-                    db.session.add(image)
-                    db.session.commit()
-
-            else:
-                print "don't reconcile"
-
-            flash("Saved! Let's do another!", "saved")
-            return redirect(url_for('views.transcribe', task_id=task_id))
-
-    else:
-        print(form.errors)
-        return render_template('transcribe.html', form=form, task=task_dict, is_new=False)
-
 
 @views.route('/download-transcriptions/', methods=['GET', 'POST'])
 @login_required
@@ -903,15 +899,16 @@ def transcriptions():
 
     row_filter = request.args.get('filter')
     if len(rows_all) > 0:
-        transcription_tbl_header, transcriptions_all_raw = pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_filter)
+        transcription_tbl_header, transcriptions_tbl_rows = pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_filter)
     else:
         transcription_tbl_header = []
-        transcriptions_all_raw = []
+        transcriptions_tbl_rows = []
 
     return render_template('transcriptions.html',
                             task=task_dict,
+                            rows_all_len=len(rows_all),
                             transcription_tbl_header=transcription_tbl_header,
-                            transcriptions_all_raw=transcriptions_all_raw,
+                            transcriptions_tbl_rows=transcriptions_tbl_rows,
                             images_completed=images_completed,
                             images_unseen=images_unseen,
                             images_inprog=images_inprog,

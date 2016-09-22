@@ -7,83 +7,79 @@
 
 <div class="row">
     <div class="col-xs-12">
-        <div class="panel panel-default panel-well">
-            <div class="panel-heading">Task Progress</div>
-            <div class="panel-body">
-                <div class="row">
-                    <div class="col-sm-4">
-                        <p class="status-heading">
-                            <strong>{{task['progress']['reviews_done_perc']}}%</strong> complete
-                        </p>
-                        <span class="text-xs">
-                            <strong>
-                                {{task.image_count}}
-                            </strong>
-                            images &nbsp;&nbsp;
-                            <strong>
-                                {{task.reviewer_count}}
-                            </strong>
-                            reviewers each
-                        </span>
-                    </div>
-                    <div class="col-sm-8">
-                        <p class="text-dark">Image overview</p>
-                        <span class="text-xs">
-                            {% if task['progress']['docs_done_perc'] %}
-                            <span class="text-success">
-                                <strong>
-                                    {{task['progress']['docs_done_perc']}}%
-                                </strong>
-                                completed &nbsp;&nbsp;
-                            </span>
-                            {% endif %}
-                            {% if task['progress']['docs_inprog_perc'] %}
-                            <span class="text-warning">
-                                <strong>
-                                    {{task['progress']['docs_inprog_perc']}}%
-                                </strong>
-                                in-progress &nbsp;&nbsp;
-                            </span>
-                            {% endif %}
-                            {% if task['progress']['docs_conflict_perc'] %}
-                            <span class="text-danger">
-                                <strong>
-                                    {{task['progress']['docs_conflict_perc']}}%
-                                </strong>
-                                in-conflict &nbsp;&nbsp;
-                            </span>
-                            {% endif %}
-                            {% if task['progress']['docs_unseen_perc'] %}
-                            <span class="text-muted">
-                                <strong>
-                                    {{task['progress']['docs_unseen_perc']}}%
-                                </strong>
-                                not yet seen
-                            </span>
-                            {% endif %}
-                        </span>
 
-                        <div class="progress">
-                            <div class="progress-bar progress-bar-done progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_done_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="{{task['progress']['docs_done_ct']}} images completed" style="width: {{task['progress']['docs_done_perc']}}%">
-                            </div>
-                            <div class="progress-bar progress-bar-inprog progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_inprog_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="{{task['progress']['docs_inprog_ct']}} images in progress" style="width: {{task['progress']['docs_inprog_perc']}}%">
-                            </div>
-                            <div class="progress-bar progress-bar-conflict progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_conflict_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="{{task['progress']['docs_conflict_ct']}} images with conflicting transcriptions" style="width: {{task['progress']['docs_conflict_perc']}}%">
-                            </div>
-                            <div class="progress-bar progress-bar-unseen progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_unseen_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="{{task['progress']['docs_unseen_ct']}} images without any transcriptions yet" style="width: {{task['progress']['docs_unseen_perc']}}%">
-                            </div>
-                        </div>
+        <div class="panel panel-default panel-well">
+            <div class="panel-heading">
+                Task progress
+                <span class="text-xs pull-right">
+                    <strong>
+                        {{task.image_count}}
+                    </strong>
+                    images &nbsp;&nbsp;
+                    <strong>
+                        {{task.reviewer_count}}
+                    </strong>
+                    reviewers each
+                </span>
+            </div>
+            <div class="panel-body">
+
+                <span class="text-xs">
+                    {% if task['progress']['docs_done_perc'] %}
+                    <span class="text-success">
+                        <strong>
+                            {{task['progress']['docs_done_perc']}}%
+                        </strong>
+                        completed &nbsp;&nbsp;
+                    </span>
+                    {% endif %}
+                    {% if task['progress']['docs_inprog_perc'] %}
+                    <span class="text-warning">
+                        <strong>
+                            {{task['progress']['docs_inprog_perc']}}%
+                        </strong>
+                        in-progress &nbsp;&nbsp;
+                    </span>
+                    {% endif %}
+                    {% if task['progress']['docs_conflict_perc'] %}
+                    <span class="text-danger">
+                        <strong>
+                            {{task['progress']['docs_conflict_perc']}}%
+                        </strong>
+                        in-conflict &nbsp;&nbsp;
+                    </span>
+                    {% endif %}
+                    {% if task['progress']['docs_unseen_perc'] %}
+                    <span class="text-muted">
+                        <strong>
+                            {{task['progress']['docs_unseen_perc']}}%
+                        </strong>
+                        not yet seen
+                    </span>
+                    {% endif %}
+                </span>
+
+                <div class="progress">
+                    <div class="progress-bar progress-bar-done progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_done_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="{{task['progress']['docs_done_ct']}} images completed" style="width: {{task['progress']['docs_done_perc']}}%">
+                    </div>
+                    <div class="progress-bar progress-bar-inprog progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_inprog_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="{{task['progress']['docs_inprog_ct']}} images in progress" style="width: {{task['progress']['docs_inprog_perc']}}%">
+                    </div>
+                    <div class="progress-bar progress-bar-conflict progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_conflict_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="{{task['progress']['docs_conflict_ct']}} images with conflicting transcriptions" style="width: {{task['progress']['docs_conflict_perc']}}%">
+                    </div>
+                    <div class="progress-bar progress-bar-unseen progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_unseen_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="{{task['progress']['docs_unseen_ct']}} images without any transcriptions yet" style="width: {{task['progress']['docs_unseen_perc']}}%">
                     </div>
                 </div>
             </div>
         </div>
+
+
     </div>
 </div>
 <br/>
 
 <div class="row">
     <div class="col-sm-12">
-        {% if transcriptions_all_raw %}
+        {% if rows_all_len %}
             <p class="status-heading"><strong>Manage transcriptions</strong></p>
             <a href="{{ url_for('views.download_transcriptions', task_id=task.id) }}" class="btn btn-default pull-right"><i class="fa fa-download fa-fw"></i> Download CSV</a>
 
@@ -124,7 +120,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                {% for cls, transcription in transcriptions_all_raw %}
+                {% for cls, transcription in transcriptions_tbl_rows %}
                     <tr>
                         <td>
                             <span class="{{cls}} t_status small"><i class="fa fa-circle fa-fw" aria-hidden="true"></i></span>

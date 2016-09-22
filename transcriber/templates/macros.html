@@ -42,7 +42,7 @@
                             <a href="{{ url_for('views.transcriptions', task_id=task_id )}}"><i class="fa fa-eye fa-fw"></i> Review transcriptions</a>
                         </li>
                         <li role="presentation" class="active pull-right">
-                            <a href=""><i class="fa fa-cog fa-fw"></i> Task setup</a>
+                            <a href=""><i class="fa fa-cog fa-fw"></i> Task settings</a>
                         </li>
                     {% elif current_tab == 'transcriptions' %}
                         <li role="presentation" class="pull-right">
@@ -53,7 +53,7 @@
                         </li>
                         {% if current_user.has_role('admin') %}
                         <li role="presentation" class="pull-right">
-                            <a href="{{ url_for('views.form_creator', form_id=task_id) }}"><i class="fa fa-cog fa-fw"></i> Task setup</a>
+                            <a href="{{ url_for('views.form_creator', form_id=task_id) }}"><i class="fa fa-cog fa-fw"></i> Task settings</a>
                         </li>
                         {% endif %}
                     {% elif current_tab == 'transcribe' %}
@@ -65,7 +65,7 @@
                         </li>
                         {% if current_user.has_role('admin') %}
                         <li role="presentation" class="pull-right">
-                            <a href="{{ url_for('views.form_creator', form_id=task_id) }}"><i class="fa fa-cog fa-fw"></i> Task setup</a>
+                            <a href="{{ url_for('views.form_creator', form_id=task_id) }}"><i class="fa fa-cog fa-fw"></i> Task settings</a>
                         </li>
                         {% endif %}
                     {% endif %}
