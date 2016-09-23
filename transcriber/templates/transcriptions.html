@@ -107,10 +107,16 @@
                 </div>
             </div>
 
-            <div class="checkbox" id="toggle-transcription-fields">
-                <label>
-                    <input type="checkbox"> Show transcribed fields
-                </label>
+            <div id="extra-tbl-controls">
+                <div class="checkbox" id="toggle-transcription-fields">
+                    <label>
+                        <input type="checkbox"> Show transcribed fields
+                    </label>
+                </div>
+                <div>
+                    Filter by source: <input id="src-search" type="text">
+                </div>
+
             </div>
 
 
@@ -170,9 +176,19 @@
                 "aaSorting": [ [1,'asc'] ],
                 "pagingType": "full_numbers",
                 "lengthMenu": [ 25, 100, 200 ],
-                "searching": false,
-                "info": false
+                "info": false,
+                "sDom": '<"top"i>rt<"bottom"lp><"clear">'
             } );
+
+ 
+            $('#src-search').on( 'keyup', function () {
+                my_table
+                    .column( [3] )
+                    .search( this.value )
+                    .draw();
+            } );
+
+
 
             // hide transcription fields by default
             $('.transcription-cell').hide();

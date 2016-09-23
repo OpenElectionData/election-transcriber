@@ -400,5 +400,10 @@ table, label,.control-label,.help-block,.checkbox,.radio { font-size: 16px; }
 .transcription-cell {
   background-color: #f2f2f2;
 }
+#extra-tbl-controls div {
+  display: inline-block;
+  padding-right: 20px;
+}
+
 
 
