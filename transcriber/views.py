@@ -648,6 +648,16 @@ def transcribe(task_id):
     task_dict = task.as_dict()
     task_dict['sections'] = []
     bools = []
+
+    if request.args.get('supercede'):
+        q = ''' 
+                SELECT * FROM "{0}" WHERE id = {1}
+            '''.format(task.table_name, int(request.args.get('supercede')))
+        with engine.begin() as conn:
+            old_transcription = conn.execute(text(q)).first()
+    else:
+        old_transcription = None
+
     for section in sorted(task.sections, key=attrgetter('index')):
         section_dict = {'name': section.name, 'fields': []}
         for field in sorted(section.fields, key=attrgetter('index')):
@@ -764,6 +774,9 @@ def transcribe(task_id):
                 else:
                     print "don't reconcile"
 
+                # TODO: if superceding another image, delete that image
+                # & then go back to review transcriptions page
+
                 flash("Saved! Let's do another!", "saved")
                 return redirect(url_for('views.transcribe', task_id=task_id))
 
@@ -809,7 +822,7 @@ def transcribe(task_id):
         flask_session['image'] = dc_image.fetch_url
         flask_session['image_type'] = dc_image.image_type
         flask_session['image_id'] = dc_image.id
-        return render_template('transcribe.html', form=form, task=task_dict, is_new = True)
+        return render_template('transcribe.html', form=form, task=task_dict, is_new = True, old_transcription=old_transcription)
 
 @views.route('/download-transcriptions/', methods=['GET', 'POST'])
 @login_required
