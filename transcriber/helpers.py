@@ -105,7 +105,7 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
     # transcription field start index (first 5 fields are meta info abt transcription)
     t_col_start = 6
 
-    meta_h = ['image id', 'date added', 'id', 'transcriber', 'irrelevant?'] # include source hierarchy?
+    meta_h = ['image id', 'date added', 'source','id', 'transcriber', 'irrelevant?', ''] # include source hierarchy?
     field_h = []
 
     swap = False
@@ -118,7 +118,7 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
         field = FormField.query.filter(FormField.form_id == task_id).filter(FormField.slug == f_slug).first().as_dict()
         field_h.append(field["name"])
     # meta fields + transcription fields + space for delete button
-    header = meta_h+field_h+[""]
+    header = meta_h+field_h
 
     transcriptions = []
     for row in rows_all:
@@ -129,12 +129,19 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
         image_id = row[0]
         image_url = row[1]
         image_link = "<a href='"+image_url+"' target='blank'>"+str(image_id)+"</a>"
-        dt_formatted = "<span class='small'>"+row[3].strftime("%Y-%m-%d %H:%M:%S")+"</span>"
+        dt_formatted = "<span class='text-xs'>"+row[3].strftime("%Y-%m-%d %H:%M:%S")+"</span>"
+        src_formatted = "<span class='text-xs'>"+row[2]+"</span>"
 
         transcription_id = row[5]
         user_name = row[4]
         user_link = '<a href="/user/?user='+user_name+'" target="_blank">'+user_name+'</a>'
-        row_pretty = [image_link, dt_formatted, row[5], user_link, row[8]] # include source hierarchy? row[2]
+        row_pretty = [image_link, dt_formatted, src_formatted, row[5], user_link, row[8]]
+
+        # adding a link to delete, link to transcribe
+        delete_html = '<a title="Delete transcription '+str(transcription_id)+'" href="/delete-transcription/?user='+user_name+'&transcription_id='+str(transcription_id)+'&task_id='+str(task_id)+'&next=task"><i class="fa fa-trash-o fa-fw"></i></a>'
+        transcribe_html = '<a title="Add a transcription for image '+str(image_id)+'" href="'+url_for('views.transcribe', task_id=task_id, image_id=image_id)+'""><i class="fa fa-pencil fa-fw"></i></a>'
+        row_pretty.append(delete_html+transcribe_html)
+
 
         row_transcribed = [row[i:i + cpf] for i in range(t_col_start+3, num_cols, cpf)] # transcribed fields
         
@@ -158,11 +165,6 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
                     include_row = True
                 field_pretty = field_pretty+'<i class="fa fa-exclamation-triangle fa-fw"></i>'
             row_pretty.append(field_pretty)
-        
-        # adding a link to delete, link to transcribe
-        delete_html = '<a title="Delete transcription '+str(transcription_id)+'" href="/delete-transcription/?user='+user_name+'&transcription_id='+str(transcription_id)+'&task_id='+str(task_id)+'&next=task"><i class="fa fa-trash-o fa-fw"></i></a>'
-        transcribe_html = '<a title="Add a transcription for image '+str(image_id)+'" href="'+url_for('views.transcribe', task_id=task_id, image_id=image_id)+'""><i class="fa fa-pencil fa-fw"></i></a>'
-        row_pretty.append(delete_html+transcribe_html)
 
         # TODO: a less hacky & more elegant way to get image task assignment status
         cls = ''

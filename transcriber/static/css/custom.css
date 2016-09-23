@@ -388,9 +388,6 @@ table, label,.control-label,.help-block,.checkbox,.radio { font-size: 16px; }
 
 
 /* table stuff on view transcriptions page */
-.row-hidden {
-  display: none;
-}
 #row-filters .btn {
   background: transparent;
   color: #CC4627;
@@ -399,6 +396,9 @@ table, label,.control-label,.help-block,.checkbox,.radio { font-size: 16px; }
 #row-filters .btn.selected {
   background: #CC4627;
   color: #fff;
+}
+.transcription-cell {
+  background-color: #f2f2f2;
 }
 
 
