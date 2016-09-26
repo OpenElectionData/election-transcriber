@@ -278,7 +278,10 @@ def delete_transcription():
     db.session.add(assignment)
     db.session.commit()
 
-    flash("Transcription deleted: image <strong>%s</strong> by user <strong>%s</strong>" %(image_id, user))
+    if request.args.get('message') == 'edited':
+        flash("Transcription edited: image <strong>%s</strong> by user <strong>%s</strong>" %(image_id, user))
+    else:
+        flash("Transcription deleted: image <strong>%s</strong> by user <strong>%s</strong>" %(image_id, user))
 
     if next == 'task':
         return redirect(url_for('views.transcriptions', task_id=task_id))
@@ -774,11 +777,18 @@ def transcribe(task_id):
                 else:
                     print "don't reconcile"
 
-                # TODO: if superceding another image, delete that image
+                # if superceding another image, delete that image
                 # & then go back to review transcriptions page
-
-                flash("Saved! Let's do another!", "saved")
-                return redirect(url_for('views.transcribe', task_id=task_id))
+                if old_transcription:
+                    return redirect(url_for('views.delete_transcription',
+                                                transcription_id=old_transcription['id'],
+                                                task_id=task_id,
+                                                next='task',
+                                                user=old_transcription['transcriber'],
+                                                message='edited'))
+                else:
+                    flash("Saved! Let's do another!", "saved")
+                    return redirect(url_for('views.transcribe', task_id=task_id))
 
         else:
             print(form.errors)

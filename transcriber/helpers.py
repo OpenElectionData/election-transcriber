@@ -138,8 +138,8 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
         row_pretty = [image_link, dt_formatted, src_formatted, row[5], user_link, row[8]]
 
         # adding a link to delete, link to transcribe
-        delete_html = '<a title="Delete transcription '+str(transcription_id)+'" href="/delete-transcription/?user='+user_name+'&transcription_id='+str(transcription_id)+'&task_id='+str(task_id)+'&next=task"><i class="fa fa-trash-o fa-fw"></i></a>'
-        transcribe_html = '<a title="Add a transcription for image '+str(image_id)+'" href="'+url_for('views.transcribe', task_id=task_id, image_id=image_id, supercede=transcription_id)+'""><i class="fa fa-pencil fa-fw"></i></a>'
+        delete_html = '<a title="Delete transcription '+str(transcription_id)+'" href="'+url_for('views.delete_transcription', user=user_name, transcription_id=transcription_id, task_id=task_id, next='task')+'"><i class="fa fa-trash-o fa-fw"></i></a>'
+        transcribe_html = '<a title="Edit transcription '+str(transcription_id)+'" href="'+url_for('views.transcribe', task_id=task_id, image_id=image_id, supercede=transcription_id)+'""><i class="fa fa-pencil fa-fw"></i></a>'
         row_pretty.append(delete_html+transcribe_html)
 
 
