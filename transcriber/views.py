@@ -654,7 +654,7 @@ def transcribe(task_id):
                 SELECT * FROM "{0}" WHERE id = {1}
             '''.format(task.table_name, int(request.args.get('supercede')))
         with engine.begin() as conn:
-            old_transcription = conn.execute(text(q)).first()
+            old_transcription = dict(conn.execute(text(q)).first())
     else:
         old_transcription = None
 
@@ -697,9 +697,9 @@ def transcribe(task_id):
     if request.method == 'POST':
         print "*************************"
         print "*POSTING A TRANSCRIPTION*"
-        form = form(request.form)
-        print "form:", form
-        if form.validate():
+        prepped_form = form(request.form)
+        print "prepped_form:", prepped_form
+        if prepped_form.validate():
             print "*FORM VALIDATED*"
             image = db.session.query(ImageTaskAssignment)\
                 .filter(ImageTaskAssignment.form_id == task_dict['id'])\
@@ -782,10 +782,20 @@ def transcribe(task_id):
 
         else:
             print(form.errors)
-            return render_template('transcribe.html', form=form, task=task_dict, is_new=False)
+            return render_template('transcribe.html', form=prepped_form, task=task_dict, is_new=False)
 
     else:
-        form = form(meta={})
+        prepped_form = form(meta={})
+
+
+    # populating form if user is 'editing' a transcription
+    if old_transcription:
+        meta_cols = ['transcriber', 'transcription_status', 'image_id', 'date_added', 'id']
+        for k,v in old_transcription.items():
+            if k and k not in meta_cols:
+                prepped_form[k].data = v
+
+
 
     # This is where we put in the image. 
     image_id = request.args.get('image_id')
@@ -818,11 +828,17 @@ def transcribe(task_id):
         ita.checkout_expire = expire_time
         db.session.add(ita)
         db.session.commit()
+        if old_transcription:
+            is_new = False
+        else:
+            is_new = True
+
+
         dc_image = db.session.query(DocumentCloudImage).get(ita.image_id)
         flask_session['image'] = dc_image.fetch_url
         flask_session['image_type'] = dc_image.image_type
         flask_session['image_id'] = dc_image.id
-        return render_template('transcribe.html', form=form, task=task_dict, is_new = True, old_transcription=old_transcription)
+        return render_template('transcribe.html', form=prepped_form, task=task_dict, is_new=is_new, old_transcription=old_transcription)
 
 @views.route('/download-transcriptions/', methods=['GET', 'POST'])
 @login_required
