@@ -134,7 +134,6 @@ def upload():
 
         client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
         sample_page_count = client.documents.get(doc_list[0].dc_id).pages
-        print(sample_page_count)
 
         if doc_list:
             if len(doc_list) > 0:
@@ -698,36 +697,24 @@ def transcribe(task_id):
             db.session.commit()
             
     if request.method == 'POST':
-        print "*************************"
-        print "*POSTING A TRANSCRIPTION*"
         prepped_form = form(request.form)
-        print "prepped_form:", prepped_form
         if prepped_form.validate():
-            print "*FORM VALIDATED*"
             image = db.session.query(ImageTaskAssignment)\
                 .filter(ImageTaskAssignment.form_id == task_dict['id'])\
                 .filter(ImageTaskAssignment.image_id == flask_session['image_id'])\
                 .first()
-            print "image: ", image
             reviewer_count = db.session.query(FormMeta).get(image.form_id).reviewer_count
 
             if not image.checkout_expire or image.checkout_expire < current_time:
-                print "*FORM EXPIRED*"
                 flash("Form has expired", "expired")
             else:
-                print "*FORM NOT EXPIRED*"
-
-                print "username:", username
 
                 ins_args = {
                     'transcriber': username,
                     'image_id': flask_session['image_id'],
                     'transcription_status': 'raw',
                 }
-                print "ins_args:", ins_args
                 for k,v in request.form.items():
-                    print "k:",k
-                    print "v:",v
                     if k != 'csrf_token':
                         if v:
                             ins_args[k] = v
@@ -749,13 +736,11 @@ def transcribe(task_id):
                 db.session.commit()
 
                 image_id = ins_args['image_id']
-                print "image_id:", image_id
                 ins_args.pop('image_id')
                 ins_args.pop('transcriber')
                 col_names = [f for f in ins_args.keys()]
                 
                 if image.view_count >= reviewer_count:
-                    print "reconcile"
                     min_agree = reviewer_count*2/3+1 # need to have more than 2/3 reviewer_count to accept. make a smarter rule here?
                     final_row = reconcile_rows(col_names, task.table_name, image_id, min_agree)
 
@@ -774,8 +759,6 @@ def transcribe(task_id):
                         db.session.add(image)
                         db.session.commit()
 
-                else:
-                    print "don't reconcile"
 
                 # if superceding another image, delete that image
                 # & then go back to review transcriptions page
@@ -791,7 +774,6 @@ def transcribe(task_id):
                     return redirect(url_for('views.transcribe', task_id=task_id))
 
         else:
-            print(form.errors)
             return render_template('transcribe.html', form=prepped_form, task=task_dict, is_new=False)
 
     else:
