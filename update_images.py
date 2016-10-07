@@ -66,7 +66,7 @@ def update_from_document_cloud():
                 print('%s added %s %s' % log_message)
                 
                 if doc.pages > 1:
-                    for p in range(1, doc.pages+1):
+                    for p in range(2, doc.pages+1):
                         values['fetch_url'] = '%s#page=%s' % (doc.pdf_url, p)
 
                         with engine.begin() as conn:
