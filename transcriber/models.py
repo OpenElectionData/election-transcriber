@@ -1,7 +1,6 @@
 from flask_bcrypt import Bcrypt
 from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
-    DateTime, text, Text
-from sqlalchemy import or_
+    DateTime, text, Text, or_
 from sqlalchemy.orm import synonym, backref, relationship
 from flask.ext.security import UserMixin, RoleMixin
 from flask.ext.security.utils import md5
@@ -157,25 +156,74 @@ class ImageTaskAssignment(db.Model):
         reviewer_count = db.session.query(FormMeta).get(task_id).reviewer_count
         if reviewer_count == None: # clean this up
             reviewer_count = 1
+        
+        engine = db.session.bind
+        
 
-        # doc counts: total = done + inprog + conflict + unseen
-        docs_total = db.session.query(cls)\
-                .filter(cls.form_id == task_id)\
-                .count()
-        docs_done = db.session.query(cls)\
-                .filter(cls.form_id == task_id)\
-                .filter(cls.is_complete == True)\
-                .count()
-        docs_inprog = len(cls.get_inprog_images_by_task(task_id))
-        docs_conflict = len(cls.get_conflict_images_by_task(task_id))
-        unseen = len(cls.get_unseen_images_by_task(task_id))
+        doc_counts = ''' 
+            SELECT 
+              COUNT(*) AS count,
+              is_complete
+            FROM image_task_assignment
+            WHERE form_id = :task_id
+            GROUP BY is_complete
+        '''
+
+        doc_counts = list(engine.execute(text(doc_counts), 
+                                         task_id=task_id))
+
+        docs_total = 0
+        docs_done = 0
+
+        for row in doc_counts:
+            
+            docs_total += row.count
+            
+            if row.is_complete:
+                docs_done += row.count
+
+        in_prog = ''' 
+            SELECT COUNT(*) AS count
+            FROM image_task_assignment
+            WHERE form_id = :task_id
+              AND view_count > 0
+              AND view_count < :reviewer_count
+        '''
+        
+        conflict = ''' 
+            SELECT COUNT(*) AS count
+            FROM image_task_assignment
+            WHERE form_id = :task_id
+              AND view_count >= :reviewer_count
+              AND is_complete = FALSE
+        '''
+        
+        unseen = ''' 
+            SELECT COUNT(*) AS count
+            FROM image_task_assignment
+            WHERE form_id = :task_id
+              AND view_count = 0
+        '''
+        
+        q_args = {
+            'task_id': task_id, 
+            'reviewer_count': reviewer_count
+        }
+
+        docs_inprog = engine.execute(text(in_prog), **q_args).first().count
+        docs_conflict = engine.execute(text(conflict), **q_args).first().count
+        docs_unseen = engine.execute(text(unseen), **q_args).first().count
 
         reviews_complete = 0
-        for i in range(1, reviewer_count):
+        
+        for i in range(1, (reviewer_count + 1)):
+            
             n = db.session.query(cls)\
                 .filter(cls.form_id == task_id)\
                 .filter(cls.view_count == i).count()
-            reviews_complete+=n*i
+            
+            reviews_complete += (n * i)
+        
         reviews_complete += docs_done*reviewer_count + docs_conflict*(reviewer_count-1)
 
 
@@ -191,8 +239,8 @@ class ImageTaskAssignment(db.Model):
         progress_dict['docs_inprog_perc'] = percentage(docs_inprog, docs_total)
         progress_dict['docs_conflict_ct'] = docs_conflict
         progress_dict['docs_conflict_perc'] = percentage(docs_conflict, docs_total)
-        progress_dict['docs_unseen_ct'] = unseen
-        progress_dict['docs_unseen_perc'] = percentage(unseen, docs_total)
+        progress_dict['docs_unseen_ct'] = docs_unseen
+        progress_dict['docs_unseen_perc'] = percentage(docs_unseen, docs_total)
 
         # hacky fix for progress bar chart rounding down percentages
         remainder = 100 - progress_dict['docs_done_perc'] - progress_dict['docs_inprog_perc'] - progress_dict['docs_conflict_perc'] - progress_dict['docs_unseen_perc']
