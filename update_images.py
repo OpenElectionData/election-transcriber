@@ -23,7 +23,9 @@ def update_from_document_cloud():
                 SELECT * FROM document_cloud_image
                 WHERE dc_id = :dc_id
             '''
+            
             existing_image = engine.execute(sa.text(existing_image), dc_id=doc_id).first()
+            
             if existing_image == None:
                 doc = client.documents.get(doc_id)
                 
@@ -62,12 +64,13 @@ def update_from_document_cloud():
                                doc_id)
 
                 print('%s added %s %s' % log_message)
+                
+                if doc.pages > 1:
+                    for p in range(1, doc.pages+1):
+                        values['fetch_url'] = '%s#page=%s' % (doc.pdf_url, p)
 
-                for p in range(1, doc.pages+1):
-                    values['fetch_url'] = '%s#page=%s' % (doc.pdf_url, p)
-
-                    with engine.begin() as conn:
-                        conn.execute(sa.text(new_image), **values)
+                        with engine.begin() as conn:
+                            conn.execute(sa.text(new_image), **values)
 
 
                 ##############################
