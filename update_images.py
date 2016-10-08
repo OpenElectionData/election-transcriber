@@ -140,6 +140,7 @@ def update_task_images():
 
     tasks = ''' 
         SELECT * FROM form_meta
+        WHERE status != 'deleted'
     '''
 
     for task in engine.execute(tasks):
