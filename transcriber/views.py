@@ -483,7 +483,7 @@ def form_creator():
             db.session.add(form_meta)
             db.session.commit()
 
-            update_task_images(form_meta.id)
+            # update_task_images(form_meta.id)
 
         return redirect(url_for('views.index'))
 
