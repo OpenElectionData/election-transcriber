@@ -412,13 +412,13 @@ def form_creator():
             for column in changed_field_names:
                 old_slug = column[0]
                 new_slug = column[1]
-                rename = 'ALTER TABLE "{0}" RENAME COLUMN {1} TO {2}'\
+                rename = 'ALTER TABLE "{0}" RENAME COLUMN "{1}" TO "{2}"'\
                             .format(form_meta.table_name, old_slug, new_slug)
-                rename_blank = 'ALTER TABLE "{0}" RENAME COLUMN {1}_blank TO {2}_blank'\
+                rename_blank = 'ALTER TABLE "{0}" RENAME "COLUMN {1}_blank" TO "{2}_blank"'\
                             .format(form_meta.table_name, old_slug, new_slug)
-                rename_not_legible = 'ALTER TABLE "{0}" RENAME COLUMN {1}_not_legible TO {2}_not_legible'\
+                rename_not_legible = 'ALTER TABLE "{0}" RENAME COLUMN "{1}_not_legible" TO "{2}_not_legible"'\
                             .format(form_meta.table_name, old_slug, new_slug)
-                rename_altered = 'ALTER TABLE "{0}" RENAME COLUMN {1}_altered TO {2}_altered'\
+                rename_altered = 'ALTER TABLE "{0}" RENAME COLUMN "{1}_altered" TO "{2}_altered"'\
                             .format(form_meta.table_name, old_slug, new_slug)
 
                 with engine.begin() as conn:
@@ -439,15 +439,15 @@ def form_creator():
                         .format(form_meta.table_name, field.slug, sql_type)
                 blank = '''
                     ALTER TABLE "{0}" 
-                    ADD COLUMN {1}_blank boolean
+                    ADD COLUMN "{1}_blank boolean"
                     '''.format(form_meta.table_name, field.slug)
                 not_legible = '''
                     ALTER TABLE "{0}" 
-                    ADD COLUMN {1}_not_legible boolean
+                    ADD COLUMN "{1}_not_legible boolean"
                     '''.format(form_meta.table_name, field.slug)
                 altered = '''
                     ALTER TABLE "{0}" 
-                    ADD COLUMN {1}_altered boolean
+                    ADD COLUMN "{1}_altered boolean"
                     '''.format(form_meta.table_name, field.slug)
                 with engine.begin() as conn:
                     conn.execute(alt)
