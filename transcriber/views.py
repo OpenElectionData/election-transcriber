@@ -435,7 +435,7 @@ def form_creator():
             for column in add_columns:
                 field = [f for f in form_meta.fields if f.slug == unicode(column)][0]
                 sql_type = SQL_DATA_TYPE[field.data_type]
-                alt = 'ALTER TABLE "{0}" ADD COLUMN {1} {2}'\
+                alt = 'ALTER TABLE "{0}" ADD COLUMN "{1}" {2}'\
                         .format(form_meta.table_name, field.slug, sql_type)
                 blank = '''
                     ALTER TABLE "{0}" 
