@@ -1,39 +1,44 @@
+import ast
+import re
+import json
+import os
+from uuid import uuid4
+from operator import attrgetter, itemgetter
+from itertools import groupby
+from io import StringIO
+from datetime import datetime, timedelta
+
 from flask import Blueprint, make_response, request, render_template, \
     url_for, send_from_directory, session as flask_session, redirect, flash
 from flask_security.decorators import login_required, roles_required
 from flask_security.core import current_user
 from flask.ext.principal import Permission, RoleNeed
-from transcriber.app_config import UPLOAD_FOLDER
-from werkzeug import secure_filename
-from transcriber.models import FormMeta, FormSection, FormField, \
-    DocumentCloudImage, ImageTaskAssignment, TaskGroup, User
-from transcriber.database import db
-from transcriber.helpers import slugify, pretty_task_transcriptions, \
-    get_user_activity, reconcile_rows
-from flask_wtf import Form
-from transcriber.dynamic_form import NullableIntegerField as IntegerField, \
-    NullableDateTimeField as DateTimeField, \
-    NullableDateField as DateField
-from transcriber.dynamic_form import validate_blank_not_legible
-from wtforms.fields import BooleanField, StringField
-from wtforms.validators import DataRequired
-from datetime import datetime, timedelta
-from transcriber.app_config import TIME_ZONE
+
 from sqlalchemy import Table, Column, MetaData, String, Boolean, \
         Integer, DateTime, Date, text, and_, or_
 from sqlalchemy.exc import NoSuchTableError
 from sqlalchemy.orm import aliased
-from uuid import uuid4
-from operator import attrgetter, itemgetter
-from itertools import groupby
-from io import StringIO
+
+from werkzeug import secure_filename
+
+from flask_wtf import Form
+
+from wtforms.validators import DataRequired
+
 import pytz
-import ast
+
+from transcriber.app_config import UPLOAD_FOLDER, DOCUMENTCLOUD_USER, \
+    DOCUMENTCLOUD_PW, TIME_ZONE
+from transcriber.models import FormMeta, FormSection, FormField, \
+    DocumentCloudImage, ImageTaskAssignment, TaskGroup, User
+from transcriber.database import db
+from transcriber.helpers import slugify, pretty_task_transcriptions, \
+    get_user_activity
+
+from transcriber.transcription_helpers import TranscriptionTask, checkinImages
+
 from documentcloud import DocumentCloud
-from .app_config import DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW
-import re
-import json
-import os
+
 
 views = Blueprint('views', __name__)
 
@@ -53,14 +58,6 @@ SQL_DATA_TYPE = {
     'integer': 'INTEGER',
     'datetime': 'TIMESTAMP WITH TIME ZONE',
     'date': 'DATE'
-}
-
-FORM_TYPE = {
-    'boolean': BooleanField,
-    'string': StringField,
-    'integer': IntegerField,
-    'datetime': DateTimeField,
-    'date': DateField
 }
 
 # Create a permission for manager & admin users
@@ -228,60 +225,20 @@ def delete_part():
 def delete_transcription():
     transcription_id = request.args.get('transcription_id')
     task_id = request.args.get('task_id')
-    user = request.args.get('user')
+    username = request.args.get('user')
     next = request.args.get('next')
 
-    engine = db.session.bind
-
-    task = db.session.query(FormMeta)\
-        .filter(FormMeta.id == task_id)\
-        .first()
-
-    q = ''' 
-        SELECT image_id from "{0}" where id = '{1}'
-        '''.format(task.table_name, transcription_id)
-    with engine.begin() as conn:
-        result = conn.execute(text(q)).fetchall()
-    image_id = result[0][0]
-
-
-    # set status on transcription as deleted
-    update_status = ''' 
-                    UPDATE "{0}"
-                    SET transcription_status = 'raw_deleted'
-                    WHERE id = {1}
-                '''.format(task.table_name, transcription_id)
-    # if the image has a final transcription, delete final transcription
-    update_remove_final =   '''
-                    DELETE from "{0}"
-                    WHERE transcription_status = 'final' and image_id = '{1}'
-                '''.format(task.table_name, image_id)
-    with engine.begin() as conn:
-        conn.execute(text(update_status))
-        conn.execute(text(update_remove_final))
-
-    q = '''
-        SELECT * from "{0}"
-        WHERE image_id = {1} and transcription_status = 'raw'
-        '''.format(task.table_name, image_id)
-    with engine.begin() as conn:
-        result = conn.execute(text(q)).fetchall()
-    updated_view_count = len(result)
-
-    # updating the view count and status in image_task_assignment
-    assignment = db.session.query(ImageTaskAssignment)\
-                    .filter(ImageTaskAssignment.form_id == task.id)\
-                    .filter(ImageTaskAssignment.image_id == image_id)\
-                    .first()
-    assignment.view_count = updated_view_count
-    assignment.is_complete = False
-    db.session.add(assignment)
-    db.session.commit()
+    transcription_task = TranscriptionTask(task_id, 
+                                           username=username,
+                                           transcription_id=transcription_id)
+    
+    transcription_task.getFormMeta()
+    image_id = transcription_task.deleteOldTranscription()
 
     if request.args.get('message') == 'edited':
-        flash("Transcription edited: image <strong>%s</strong> by user <strong>%s</strong>" %(image_id, user))
+        flash("Transcription edited: image <strong>%s</strong> by user <strong>%s</strong>" % (image_id, user))
     else:
-        flash("Transcription deleted: image <strong>%s</strong> by user <strong>%s</strong>" %(image_id, user))
+        flash("Transcription deleted: image <strong>%s</strong> by user <strong>%s</strong>" % (image_id, user))
 
     if next == 'task':
         return redirect(url_for('views.transcriptions', task_id=task_id))
@@ -298,8 +255,10 @@ def form_creator():
         form = db.session.query(FormMeta).get(request.args['form_id'])
         if form:
             form_meta = form
-            flask_session['image'] = form.sample_image
-            flask_session['image_type'] = form.sample_image.rsplit('.', 1)[1].lower()
+            flask_session['image'] = {
+                'image': form.sample_image, 
+                'image_type': form.sample_image.rsplit('.', 1)[1].lower()
+            }
             flask_session['dc_project'] = form.dc_project
             flask_session['dc_filter'] = form.dc_filter
             dc_filter_list = ast.literal_eval(json.loads(form.dc_filter)) if form.dc_filter else None
@@ -623,232 +582,65 @@ def transcribe(task_id):
         return redirect(url_for('views.index'))
 
     engine = db.session.bind
-    section_sq = db.session.query(FormSection)\
-            .filter(or_(FormSection.status != 'deleted', 
-                        FormSection.status == None))\
-            .order_by(FormSection.index)\
-            .subquery()
-    field_sq = db.session.query(FormField)\
-            .filter(or_(FormField.status != 'deleted', 
-                        FormField.status == None))\
-            .order_by(FormField.index)\
-            .subquery()
-    task = db.session.query(FormMeta)\
-            .join(section_sq)\
-            .join(field_sq)\
-            .filter(FormMeta.id == task_id)\
-            .first()
-
+    
     if current_user.is_anonymous():
         username = request.remote_addr
     else:
         username = current_user.name
     
-    class DynamicForm(Form):
-        pass
+    supercede = request.args.get('supercede')
+    image_id = request.args.get('image_id')
 
-    form = DynamicForm
-    task_dict = task.as_dict()
-    task_dict['sections'] = []
-    bools = []
+    transcription_task = TranscriptionTask(task_id, 
+                                           username=username,
+                                           transcription_id=supercede,
+                                           image_id=image_id)
+    
+    transcription_task.getFormMeta()
+    transcription_task.setupDynamicForm()
 
-    if request.args.get('supercede'):
-        q = ''' 
-                SELECT * FROM "{0}" WHERE id = {1}
-            '''.format(task.table_name, int(request.args.get('supercede')))
-        with engine.begin() as conn:
-            old_transcription = dict(conn.execute(text(q)).first())
-    else:
-        old_transcription = None
+    checkinImages()
+    
+    transcription_task.getImageTaskAssignment()
 
-    for section in sorted(task.sections, key=attrgetter('index')):
-        section_dict = {'name': section.name, 'fields': []}
-        for field in sorted(section.fields, key=attrgetter('index')):
-            message = u'If the "{0}" field is either blank or not legible, \
-                    please mark the appropriate checkbox'.format(field.name)
-            if field.data_type == 'boolean':
-                bools.append(field.slug)
-            ft = FORM_TYPE[field.data_type]()
-            setattr(form, field.slug, ft)
-            blank = '{0}_blank'.format(field.slug)
-            not_legible = '{0}_not_legible'.format(field.slug)
-            altered = '{0}_altered'.format(field.slug)
-            setattr(form, blank, BooleanField())
-            setattr(form, not_legible, BooleanField())
-            setattr(form, altered, BooleanField())
-            bools.extend([blank, not_legible, altered])
-            section_dict['fields'].append(field)
-        task_dict['sections'].append(section_dict)
-    # adding field for marking docs as irrelevant
-    setattr(form, 'flag_irrelevant', BooleanField())
-
-    all_fields = set([f.slug for f in section_dict['fields']])
-    for field in all_fields:
-        setattr(form, 'validate_{0}'.format(field), validate_blank_not_legible)
-
-    current_time = datetime.now().replace(tzinfo=pytz.UTC)
-    expire_time = current_time+timedelta(seconds=5*60)
-
-    # update image checkout expiration
-    expired = db.session.query(ImageTaskAssignment).filter(ImageTaskAssignment.checkout_expire < current_time).all()
-    if expired:
-        for expired_image in expired:
-            expired_image.checkout_expire = None
-            db.session.add(expired_image)
-            db.session.commit()
-            
     if request.method == 'POST':
-        print "*************************"
-        print "*POSTING A TRANSCRIPTION*"
-        prepped_form = form(request.form)
-        print "prepped_form:", prepped_form
-        if prepped_form.validate():
-            print "*FORM VALIDATED*"
-            image = db.session.query(ImageTaskAssignment)\
-                .filter(ImageTaskAssignment.form_id == task_dict['id'])\
-                .filter(ImageTaskAssignment.image_id == flask_session['image_id'])\
-                .first()
-            print "image: ", image
-            reviewer_count = db.session.query(FormMeta).get(image.form_id).reviewer_count
 
-            if not image.checkout_expire or image.checkout_expire < current_time:
-                print "*FORM EXPIRED*"
-                flash("Form has expired", "expired")
-            else:
-                print "*FORM NOT EXPIRED*"
+        if transcription_task.validateTranscription(request.form):
+            
+            if transcription_task.transcription_id:
+                transcription_task.deleteOldTranscription()
+            
+            transcription_task.saveTranscription()
+            
+            transcription_task.updateImage()
 
-                print "username:", username
-
-                ins_args = {
-                    'transcriber': username,
-                    'image_id': flask_session['image_id'],
-                    'transcription_status': 'raw',
-                }
-                print "ins_args:", ins_args
-                for k,v in request.form.items():
-                    print "k:",k
-                    print "v:",v
-                    if k != 'csrf_token':
-                        if v:
-                            ins_args[k] = v
-                        else:
-                            ins_args[k] = None
-                if not set(bools).intersection(set(ins_args.keys())):
-                    for f in bools:
-                        ins_args[f] = False
-                ins = ''' 
-                    INSERT INTO "{0}" ({1}) VALUES ({2})
-                '''.format(task.table_name, 
-                           ','.join(['"%s"' % f for f in ins_args.keys()]),
-                           ','.join([':{0}'.format(f) for f in ins_args.keys()]))
-                with engine.begin() as conn:
-                    conn.execute(text(ins), **ins_args)
-                image.view_count += 1
-                image.checkout_expire = None
-                db.session.add(image)
-                db.session.commit()
-
-                image_id = ins_args['image_id']
-                print "image_id:", image_id
-                ins_args.pop('image_id')
-                ins_args.pop('transcriber')
-                col_names = [f for f in ins_args.keys()]
-                
-                if image.view_count >= reviewer_count:
-                    print "reconcile"
-                    min_agree = reviewer_count*2/3+1 # need to have more than 2/3 reviewer_count to accept. make a smarter rule here?
-                    final_row = reconcile_rows(col_names, task.table_name, image_id, min_agree)
-
-                    if final_row: # if images can be reconciled
-                        final_row['transcription_status'] = 'final'
-                        final_row['image_id'] = image_id
-                        ins_final = ''' 
-                            INSERT INTO "{0}" ({1}) VALUES ({2})
-                        '''.format(task.table_name, 
-                                   ','.join(['"%s"' % f for f in final_row.keys()]),
-                                   ','.join([':{0}'.format(f) for f in final_row.keys()]))
-                        with engine.begin() as conn:
-                            conn.execute(text(ins_final), **final_row)
-
-                        image.is_complete = True
-                        db.session.add(image)
-                        db.session.commit()
-
-                else:
-                    print "don't reconcile"
+                # TODO: Figure out UI parts here
 
                 # if superceding another image, delete that image
                 # & then go back to review transcriptions page
-                if old_transcription:
-                    return redirect(url_for('views.delete_transcription',
-                                                transcription_id=old_transcription['id'],
-                                                task_id=task_id,
-                                                next='task',
-                                                user=old_transcription['transcriber'],
-                                                message='edited'))
-                else:
-                    flash("Saved! Let's do another!", "saved")
-                    return redirect(url_for('views.transcribe', task_id=task_id))
-
-        else:
-            print(form.errors)
-            return render_template('transcribe.html', form=prepped_form, task=task_dict, is_new=False)
-
-    else:
-        prepped_form = form(meta={})
+                # if transcription_task.old_transcription:
+                #     return redirect(url_for('views.delete_transcription',
+                #                                 transcription_id=old_transcription['id'],
+                #                                 task_id=task_id,
+                #                                 next='task',
+                #                                 user=old_transcription['transcriber'],
+                #                                 message='edited'))
+                # else:
+            flash("Saved! Let's do another!", "saved")
+                    # return redirect(url_for('views.transcribe', task_id=task_id))
 
 
-    # populating form if user is 'editing' a transcription
-    if old_transcription:
-        meta_cols = ['transcriber', 'transcription_status', 'image_id', 'date_added', 'id']
-        for k,v in old_transcription.items():
-            if k and k not in meta_cols:
-                prepped_form[k].data = v
+    if transcription_task.image_task_assignment == None:
 
-
-
-    # This is where we put in the image. 
-    image_id = request.args.get('image_id')
-    ita = None
-
-    if image_id:
-        ita = db.session.query(ImageTaskAssignment).filter(ImageTaskAssignment.image_id == int(image_id)).first()
-    else:
-        ita = ImageTaskAssignment.get_next_image_to_transcribe(task.id, username)
-
-    q = ''' 
-        SELECT * from "{0}" where transcriber = '{1}'
-        '''.format(task_dict['table_name'], username)
-    with engine.begin() as conn:
-        user_transcriptions = conn.execute(text(q)).fetchall()
-    task_dict['user_transcriptions'] = len(user_transcriptions)
-
-
-    if ita == None:
-
-        if ImageTaskAssignment.is_task_complete(task.id): # if task is done
-            flash("Thanks for helping to transcribe '%s'! Want to help out with another?" %task_dict['name'])
+        if transcription_task.isTaskIncomplete(): # if task is done
+            flash("Thanks for helping to transcribe '%s'! Want to help out with another?" % transcription_task.task.name)
             return redirect(url_for('views.index'))
         else: # if task is not done
-            flash("All images associated with '%s' have been checked out" %task_dict['name'])
+            flash("All images associated with '%s' have been checked out" % transcription_task.task.name)
             return redirect(url_for('views.index'))
 
-    else:
-        # checkout image for 5 mins
-        ita.checkout_expire = expire_time
-        db.session.add(ita)
-        db.session.commit()
-        if old_transcription:
-            is_new = False
-        else:
-            is_new = True
-
-
-        dc_image = db.session.query(DocumentCloudImage).get(ita.image_id)
-        flask_session['image'] = dc_image.fetch_url
-        flask_session['image_type'] = dc_image.image_type
-        flask_session['image_id'] = dc_image.id
-        return render_template('transcribe.html', form=prepped_form, task=task_dict, is_new=is_new, old_transcription=old_transcription)
+    return render_template('transcribe.html', 
+                           task=transcription_task)
 
 @views.route('/download-transcriptions/', methods=['GET', 'POST'])
 @login_required

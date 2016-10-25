@@ -103,8 +103,7 @@ class ImageTaskAssignment(db.Model):
 
     @classmethod
     def is_task_complete(cls, task_id):
-        # add in a filter so that one user does not review the same image multiple times
-        # images left & images total (for progress bar) should be specific to the user
+        
         not_complete = db.session.query(cls)\
                 .filter(cls.form_id == task_id)\
                 .filter(cls.is_complete == False)\

@@ -1,6 +1,6 @@
-{% macro render_image() -%}
-    {% if session.image_type == 'pdf' %}
-    <iframe src="{{ session.image }}"
+{% macro render_image(image) -%}
+    {% if image.image_type == 'pdf' %}
+    <iframe src="{{ image.fetch_url }}"
             id="result-image"
             frameborder="0"
             seamless="true"
@@ -10,7 +10,7 @@
     {% else %}
     <div class="row">
         <div class="col-md-12 image-inset">
-            <img src="{{session.image}}" class="panzoom" />
+            <img src="{{ image.fetch_url }}" class="panzoom" />
         </div>
     </div>
     <div class="row">

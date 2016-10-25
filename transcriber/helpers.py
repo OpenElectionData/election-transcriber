@@ -25,25 +25,6 @@ def slugify(text, delim=u'_'):
         return text
 
 # given several transcriptions, returns a final representation (or none if it can't be reconciled)
-def reconcile_rows(col_names, table_name, image_id, min_agree):
-    engine = db.session.bind
-
-    final_transcription = {}
-    for col_name in col_names:
-        q = '''
-            SELECT "{0}", COUNT(*) as c FROM "{1}" WHERE image_id = {2} and transcription_status = 'raw' GROUP BY "{0}" ORDER BY c DESC
-            '''.format( col_name,
-                        table_name,
-                        image_id
-                        )
-        with engine.begin() as conn:
-            top_result = conn.execute(text(q)).first()
-            if int(top_result[1]) >= min_agree:
-                final_transcription[col_name] = top_result[0]
-            else:
-                return None
-            
-    return final_transcription
 
 # given all rows, produce pretty rows to display in html table
 # this is used to display transcriptions on the user transcriptions page (user view)

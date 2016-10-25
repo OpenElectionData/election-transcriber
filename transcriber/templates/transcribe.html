@@ -1,20 +1,20 @@
 {% extends 'base.html' %}
 {% from 'macros.html' import render_image, render_header, render_admin_header %}
-{% block title %}{{task.name}}{% endblock %}
+{% block title %}{{task.task.name}}{% endblock %}
 {% block content %}
 
 {% if current_user.has_role('admin') or current_user.has_role('manager') %}
-    {{ render_admin_header(task.name, task, task.id, 'transcribe', current_user) }}
+    {{ render_admin_header(task.task.name, task.task, task.task.id, 'transcribe', current_user) }}
 {% else %}
-    {{ render_header(task.name, task) }}
+    {{ render_header(task.name, task.task) }}
 {% endif %}
 
 
 <div class="row">
     <div class='col-md-6'>
-        {{ render_image() }}
+        {{ render_image(task.dc_image) }}
     </div>
-    {% if is_new %}
+    {% if task.is_new %}
     <div class="pretend-new">
     {% else %}
     <div>
@@ -26,10 +26,10 @@
                     <div class="well">
                         <h3>{{ section.name }}</h3>
                         {% for field in section.fields %}
-                            {% set form_field = form|attr(field.slug) %}
-                            {% set form_blank = form|attr(field.slug + '_blank') %}
-                            {% set form_not_legible = form|attr(field.slug + '_not_legible') %}
-                            {% set form_altered = form|attr(field.slug + '_altered') %}
+                            {% set form_field = task.form|attr(field.slug) %}
+                            {% set form_blank = task.form|attr(field.slug + '_blank') %}
+                            {% set form_not_legible = task.form|attr(field.slug + '_not_legible') %}
+                            {% set form_altered = task.form|attr(field.slug + '_altered') %}
                             {% if form_field.errors %}
                             <div class="form-group has-error">
                             {% else %}
@@ -40,7 +40,7 @@
                                         {% if form_field.type == 'StringField' %}
                                             <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }}</label>
                                             <div class='col-sm-6'>
-                                            {% if is_new %}
+                                            {% if task.is_new %}
                                                 {{ form_field(class_='form-control clear-field') }}
                                             {% else %}
                                                 {{ form_field(class_='form-control') }}
@@ -50,7 +50,7 @@
                                         {% elif form_field.type == 'NullableIntegerField' %}
                                             <label for="id_{{ field.slug }}" class="col-sm-3 control-label">{{ field.name }} (number)</label>
                                             <div class='col-sm-6'>
-                                            {% if is_new %}
+                                            {% if task.is_new %}
                                                 {{ form_field(class_='form-control clear-field') }}
                                             {% else %}
                                                 {{ form_field(class_='form-control') }}
@@ -85,7 +85,7 @@
                                         {% endif %}
                                         <div class="col-sm-offset-9">
                                             <div class="checkbox field-checks">
-                                            {% if is_new %}
+                                            {% if task.is_new %}
                                                 <label>
                                                     {{ form_blank(class='check-blank clear-checkbox', tabindex="-1") }} <small>Blank?</small>
                                                 </label>
@@ -122,7 +122,7 @@
                             </div>
                         {% endfor %}
                         <label>
-                            {{ form|attr('flag_irrelevant') }} <small class="text-muted">This document doesn't look relevant to the task</small>
+                            {{ task.form|attr('flag_irrelevant') }} <small class="text-muted">This document doesn't look relevant to the task</small>
                         </label>
                     </div>
                 {% endfor %}
