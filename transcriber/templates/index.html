@@ -28,7 +28,7 @@
                 <tbody>
                     {% if current_user.has_role('admin') or current_user.has_role('manager') %}
                         {% for t in tasks %}
-                            {% if t[1]['reviews_done_ct'] < t[1]['reviews_total'] %}
+                            {% if (t[1]['reviews_done_ct'] < t[1]['reviews_total']) or t[1]['reviews_total'] == 0 %}
                             <tr>
                                 <td>
                                     <a href="{{ url_for('views.edit_task_group', group_id=t[0].task_group.id) }}">{{ t[0].task_group.name }}</a>
@@ -98,7 +98,7 @@
             </table>
 
             <br>
-            
+
             {% if (current_user.has_role('admin') or current_user.has_role('manager')) and has_complete_tasks == True %}
             <h3>Completed</h3>
             <table class='table' id='finished_tasks'>

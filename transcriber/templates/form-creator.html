@@ -20,7 +20,7 @@
 
 <div class="row">
     <div class='col-md-6'>
-        {{ render_image(session) }}
+        {{ render_image(image_url) }}
     </div>
     <div class="col-md-6 form-fit" id="form-wrapper">
         <div class='well well-sm well-info'>
@@ -30,11 +30,11 @@
                     <strong>Project</strong><br>
                     {{session.dc_project}}
                 </div>
-                {% if session.dc_filter_list %}
+                {% if dc_filter_list %}
                 <div class="col-xs-8 text-xs">
-                    <strong>Filters </strong>({{session.dc_filter_list|length}})<br>
+                    <strong>Filters </strong>({{dc_filter_list|length}})<br>
                     <ul class="bullet-list">
-                        {% for filter in session.dc_filter_list %}
+                        {% for filter in dc_filter_list %}
                         <li class="small">{{filter}}</li>
                         {% endfor %}
                     </ul>
@@ -322,6 +322,8 @@
                         var groupid = $('#id_task_group').data('groupid');
                         $('#task-form').append('<input type="hidden" name="task_group_id" value="' + groupid + '" />');
                     }
+                    // Keys appear to be overridden
+                    console.log($('#task-form').serializeArray());
                     $('#task-form').submit();
                 }
             })

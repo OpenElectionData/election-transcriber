@@ -1,6 +1,7 @@
 from flask_bcrypt import Bcrypt
 from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
-    DateTime, text, Text, or_
+    DateTime, text, Text, or_, LargeBinary
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import synonym, backref, relationship
 from flask.ext.security import UserMixin, RoleMixin
 from flask.ext.security.utils import md5
@@ -15,6 +16,20 @@ _security = LocalProxy(lambda: current_app.extensions['security'])
 
 flask_bcrypt = Bcrypt()
 
+class WorkTable(db.Model):
+    __tablename__ = 'work_table'
+    key = Column(String, primary_key=True)
+    return_value = Column(JSONB)
+    work_value = Column(LargeBinary)
+    traceback = Column(Text)
+    task_name = Column(String(255))
+    updated = Column(DateTime(timezone=True))
+    claimed = Column(Boolean, server_default=text('FALSE'))
+    cleared = Column(Boolean, server_default=text('TRUE'))
+    completed = Column(Boolean, server_default=text('FALSE'))
+
+    def __repr__(self):
+        return '<WorkTable {0}>'.format(str(self.key))
 
 class DocumentCloudImage(db.Model):
     __tablename__ = 'document_cloud_image'

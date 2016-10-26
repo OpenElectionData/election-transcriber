@@ -35,7 +35,8 @@ from transcriber.database import db
 from transcriber.helpers import slugify, pretty_task_transcriptions, \
     get_user_activity
 
-from transcriber.transcription_helpers import TranscriptionTask, checkinImages
+from transcriber.transcription_helpers import TranscriptionManager, checkinImages
+from transcriber.form_creator_helpers import FormCreatorManager
 
 from documentcloud import DocumentCloud
 
@@ -44,21 +45,6 @@ views = Blueprint('views', __name__)
 
 ALLOWED_EXTENSIONS = set(['pdf', 'png', 'jpg', 'jpeg'])
 
-DATA_TYPE = {
-    'boolean': Boolean,
-    'string': String,
-    'integer': Integer,
-    'datetime': DateTime,
-    'date': Date
-}
-
-SQL_DATA_TYPE = {
-    'boolean': 'BOOLEAN',
-    'string': 'VARCHAR',
-    'integer': 'INTEGER',
-    'datetime': 'TIMESTAMP WITH TIME ZONE',
-    'date': 'DATE'
-}
 
 # Create a permission for manager & admin users
 manager_permission = Permission(RoleNeed('admin'), RoleNeed('manager'))
@@ -101,8 +87,11 @@ def index():
             has_complete_tasks = True
         
         t.append([task, progress_dict, is_top_task])
-        
-    return render_template('index.html', tasks=t, has_inprog_tasks=has_inprog_tasks, has_complete_tasks=has_complete_tasks)
+    
+    return render_template('index.html', 
+                           tasks=t, 
+                           has_inprog_tasks=has_inprog_tasks, 
+                           has_complete_tasks=has_complete_tasks)
 
 @views.route('/about/')
 def about():
@@ -131,12 +120,11 @@ def upload():
 
         client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
         sample_page_count = client.documents.get(doc_list[0].dc_id).pages
-        print(sample_page_count)
 
         if doc_list:
             if len(doc_list) > 0:
                 first_doc = doc_list[0]
-                flask_session['image'] = first_doc.fetch_url
+                flask_session['image_url'] = first_doc.fetch_url
                 flask_session['page_count'] = sample_page_count
                 flask_session['image_type'] = 'pdf'
                 flask_session['dc_project'] = project_name
@@ -145,7 +133,12 @@ def upload():
                 dc_filter_list = [thing.decode('utf-8') for thing in dc_filter_list] if dc_filter_list else []
                 flask_session['dc_filter_list'] = dc_filter_list
 
-                return render_template('upload.html', project_list=project_list, project_name=project_name, hierarchy_filter=hierarchy_filter, h_obj=h_obj, doc_count=len(doc_list))
+                return render_template('upload.html', 
+                                       project_list=project_list, 
+                                       project_name=project_name, 
+                                       hierarchy_filter=hierarchy_filter, 
+                                       h_obj=h_obj, 
+                                       doc_count=len(doc_list))
             else:
                 flash("No DocumentCloud images found")
 
@@ -228,9 +221,9 @@ def delete_transcription():
     username = request.args.get('user')
     next = request.args.get('next')
 
-    transcription_task = TranscriptionTask(task_id, 
-                                           username=username,
-                                           transcription_id=transcription_id)
+    transcription_task = TranscriptionManager(task_id, 
+                                              username=username,
+                                              transcription_id=transcription_id)
     
     transcription_task.getFormMeta()
     image_id = transcription_task.deleteOldTranscription()
@@ -250,248 +243,68 @@ def delete_transcription():
 @login_required
 @roles_required('admin')
 def form_creator():
-    form_meta = FormMeta()
-    if request.args.get('form_id'):
-        form = db.session.query(FormMeta).get(request.args['form_id'])
-        if form:
-            form_meta = form
-            flask_session['image'] = {
-                'image': form.sample_image, 
-                'image_type': form.sample_image.rsplit('.', 1)[1].lower()
-            }
-            flask_session['dc_project'] = form.dc_project
-            flask_session['dc_filter'] = form.dc_filter
-            dc_filter_list = ast.literal_eval(json.loads(form.dc_filter)) if form.dc_filter else None
-            dc_filter_list = [thing.decode('utf-8') for thing in dc_filter_list] if dc_filter_list else []
-            flask_session['dc_filter_list'] = dc_filter_list
+    
+    dc_project = flask_session.get('dc_project')
+    dc_filter = flask_session.get('dc_filter')
 
-    if not flask_session.get('image'):
-        return redirect(url_for('views.upload'))
-    engine = db.session.bind
-    if request.method == 'POST':
-        name = request.form['task_name']
-        form_meta.name = name
-        form_meta.description = request.form['task_description']
-        form_meta.slug = slugify(name)
-        form_meta.last_update = datetime.now().replace(tzinfo=TIME_ZONE)
-        form_meta.sample_image = flask_session['image']
-        if request.form.get('task_group_id'):
-            task_group = db.session.query(TaskGroup)\
-                    .get(request.form['task_group_id'])
-        else:
-            task_group = TaskGroup(name=request.form['task_group'],
-                    description=request.form.get('task_group_description'))
-        form_meta.task_group = task_group
-        form_meta.deadline = request.form['deadline']
-        form_meta.reviewer_count = request.form['reviewer_count']
-        form_meta.dc_project = flask_session['dc_project']
-        form_meta.dc_filter = flask_session['dc_filter']
-        form_meta.split_image = False if request.form.get('is_concat') == "keep_intact" or request.form.get('is_concat') == None else True
-        db.session.add(form_meta)
-        db.session.commit()
-        section_fields = {}
-        sections = {}
-        field_datatypes = {}
-        changed_field_names = []
-        for k,v in request.form.items():
-            parts = k.split('_')
-            if 'section' in parts:
-                if len(parts) == 2:
-                    # You've got yourself a section
-                    section_idx = k.split('_')[-1]
-                    section = db.session.query(FormSection)\
-                            .filter(FormSection.index == section_idx)\
-                            .filter(FormSection.form == form_meta)\
-                            .first()
-                    if not section:
-                        section = FormSection(name=v, 
-                                              slug=slugify(v),
-                                              index=section_idx,
-                                              form=form_meta)
-                    else:
-                        section.name = v
-                        section.slug = slugify(v)
-                    sections[section_idx] = section
-                if len(parts) == 5:
-                    # You've got yourself a field data type
-                    field_idx = k.split('_')[-1]
-                    section_idx = k.split('_')[2]
-                    try:
-                        field_datatypes[section_idx][field_idx] = v
-                    except KeyError:
-                        field_datatypes[section_idx] = {field_idx: v}
-                if len(parts) == 4:
-                    # You've got yourself a field
-                    field_idx = k.split('_')[-1]
-                    section_idx = k.split('_')[1]
-                    field = db.session.query(FormField)\
-                            .filter(FormField.index == field_idx)\
-                            .filter(FormSection.index == section_idx)\
-                            .filter(FormField.form == form_meta)\
-                            .first()
-                    if not field: # adding a new field
-                        section = db.session.query(FormSection)\
-                                .filter(FormSection.index == section_idx)\
-                                .filter(FormSection.form == form_meta)\
-                                .first()
-                        field = FormField(name=v,
-                                          slug=slugify(v),
-                                          index=field_idx,
-                                          form=form_meta,
-                                          section=section)
-                    else:
-                        # keeping track of field names that have changed
-                        if field.name != v:                        
-                            changed_field_names.append([field.slug, slugify(v)])
-                            field.name = v
-                            field.slug = slugify(v)
-                    db.session.add(field)
-                    try:
-                        section_fields[section_idx].append(field)
-                    except KeyError:
-                        section_fields[section_idx] = [field]
-        for section_id, section in sections.items():
-            section.fields = section_fields[section_id]
-            for field in section.fields:
-                # if this is a new field (all existing fields will already have a data type)
-                if not field.data_type:
-                    field.data_type = field_datatypes[section_id][unicode(field.index)]
-                    field.section = section
-                    db.session.add(field)
-            db.session.add(section)
-        db.session.commit()
-        db.session.refresh(form_meta, ['fields', 'table_name'])
+    creator_manager = FormCreatorManager(form_id=request.args.get('form_id'))
+
+    if creator_manager.existing_form:
+        image_url = creator_manager.form_meta.sample_image
         
-        metadata = MetaData()
+        dc_project = creator_manager.form_meta.dc_project
+        dc_filter = creator_manager.form_meta.dc_filter
 
-        # if the form already exists
-        if form_meta.table_name:
-            
-            #update column names
-            for column in changed_field_names:
-                old_slug = column[0]
-                new_slug = column[1]
-                rename = 'ALTER TABLE "{0}" RENAME COLUMN "{1}" TO "{2}"'\
-                            .format(form_meta.table_name, old_slug, new_slug)
-                rename_blank = 'ALTER TABLE "{0}" RENAME "COLUMN {1}_blank" TO "{2}_blank"'\
-                            .format(form_meta.table_name, old_slug, new_slug)
-                rename_not_legible = 'ALTER TABLE "{0}" RENAME COLUMN "{1}_not_legible" TO "{2}_not_legible"'\
-                            .format(form_meta.table_name, old_slug, new_slug)
-                rename_altered = 'ALTER TABLE "{0}" RENAME COLUMN "{1}_altered" TO "{2}_altered"'\
-                            .format(form_meta.table_name, old_slug, new_slug)
-
-                with engine.begin() as conn:
-                    conn.execute(rename)
-                    conn.execute(rename_blank)
-                    conn.execute(rename_not_legible)
-                    conn.execute(rename_altered)
-
-            table = Table(form_meta.table_name, metadata, 
-                          autoload=True, autoload_with=engine)
-            new_columns = set([f.slug for f in form_meta.fields])
-            existing_columns = set([c.name for c in table.columns])
-            add_columns = new_columns - existing_columns
-            for column in add_columns:
-                field = [f for f in form_meta.fields if f.slug == unicode(column)][0]
-                sql_type = SQL_DATA_TYPE[field.data_type]
-                alt = 'ALTER TABLE "{0}" ADD COLUMN "{1}" {2}'\
-                        .format(form_meta.table_name, field.slug, sql_type)
-                blank = '''
-                    ALTER TABLE "{0}" 
-                    ADD COLUMN "{1}_blank" boolean
-                    '''.format(form_meta.table_name, field.slug)
-                not_legible = '''
-                    ALTER TABLE "{0}" 
-                    ADD COLUMN "{1}_not_legible" boolean
-                    '''.format(form_meta.table_name, field.slug)
-                altered = '''
-                    ALTER TABLE "{0}" 
-                    ADD COLUMN "{1}_altered" boolean
-                    '''.format(form_meta.table_name, field.slug)
-                with engine.begin() as conn:
-                    conn.execute(alt)
-                    conn.execute(blank)
-                    conn.execute(not_legible)
-                    conn.execute(altered)
-
-        # if the form does not exist yet
-        else:
-            form_meta.table_name = '{0}_{1}'.format(
-                    unicode(uuid4()).rsplit('-', 1)[1], 
-                    form_meta.slug)[:60]
-            cols = [
-                Column('date_added', DateTime(timezone=True), 
-                    server_default=text('CURRENT_TIMESTAMP')),
-                Column('transcriber', String),
-                Column('id', Integer, primary_key=True),
-                Column('image_id', Integer),
-                Column('transcription_status', String, default="raw"),
-                Column('flag_irrelevant', Boolean)
-            ]
-            for field in form_meta.fields:
-                dt = DATA_TYPE.get(field.data_type, String)
-                if field.data_type  == 'datetime':
-                    dt = DateTime(timezone=True)
-                cols.append(Column(field.slug, dt))
-                cols.append(Column('{0}_blank'.format(field.slug), Boolean))
-                cols.append(Column('{0}_not_legible'.format(field.slug), Boolean))
-                cols.append(Column('{0}_altered'.format(field.slug), Boolean))
-            table = Table(form_meta.table_name, metadata, *cols)
-            engine = db.session.bind
-            table.create(bind=engine)
-            db.session.add(form_meta)
-            db.session.commit()
-
-            # update_task_images(form_meta.id)
-
+    else:
+        # image info in session data from upload
+        image_url = flask_session['image_url']
+        creator_manager.dc_project = dc_project
+        creator_manager.dc_filter = dc_filter
+    
+    dc_filter_list = []
+    if dc_filter:
+        dc_filter_list = ast.literal_eval(json.loads(dc_filter)) 
+        dc_filter_list = [thing.decode('utf-8') for thing in dc_filter_list]
+    
+    if not image_url:
+        return redirect(url_for('views.upload'))
+    
+    engine = db.session.bind
+    
+    if request.method == 'POST':
+        
+        creator_manager.updateFormMeta(request.form, 
+                                       sample_image=image_url)
+        
+        creator_manager.saveFormParts()
+        
         return redirect(url_for('views.index'))
 
-    next_section_index = 2
-    next_field_indicies = {1: 2}
-    if form_meta.id:
-        sel = ''' 
-            SELECT 
-                s.index + 1 as section_index
-            FROM form_meta as m
-            JOIN form_section as s
-                ON m.id = s.form_id
-            WHERE m.id = :form_id
-            ORDER BY section_index DESC
-            LIMIT 1
-        '''
-        next_section_index = engine.execute(text(sel), 
-                                form_id=form_meta.id).first()[0]
-        sel = ''' 
-            SELECT 
-                s.index as section_index,
-                MAX(f.index) AS field_index
-            FROM form_meta as m
-            JOIN form_section as s
-                ON m.id = s.form_id
-            JOIN form_field as f
-                ON s.id = f.section_id
-            WHERE m.id = :form_id
-            GROUP BY s.id
-        '''
-        next_field_indicies = {f[0]: f[1] for f in \
-                engine.execute(text(sel), form_id=form_meta.id)}
-    form_meta = form_meta.as_dict()
+    if creator_manager.existing_form:
+        creator_manager.getNextIndices()
+
+    form_meta = creator_manager.form_meta.as_dict()
+    
     if form_meta['sections']:
         for section in form_meta['sections']:
             section['fields'] = sorted(section['fields'], key=itemgetter('index'))
         form_meta['sections'] = sorted(form_meta['sections'], key=itemgetter('index'))
+    
     return render_template('form-creator.html', 
                            form_meta=form_meta,
-                           next_section_index=next_section_index,
-                           next_field_index=next_field_indicies)
+                           next_section_index=creator_manager.next_section_index,
+                           next_field_index=creator_manager.next_field_indices,
+                           image_url=image_url,
+                           dc_project=dc_project,
+                           dc_filter_list=dc_filter_list)
 
 def update_task_images(task_id):
     task = db.session.query(FormMeta).get(task_id)
     task_dict = task.as_dict()
-
+    
     if task_dict['split_image'] == False:
         doc_list = DocumentCloudImage.grab_relevant_images(task_dict['dc_project'],task_dict['dc_filter'])
-    
+        
         for doc in doc_list:
             url = doc.fetch_url
                 
@@ -591,13 +404,16 @@ def transcribe(task_id):
     supercede = request.args.get('supercede')
     image_id = request.args.get('image_id')
 
-    transcription_task = TranscriptionTask(task_id, 
-                                           username=username,
-                                           transcription_id=supercede,
-                                           image_id=image_id)
+    transcription_task = TranscriptionManager(task_id, 
+                                              username=username,
+                                              transcription_id=supercede,
+                                              image_id=image_id)
     
     transcription_task.getFormMeta()
     transcription_task.setupDynamicForm()
+    
+    if image_id and supercede:
+        transcription_task.prepopulateFields()
 
     checkinImages()
     
@@ -614,20 +430,8 @@ def transcribe(task_id):
             
             transcription_task.updateImage()
 
-                # TODO: Figure out UI parts here
-
-                # if superceding another image, delete that image
-                # & then go back to review transcriptions page
-                # if transcription_task.old_transcription:
-                #     return redirect(url_for('views.delete_transcription',
-                #                                 transcription_id=old_transcription['id'],
-                #                                 task_id=task_id,
-                #                                 next='task',
-                #                                 user=old_transcription['transcriber'],
-                #                                 message='edited'))
-                # else:
             flash("Saved! Let's do another!", "saved")
-                    # return redirect(url_for('views.transcribe', task_id=task_id))
+            return redirect(url_for('views.transcribe', task_id=task_id))
 
 
     if transcription_task.image_task_assignment == None:

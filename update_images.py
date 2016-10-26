@@ -124,10 +124,12 @@ def create_update_assign(task):
             image_task_assign = ''' 
                 INSERT INTO image_task_assignment (
                   image_id, 
-                  form_id
+                  form_id,
+                  is_complete
                 ) VALUES (
                   :image_id,
-                  :task_id
+                  :task_id,
+                  FALSE
                 )
             '''
 

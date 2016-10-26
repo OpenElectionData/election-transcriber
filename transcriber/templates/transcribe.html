@@ -12,7 +12,7 @@
 
 <div class="row">
     <div class='col-md-6'>
-        {{ render_image(task.dc_image) }}
+        {{ render_image(task.dc_image.fetch_url) }}
     </div>
     {% if task.is_new %}
     <div class="pretend-new">

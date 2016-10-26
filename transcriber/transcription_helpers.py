@@ -19,7 +19,7 @@ FORM_TYPE = {
     'date': DateField
 }
 
-class TranscriptionTask(object):
+class TranscriptionManager(object):
     
     def __init__(self, 
                  task_id, 
@@ -126,6 +126,14 @@ class TranscriptionTask(object):
         
         self.form = self.dynamic_form(meta={})
     
+    def prepopulateFields(self):
+        meta_cols = ['transcriber', 'transcription_status', 'image_id', 'date_added', 'id']
+        
+        for k,v in self.old_transcription.items():
+            
+            if k and k not in meta_cols:
+                self.form[k].data = v
+
     def getImageTaskAssignment(self):
         if self.image_id:
             self.image_task_assignment = db.session.query(ImageTaskAssignment)\
@@ -294,7 +302,7 @@ class TranscriptionTask(object):
 
         incomplete_count = self.engine.execute(sa.text(incomplete_count), 
                                                task_id=self.task_id).first().count
-
+        
         return incomplete_count > 0
 
 def checkinImages():

@@ -15,9 +15,9 @@ depends_on = None
 from alembic import op
 import sqlalchemy as sa
 
-connection = op.get_bind()
 
 def upgrade():
+    connection = op.get_bind()
     q = 'SELECT table_name from form_meta'
     tasks = connection.execute(q)
     table_names = [task.table_name for task in tasks]
