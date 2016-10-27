@@ -13,14 +13,14 @@ from sqlalchemy import text, or_
 
 def slugify(text, delim=u'_'):
     if text:
-        text = unicode(text)
+        text = str(text)
         punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.:;]+')
         result = []
         for word in punct_re.split(text.lower()):
             word = normalize('NFKD', word).encode('ascii', 'ignore')
             if word:
                 result.append(word)
-        return unicode(delim.join(result))
+        return str(delim.join([r.decode('utf-8') for r in result]))
     else: # pragma: no cover
         return text
 

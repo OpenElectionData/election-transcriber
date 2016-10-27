@@ -50,10 +50,11 @@ class DocumentCloudImage(db.Model):
         return db.session.query(cls).filter(cls.fetch_url == url).first().id
 
     @classmethod
-    def grab_relevant_images(cls, project_name, hierarchy_filter):
+    def grab_relevant_images(cls, project_name, hierarchy_filter=None):
         # this only grabs image urls without page numbers
         
-        hierarchy_filter = ast.literal_eval(json.loads(hierarchy_filter)) if hierarchy_filter else None
+        if hierarchy_filter:
+            hierarchy_filter = ast.literal_eval(json.loads(hierarchy_filter))
         
         doc_list = [row for row in db.session.query(cls)\
                         .filter(cls.dc_project == project_name)\

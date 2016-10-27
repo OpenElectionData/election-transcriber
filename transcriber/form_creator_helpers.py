@@ -42,6 +42,8 @@ class FormCreatorManager(object):
         if form_id:
             self.form_meta = db.session.query(FormMeta).get(form_id)
             self.existing_form = True
+            self.dc_project = self.form_meta.dc_project
+            self.dc_filter = self.form_meta.dc_filter
     
     def getNextIndices(self):
 
@@ -242,7 +244,7 @@ class FormCreatorManager(object):
     def createDataTable(self):
         
         table_name = '{0}_{1}'.format(
-                unicode(uuid4()).rsplit('-', 1)[1], 
+                str(uuid4()).rsplit('-', 1)[1], 
                 self.form_meta.slug)[:60]
         
         cols = [
@@ -319,7 +321,7 @@ class FormCreatorManager(object):
         for column in additional_columns:
             
 
-            field = [f for f in self.form_meta.fields if f.slug == unicode(column)][0]
+            field = [f for f in self.form_meta.fields if f.slug == str(column)][0]
             sql_type = SQL_DATA_TYPE[field.data_type]
             
             fmt_args = [self.form_meta.table_name, field.slug, sql_type,]

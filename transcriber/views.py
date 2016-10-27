@@ -34,9 +34,11 @@ from transcriber.models import FormMeta, FormSection, FormField, \
 from transcriber.database import db
 from transcriber.helpers import slugify, pretty_task_transcriptions, \
     get_user_activity
+from transcriber.auth import csrf
 
 from transcriber.transcription_helpers import TranscriptionManager, checkinImages
 from transcriber.form_creator_helpers import FormCreatorManager
+from transcriber.tasks import update_images_by_task, update_one_from_document_cloud
 
 from documentcloud import DocumentCloud
 
@@ -130,7 +132,7 @@ def upload():
                 flask_session['dc_project'] = project_name
                 flask_session['dc_filter'] = hierarchy_filter if hierarchy_filter else None
                 dc_filter_list = ast.literal_eval(json.loads(hierarchy_filter)) if hierarchy_filter else None
-                dc_filter_list = [thing.decode('utf-8') for thing in dc_filter_list] if dc_filter_list else []
+                dc_filter_list = [thing for thing in dc_filter_list] if dc_filter_list else []
                 flask_session['dc_filter_list'] = dc_filter_list
 
                 return render_template('upload.html', 
@@ -264,7 +266,7 @@ def form_creator():
     dc_filter_list = []
     if dc_filter:
         dc_filter_list = ast.literal_eval(json.loads(dc_filter)) 
-        dc_filter_list = [thing.decode('utf-8') for thing in dc_filter_list]
+        dc_filter_list = [thing for thing in dc_filter_list]
     
     if not image_url:
         return redirect(url_for('views.upload'))
@@ -278,6 +280,8 @@ def form_creator():
         
         creator_manager.saveFormParts()
         
+        update_images_by_task.delay(creator_manager.form_meta.id)
+
         return redirect(url_for('views.index'))
 
     if creator_manager.existing_form:
@@ -298,37 +302,6 @@ def form_creator():
                            dc_project=dc_project,
                            dc_filter_list=dc_filter_list)
 
-def update_task_images(task_id):
-    task = db.session.query(FormMeta).get(task_id)
-    task_dict = task.as_dict()
-    
-    if task_dict['split_image'] == False:
-        doc_list = DocumentCloudImage.grab_relevant_images(task_dict['dc_project'],task_dict['dc_filter'])
-        
-        for doc in doc_list:
-            url = doc.fetch_url
-                
-            image_id = DocumentCloudImage.get_id_by_url(url)
-
-            if db.session.query(ImageTaskAssignment).filter(ImageTaskAssignment.form_id==task_id).filter(ImageTaskAssignment.image_id==image_id).first()==None:
-                img_task_assign = ImageTaskAssignment(image_id=image_id, 
-                      form_id=task_id)
-                db.session.add(img_task_assign)
-                db.session.commit()
-
-    else:
-        doc_list = DocumentCloudImage.grab_relevant_image_pages(task_dict['dc_project'], task_dict['dc_filter'])
-
-        for doc in doc_list:
-            url = doc.fetch_url
-
-            image_id = DocumentCloudImage.get_id_by_url(url)
-
-            if db.session.query(ImageTaskAssignment).filter(ImageTaskAssignment.form_id==task_id).filter(ImageTaskAssignment.image_id==image_id).first()==None:
-                img_task_assign = ImageTaskAssignment(image_id=image_id, 
-                          form_id=task_id)
-                db.session.add(img_task_assign)
-                db.session.commit()
 
 @views.route('/get-task-group/')
 @login_required
@@ -494,7 +467,7 @@ def transcriptions():
 
     if task_dict['dc_filter']:
         task_dict['dc_filter'] = ast.literal_eval(json.loads(task_dict['dc_filter']))
-        task_dict['dc_filter'] = [thing.decode('utf-8') for thing in task_dict['dc_filter']]
+        task_dict['dc_filter'] = [thing for thing in task_dict['dc_filter']]
 
     task_dict['progress'] = ImageTaskAssignment.get_task_progress(task_id)
     task_dict['image_count'] = ImageTaskAssignment.count_images(task_id)
@@ -617,3 +590,13 @@ def uploaded_image(filename):
 @views.route('/viewer/')
 def viewer():
     return render_template('viewer.html')
+
+@csrf.exempt
+@views.route('/update-image/', methods=['POST'])
+def update_image():
+    document_id = request.form['document_id']
+    project_title = request.form['project_title']
+
+    update_one_from_document_cloud.delay(document_id, project_title)
+
+    return 'Updating !!'

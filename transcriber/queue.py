@@ -2,16 +2,29 @@ import pickle
 from uuid import uuid4
 import threading
 import select
+import traceback
+import json
 
 import sqlalchemy as sa
+
+import psycopg2
+
+from transcriber.models import WorkTable
+from transcriber.app_config import DB_CONN
+
+try:
+    from raven import Client
+    client = Client(dsn=WORKER_SENTRY)
+except ImportError: # pragma: no cover
+    client = None
+except KeyError:
+    client = None
 
 def queuefunc(f):
 
     def delay(*args, **kwargs):
         
-        from transcriber.database import db
-        
-        engine = db.session.bind
+        engine = sa.create_engine(DB_CONN)
         
         pickled_task = pickle.dumps((f, args, kwargs))
         key = str(uuid4())
@@ -23,20 +36,18 @@ def queuefunc(f):
             'value': pickled_task,
             'task_name': task_name,
         }
-
+        
         with engine.begin() as conn:
-            conn.execute(text(''' 
+            conn.execute(sa.text(''' 
                 INSERT INTO work_table
-                    (key, work_value, task_name, updated) 
-                SELECT 
+                    (key, work_value, task_name, updated, claimed) 
+                VALUES ( 
                   :key, 
                   :value, 
                   :task_name, 
-                  NOW() AS updated
-                WHERE NOT EXISTS (
-                    SELECT * FROM work_table 
-                    WHERE work_value = :value 
-                      AND completed = FALSE)
+                  NOW(),
+                  FALSE
+                )
             '''), **query_args)
             
             conn.execute("NOTIFY worker, '{}'".format(key))
@@ -96,13 +107,13 @@ class ProcessMessage(threading.Thread):
                 WHERE work_table.key = s.key
                 RETURNING work_table.*
             '''
-            work = trans.execute(text(upd), 
+            work = trans.execute(sa.text(upd), 
                                  work_key=work_key).first()
         
         return work
 
     def doWork(self, work):
-
+        
         func, args, kwargs = pickle.loads(work.work_value)
         
         upd_args = {
@@ -114,17 +125,12 @@ class ProcessMessage(threading.Thread):
             upd_args['return_value'] = func(*args, **kwargs)
             upd_args['cleared'] = True
             upd_args['tb'] = None
-        
         except Exception as e:
 
-            if isinstance(e, ImportFailed):
-                upd_args['return_value'] = e.as_dict()
-            
-            else:
-                try:
-                    upd_args['return_value'] = {'message': e.message}
-                except AttributeError:
-                    upd_args['return_value'] = {'message': str(e)}
+            try:
+                upd_args['return_value'] = {'message': e.message}
+            except AttributeError:
+                upd_args['return_value'] = {'message': str(e)}
 
             if client: # pragma: no cover
                 client.captureException()
@@ -146,5 +152,30 @@ class ProcessMessage(threading.Thread):
                 WHERE key = :key
               '''
         with self.engine.begin() as conn:
-            conn.execute(text(upd), **upd_args)
+            conn.execute(sa.text(upd), **upd_args)
 
+def queue_daemon(): # pragma: no cover
+    # import logging
+    # logging.getLogger().setLevel(logging.WARNING)
+    
+    import signal
+    import sys
+
+    engine = sa.create_engine(DB_CONN)
+    
+    work_table = WorkTable.__table__
+    work_table.create(engine, checkfirst=True)
+   
+    stopper = threading.Event()
+
+    worker = ProcessMessage(stopper)
+
+    def signalHandler(signum, frame):
+        stopper.set()
+        worker.join()
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signalHandler)
+
+    print('Starting worker')
+    worker.start()

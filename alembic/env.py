@@ -38,7 +38,7 @@ def include_tables_from_config(config_):
 include_tables = include_tables_from_config(config.get_section('alembic:include'))
 
 def include_object(obj, name, type_, reflected, compare_to):
-    parts = unicode(obj).split('.')
+    parts = str(obj).split('.')
     if parts[0] in include_tables and type_ in ['table', 'column']:
         return True
     else:
