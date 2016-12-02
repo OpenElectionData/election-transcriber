@@ -262,9 +262,18 @@ class FormCreatorManager(object):
             if field.data_type  == 'datetime':
                 dt = sa.DateTime(timezone=True)
             cols.append(sa.Column(field.slug, dt))
-            cols.append(sa.Column('{0}_blank'.format(field.slug), sa.Boolean))
-            cols.append(sa.Column('{0}_not_legible'.format(field.slug), sa.Boolean))
-            cols.append(sa.Column('{0}_altered'.format(field.slug), sa.Boolean))
+            
+            cols.append(sa.Column('{0}_blank'.format(field.slug), 
+                                  sa.Boolean, 
+                                  server_default=sa.text('FALSE')))
+            
+            cols.append(sa.Column('{0}_not_legible'.format(field.slug), 
+                                  sa.Boolean, 
+                                  server_default=sa.text('FALSE')))
+
+            cols.append(sa.Column('{0}_altered'.format(field.slug), 
+                                  sa.Boolean, 
+                                  server_default=sa.text('FALSE')))
         
         table = sa.Table(table_name, sa.MetaData(), *cols)
         
