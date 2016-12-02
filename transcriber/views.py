@@ -427,8 +427,10 @@ def download_transcriptions():
         return redirect(url_for('views.index'))
 
     task = db.session.query(FormMeta).get(request.args['task_id'])
-    task_dict = task.as_dict()
-    table_name = task_dict['table_name']
+    
+    # TODO: Do some switch statements to get the word "blank" or "illegible"
+    # instead of "None" in the case where there is a NULL in the field and
+    # blank or illigible is true
 
     copy = '''
         COPY (
@@ -438,14 +440,19 @@ def download_transcriptions():
             on t.image_id = i.id 
             order by t.image_id, transcription_status
         ) TO STDOUT WITH CSV HEADER DELIMITER ','
-    '''.format(table_name)
+    '''.format(task.table_name)
 
     engine = db.session.bind
+    
     conn = engine.raw_connection()
     curs = conn.cursor()
+    
     outp = StringIO()
     curs.copy_expert(copy, outp)
+    conn.close()
+    
     outp.seek(0)
+
     resp = make_response(outp.getvalue())
     resp.headers['Content-Type'] = 'text/csv'
     filedate = datetime.now().strftime('%Y-%m-%d')
@@ -473,30 +480,42 @@ def transcriptions():
     task_dict['image_count'] = ImageTaskAssignment.count_images(task_id)
 
     table_name = task_dict['table_name']
+    
+    engine = db.session.bind
+    
+    table = Table(table_name, 
+                  MetaData(), 
+                  autoload=True, 
+                  autoload_with=engine)
+    
+    t_header = [c.name for c in table.columns if 'irrelevant' not in c.name.lower()]
+    columns = ', '.join(['t."{}"'.format(c) for c in t_header])
+    
+    # TODO: Do some switch statements to get the word "blank" or "illegible"
+    # instead of "None" in the case where there is a NULL in the field and
+    # blank or illigible is true
+
+    q = ''' 
+            SELECT 
+              i.id AS dc_image_id,
+              i.fetch_url,
+              i.hierarchy,
+              {columns}
+            FROM document_cloud_image AS i
+            JOIN "{table_name}" AS t 
+              ON i.id = t.image_id
+            WHERE t.transcription_status = 'raw'
+            ORDER BY i.id, t.id
+        '''.format(columns=columns, 
+                   table_name=table_name)
+
+    with engine.begin() as conn:
+        rows_all = conn.execute(text(q)).fetchall()
 
     images_completed = ImageTaskAssignment.get_completed_images_by_task(task_id)
     images_unseen = ImageTaskAssignment.get_unseen_images_by_task(task_id)
     images_inprog = ImageTaskAssignment.get_inprog_images_by_task(task_id)
     images_conflict = ImageTaskAssignment.get_conflict_images_by_task(task_id)
-
-    q = ''' 
-            SELECT * from (SELECT id, fetch_url, hierarchy from document_cloud_image) i
-            JOIN "{0}" t 
-            ON (i.id = t.image_id)
-            WHERE (t.transcription_status = 'raw')
-            ORDER BY i.id, t.id
-        '''.format(table_name)
-    h = ''' 
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_name = '{0}'
-        '''.format(table_name)
-
-
-    engine = db.session.bind
-    with engine.begin() as conn:
-        t_header = conn.execute(text(h)).fetchall()
-        rows_all = conn.execute(text(q)).fetchall()
 
     img_statuses = {
         'done': images_completed,

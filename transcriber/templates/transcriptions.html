@@ -85,7 +85,7 @@
 
 
             <div id="row-filters">
-                <strong>Viewing:</strong> 
+                <strong>Viewing:</strong>
 
                 <a type="button" class="btn btn-default btn-sm {% if not row_filter %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id) }}">All</a>
 
@@ -126,10 +126,10 @@
                 <thead>
                     <tr>
                         <th></th>
-                        {% for h in transcription_tbl_header[:7] %}
+                        {% for h in transcription_tbl_header[:6] %}
                             <th> {{h}} </th>
                         {% endfor %}
-                        {% for h in transcription_tbl_header[7:] %}
+                        {% for h in transcription_tbl_header[6:] %}
                             <th class="transcription-cell"> {{h}} </th>
                         {% endfor %}
                     </tr>
@@ -140,10 +140,10 @@
                         <td>
                             <span class="{{cls}} t_status small"><i class="fa fa-circle fa-fw" aria-hidden="true"></i></span>
                         </td>
-                        {% for col in transcription[:7] %}
+                        {% for col in transcription[:6] %}
                             <td class="small">{{col|safe}}</td>
                         {% endfor %}
-                        {% for col in transcription[7:] %}
+                        {% for col in transcription[6:] %}
                             <td class="small transcription-cell">{{col|safe}}</td>
                         {% endfor %}
                     </tr>
@@ -180,7 +180,7 @@
                 "sDom": '<"top"i>rt<"bottom"lp><"clear">'
             } );
 
- 
+
             $('#src-search').on( 'keyup', function () {
                 my_table
                     .column( [3] )
