@@ -7,9 +7,6 @@
     Transcription task - New form
     {% endif %}
 {% endblock %}
-{% block extra_styles %}
-    <link href="{{ url_for('static', filename='css/jquery-ui.min.css') }}" rel="stylesheet">
-{% endblock %}
 {% block content %}
 
 {% if form_meta.name %}
@@ -52,7 +49,11 @@
                            class="form-control"
                            id="id_task_name"
                            name="task_name"
-                           placeholder="A new transcription task"
+                           {% if form_meta.name %}
+                               value="{{ form_meta.name }}"
+                           {% else %}
+                               placeholder="A new transcription task"
+                           {% endif %}
                            aria-describedby="section-name-addon"/>
                     </div>
                 </div>
@@ -63,7 +64,12 @@
                                class="form-control"
                                id="id_task_group"
                                name="task_group"
-                               placeholder="A new task group"
+                               {% if form_meta.task_group %}
+                                   value="{{ form_meta.task_group.name }}"
+                                   data-groupid="{{ form_meta.task_group.id }}"
+                               {% else %}
+                                   placeholder="A new task group"
+                               {% endif %}
                                aria-describedby="section-name-addon"/>
                         </div>
                 </div>
@@ -71,8 +77,15 @@
                     <label for="id_deadline" class="col-sm-3 control-label">Deadline</label>
                     <div class="col-sm-9">
                         <div class='input-group date' id='id_deadline'>
-                            <input type='text' name="deadline" class="form-control" />
-                            <span class="input-group-addon"><span class="fa fa-calendar"></span>
+                            <input type='text'
+                                   name="deadline"
+                                   class="form-control"
+                                   {% if form_meta.deadline %}
+                                       value="{{ form_meta.deadline|format_date('%m/%d/%Y') }}"
+                                   {% endif %}/>
+
+                            <span class="input-group-addon">
+                                <a href="javascript://" class="fa fa-calendar"></a>
                             </span>
                         </div>
                     </div>
@@ -84,7 +97,11 @@
                            class="form-control"
                            id="id_reviewer_count"
                            name="reviewer_count"
-                           placeholder="2"/>
+                           {% if form_meta.reviewer_count %}
+                               value="{{ form_meta.reviewer_count }}" />
+                           {% else %}
+                               value="2" />
+                           {% endif %}
                     </div>
                 </div>
                 <div class="form-group">
@@ -94,7 +111,12 @@
                            class="form-control"
                            id="id_task_description"
                            name="task_description"
-                           placeholder="Task description and instructions"></textarea>
+                           {% if not form_meta.description %}
+                               placeholder="Task description and instructions">
+                           {% else %}
+                               >{{ form_meta.description }}
+                           {% endif %}
+                        </textarea>
                     </div>
                 </div>
                 {% if not form_meta.name and session.page_count > 10 %}
@@ -264,22 +286,16 @@
             $('#form-wrapper').css('height', (h - offsetTop));
         }).resize();
 
+        var task_id = {{ form_meta.id }};
+        var sections = {{ form_meta.sections|tojson|safe }}
         var section_id = {{ next_section_index|tojson|safe }}
         var field_ids = {{ next_field_index|tojson|safe }}
-        var form_meta = {{ form_meta|tojson|safe }}
 
         $(document).ready(function(){
-            $('#id_deadline').datetimepicker();
+            $('#id_deadline > input').datetimepicker();
 
-            if (form_meta.sections.length > 0){ // if editing instead of creating
-                $('#id_task_name').val(form_meta.name);
-                $('#id_task_description').val(form_meta.description);
-                $('#id_task_group').val(form_meta.task_group.name);
-                $('#id_deadline > input').val(form_meta.deadline);
-                $('#id_reviewer_count').val(form_meta.reviewer_count);
-                $('#id_task_group').data('groupid', form_meta.task_group.id);
-                $('#id_task_group_description').val(form_meta.task_group.description);
-                $.each(form_meta.sections, function(i, section){
+            if (sections.length > 0){ // if editing instead of creating
+                $.each(sections, function(i, section){
                     if (section.status != 'deleted'){
                         var tpl = new EJS({'text': $('#sectionTemplate').html()});
                         $('#add-section-container').append(tpl.render({'section': section}))
@@ -342,7 +358,6 @@
             });
             $('.delete').on('click', deleteStuff)
             $('#delete-task').on('click', function(e){
-                var task_id = form_meta.id;
                 $.when(deleteTask(task_id)).then(function(resp){
                     console.log("RESP", resp);
                     window.location = '/'
