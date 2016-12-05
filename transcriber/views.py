@@ -38,7 +38,7 @@ from transcriber.auth import csrf
 
 from transcriber.transcription_helpers import TranscriptionManager, checkinImages
 from transcriber.form_creator_helpers import FormCreatorManager
-from transcriber.tasks import update_images_by_task, update_one_from_document_cloud
+from transcriber.tasks import update_images
 
 from documentcloud import DocumentCloud
 
@@ -280,7 +280,7 @@ def form_creator():
         
         creator_manager.saveFormParts()
         
-        update_images_by_task.delay(creator_manager.form_meta.id)
+        update_images()
 
         return redirect(url_for('views.index'))
 
@@ -609,13 +609,3 @@ def uploaded_image(filename):
 @views.route('/viewer/')
 def viewer():
     return render_template('viewer.html')
-
-@csrf.exempt
-@views.route('/update-image/', methods=['POST'])
-def update_image():
-    document_id = request.form['document_id']
-    project_title = request.form['project_title']
-
-    update_one_from_document_cloud.delay(document_id, project_title)
-
-    return 'Updating !!'

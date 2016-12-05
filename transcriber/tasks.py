@@ -1,5 +1,6 @@
 from datetime import datetime
 import json
+import os
 
 import sqlalchemy as sa
 
@@ -7,167 +8,124 @@ from documentcloud import DocumentCloud
 
 from transcriber.queue import queuefunc
 from transcriber.app_config import DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW, DB_CONN
+from transcriber.models import FormMeta, DocumentCloudImage, ImageTaskAssignment
 
-
-@queuefunc
-def update_images_by_task(task_id):
-    
-    from transcriber import create_app
-    
-    app = create_app()
-    
-    with app.test_request_context():
-        from transcriber.database import db
-        from transcriber.models import FormMeta, DocumentCloudImage, \
-            ImageTaskAssignment
-        
-        task = db.session.query(FormMeta).get(task_id)
-        task_dict = task.as_dict()
-        
-        if task_dict['split_image'] == False:
-            doc_list = DocumentCloudImage.grab_relevant_images(task_dict['dc_project'],
-                                                               task_dict['dc_filter'])
-            for doc in doc_list:
-
-                update_image_by_id(doc.id, task_dict['dc_project'])
-
-        else:
-            doc_list = DocumentCloudImage.grab_relevant_image_pages(task_dict['dc_project'], 
-                                                                    task_dict['dc_filter'])
-            
-            for doc in doc_list:
-
-                update_image_by_id(doc.id, task_dict['project_title'])
-
-
-def update_image_by_id(image_id, project_title):
-        
-    from transcriber import create_app
-    
-    app = create_app()
-    
-    with app.test_request_context():
-        from transcriber.database import db
-        from transcriber.models import DocumentCloudImage, \
-            ImageTaskAssignment, FormMeta
-
-        tasks = ''' 
-            SELECT * 
-            FROM form_meta AS fm
-            JOIN (
-              SELECT form_id
-              FROM image_task_assignment
-              WHERE image_id = :image_id
-            ) AS assign
-              ON fm.id = assign.form_id
-            WHERE fm.dc_project = :project_title
-            AND status != 'deleted'
-        '''
-        
-        params = {'image_id': image_id, 'project_title': project_title}
-        tasks = list(db.session.execute(sa.text(tasks), params))
-        
-        if len(tasks) == 0:
-            
-            related_tasks = db.session.query(FormMeta)\
-                              .filter(FormMeta.dc_project == project_title).all()
-            
-            for task in related_tasks:
-                assignment = db.session.query(ImageTaskAssignment)\
-                                       .filter(ImageTaskAssignment.image_id == image_id)\
-                                       .filter(ImageTaskAssignment.form_id == task.id).first()
-                
-                if not assignment:
-                    img_task_assign = ImageTaskAssignment(image_id=image_id, 
-                                                          form_id=task.id)
-                    db.session.add(img_task_assign)
-                    db.session.commit()
-
+engine = sa.create_engine(DB_CONN)
 
 @queuefunc
-def update_one_from_document_cloud(doc_id, project_title):
-    # adding images document_cloud_image table if they don't exist
+def update_images(image_id=None):
     
-    client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
-    
-    engine = sa.create_engine(DB_CONN, 
-                           convert_unicode=True, 
-                           server_side_cursors=True)
-    
-    existing_image = ''' 
-        SELECT * FROM document_cloud_image
-        WHERE dc_id = :dc_id
+    insert = ''' 
+        INSERT INTO image_task_assignment (
+          image_id,
+          form_id,
+          is_complete
+        )
+        SELECT 
+          dc.dc_id AS image_id,
+          fm.id AS form_id,
+          FALSE AS is_complete
+        FROM document_cloud_image AS dc
+        JOIN form_meta AS fm 
+          USING(dc_project)
+        LEFT JOIN image_task_assignment AS ita
+          ON fm.id = ita.form_id
+        WHERE ita.form_id IS NULL
     '''
     
-    existing_image = engine.execute(sa.text(existing_image), dc_id=doc_id).first()
+    q_args = {}
     
-    if existing_image == None:
-        doc = client.documents.get(doc_id)
-        
-        new_image = ''' 
-            INSERT INTO document_cloud_image (
-              image_type,
-              fetch_url,
-              dc_project,
-              dc_id,
-              hierarchy,
-              is_page_url,
-              is_current
-            ) VALUES (
-              :image_type,
-              :fetch_url,
-              :dc_project,
-              :dc_id,
-              :hierarchy,
-              :is_page_url,
-              :is_current
-            )
-            RETURNING id
-        '''
-        
-        values = dict(image_type='pdf', 
-                      fetch_url=doc.pdf_url, 
-                      dc_project = project_title,
-                      dc_id = doc_id,
-                      hierarchy = doc.data['hierarchy'],
-                      is_page_url = False,
-                      is_current = True)
-        with engine.begin() as conn:
-            image_id = conn.execute(sa.text(new_image), **values)
-        
-        update_image_by_id(image_id.first().id, project_title)
+    if image_id:
+        insert = '{} AND dc.id = :image_id'
+        q_args['image_id'] = image_id
 
-        log_message = (datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S'), 
-                       project_title, 
-                       doc_id)
-
-        print('%s added %s %s' % log_message)
-        
-        if doc.pages > 1:
-            for p in range(2, doc.pages+1):
-                values['fetch_url'] = '%s#page=%s' % (doc.pdf_url, p)
-
-                with engine.begin() as conn:
-                    image_id = conn.execute(sa.text(new_image), **values)
-                
-                update_image_by_id(image_id.first().id, project_title)
-        
-        ##############################
-        # handle documents that are
-        # updates of exisiting documents
-        ##############################
+    with engine.begin() as conn:
+        conn.execute(sa.text(insert), **q_args)
 
 
 def update_all_document_cloud():
     client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
     projects = client.projects.all()
     
+    insert_q = ''' 
+        INSERT INTO document_cloud_image (
+          image_type,
+          fetch_url,
+          dc_project,
+          dc_id,
+          hierarchy,
+          is_page_url,
+          is_current
+        ) VALUES (
+          :image_type,
+          :fetch_url,
+          :dc_project,
+          :dc_id,
+          :hierarchy,
+          :is_page_url,
+          :is_current
+        )
+        ON CONFLICT (dc_id) DO NOTHING
+    '''
+    
+    inserts = []
+    count = 0
+    
+    this_folder = os.path.abspath(os.path.dirname(__file__))
+    download_folder = os.path.join(this_folder, 'downloads')
+
     for project in projects:
+        
+        print('getting images for project {}'.format(project.title))
+        
+        project_dir = os.path.join(download_folder, str(project.id))
+        os.makedirs(project_dir, exist_ok=True)
+
         project = client.projects.get_by_title(project.title)
-        doc_ids = project.document_ids
-        for doc_id in doc_ids:
+
+        for document_id in project.document_ids:
             
-            update_one_from_document_cloud(doc_id, project.title)
+            document_path = os.path.join(project_dir, '{}.json'.format(document_id))
+            
+            if not os.path.exists(document_path):
+                document = client.documents.get(document_id)
+                document = {
+                    'pdf_url': document.pdf_url,
+                    'id': document.id,
+                    'data': document.data,
+                    'pages': document.pages,
+                }
+                with open(document_path, 'w') as f:
+                    f.write(json.dumps(document))
+            else:
+                document = json.load(open(document_path))
+
+            values = dict(image_type='pdf', 
+                          fetch_url=document['pdf_url'], 
+                          dc_project = project.title,
+                          dc_id = document['id'],
+                          hierarchy = document['data']['hierarchy'],
+                          is_page_url = False,
+                          is_current = True)
+            
+            inserts.append(values)
+            
+            if document['pages'] > 1:
+                for p in range(2, (document['pages'] + 1)):
+                    values['fetch_url'] = '%s#page=%s' % (document['pdf_url'], p)
+
+                    inserts.append(values)
+
+        if inserts:
+            with engine.begin() as conn:
+                conn.execute(sa.text(insert_q), *inserts)
+        
+            count += len(inserts)
+            print('inserted {}'.format(count))
+
+            inserts = []
+
+    update_images()
 
 def string_start_match(full_string, match_strings):
     for match_string in match_strings:
