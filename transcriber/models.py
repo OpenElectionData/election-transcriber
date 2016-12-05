@@ -94,7 +94,7 @@ class ImageTaskAssignment(db.Model):
     image = relationship('DocumentCloudImage', backref='taskassignments')
     form_id = Column(Integer, ForeignKey('form_meta.id'))
     checkout_expire = Column(DateTime(timezone=True))
-    view_count = Column(Integer, default=0)
+    view_count = Column(Integer, server_default=text('0'))
     is_complete = Column(Boolean, default=False)
 
     def __repr__(self):

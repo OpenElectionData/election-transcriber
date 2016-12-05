@@ -508,7 +508,7 @@ def transcriptions():
             ORDER BY i.id, t.id
         '''.format(columns=columns, 
                    table_name=table_name)
-
+    
     with engine.begin() as conn:
         rows_all = conn.execute(text(q)).fetchall()
 

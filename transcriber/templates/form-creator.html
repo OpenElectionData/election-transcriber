@@ -286,7 +286,7 @@
             $('#form-wrapper').css('height', (h - offsetTop));
         }).resize();
 
-        var task_id = {{ form_meta.id }};
+        var task_id = {{ form_meta.id|tojson|safe }};
         var sections = {{ form_meta.sections|tojson|safe }}
         var section_id = {{ next_section_index|tojson|safe }}
         var field_ids = {{ next_field_index|tojson|safe }}

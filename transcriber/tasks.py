@@ -27,9 +27,8 @@ def update_images_by_task(task_id):
         if task_dict['split_image'] == False:
             doc_list = DocumentCloudImage.grab_relevant_images(task_dict['dc_project'],
                                                                task_dict['dc_filter'])
-            
             for doc in doc_list:
-                    
+
                 update_image_by_id(doc.id, task_dict['dc_project'])
 
         else:
@@ -62,6 +61,7 @@ def update_image_by_id(image_id, project_title):
             ) AS assign
               ON fm.id = assign.form_id
             WHERE fm.dc_project = :project_title
+            AND status != 'deleted'
         '''
         
         params = {'image_id': image_id, 'project_title': project_title}
