@@ -251,7 +251,38 @@ table, label,.control-label,.help-block,.checkbox,.radio { font-size: 16px; }
 
 /**** Autocomplete Widget ****/
 
+.datepicker {
+    padding: 0 3px;
+}
 
+.datepicker td  {
+    padding: 3px !important;
+}
+
+.datepicker td.active {
+    background-color: #333;
+    color: white;
+}
+
+.datepicker td:hover {
+    cursor: pointer;
+}
+
+.datepicker th {
+    font-size: 14px;
+}
+
+.datepicker td.day {
+    font-size: 12px;
+}
+
+.datepicker td.disabled {
+    color: #ddd;
+}
+
+.datepicker td.disabled:hover {
+    cursor: default;
+}
 
 /* Task finish alert banner */
 .task-finish-alert{

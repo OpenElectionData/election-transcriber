@@ -85,7 +85,7 @@
                                    {% endif %}/>
 
                             <span class="input-group-addon">
-                                <a href="javascript://" class="fa fa-calendar"></a>
+                                <span class="fa fa-calendar"></span>
                             </span>
                         </div>
                     </div>
@@ -292,7 +292,7 @@
         var field_ids = {{ next_field_index|tojson|safe }}
 
         $(document).ready(function(){
-            $('#id_deadline > input').datetimepicker();
+            $('#id_deadline > input').datetimepicker({minDate: moment()});
 
             if (sections.length > 0){ // if editing instead of creating
                 $.each(sections, function(i, section){

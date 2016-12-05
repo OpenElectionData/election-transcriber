@@ -86,6 +86,7 @@ class FormCreatorManager(object):
         if post_data.get('task_group_id'):
             task_group = db.session.query(TaskGroup)\
                            .get(self.post_data['task_group_id'])
+            task_group.name = self.post_data['task_group']
         else:
             task_group = TaskGroup(name=self.post_data['task_group'],
                                    description=self.post_data.get('task_group_description'))
@@ -106,6 +107,7 @@ class FormCreatorManager(object):
         self.form_meta.dc_filter = self.dc_filter
         self.form_meta.sample_image = sample_image
 
+        db.session.add(task_group)
         db.session.add(self.form_meta)
         db.session.commit()
     
