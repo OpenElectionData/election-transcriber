@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 from flask_wtf import Form
 
 from wtforms.fields import BooleanField, StringField
@@ -147,7 +149,9 @@ class TranscriptionManager(object):
         if self.image_task_assignment:
             self.image_id = self.image_task_assignment.image_id
             self.checkoutImage()
-            self.dc_image = db.session.query(DocumentCloudImage).get(self.image_id)
+            self.dc_image = db.session.query(DocumentCloudImage)\
+                                      .filter(DocumentCloudImage.dc_id == self.image_id)\
+                                      .first()
 
     def validateTranscription(self, post_data):
         
@@ -199,11 +203,11 @@ class TranscriptionManager(object):
             self.insertTranscription(final_transcription)
     
     def saveTranscription(self):
-        ins_args = {
-            'transcriber': self.username,
-            'image_id': self.image_id,
-            'transcription_status': 'raw',
-        }
+        ins_args = OrderedDict([
+            ('transcriber', self.username,),
+            ('image_id', self.image_id,),
+            ('transcription_status', 'raw',),
+        ])
 
         for k,v in self.post_data.items():
             
@@ -220,12 +224,14 @@ class TranscriptionManager(object):
         self.insertTranscription(ins_args)
 
     def insertTranscription(self, transcription):
+        transcription_fields = transcription.keys()
+        
         ins = ''' 
             INSERT INTO "{0}" ({1}) VALUES ({2})
             RETURNING id
         '''.format(self.task.table_name, 
-                   ','.join(['"{}"'.format(f) for f in transcription.keys()]),
-                   ','.join([':{}'.format(f) for f in transcription.keys()]))
+                   ','.join(['"{}"'.format(f) for f in transcription_fields]),
+                   ','.join([':{}'.format(f) for f in transcription_fields]))
 
         with self.engine.begin() as conn:
             self.transcription_id = conn.execute(sa.text(ins), **transcription)

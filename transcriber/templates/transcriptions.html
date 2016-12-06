@@ -30,6 +30,7 @@
                         <strong>
                             {{task['progress']['docs_done_perc']}}%
                         </strong>
+                        ({{task['progress']['docs_done_ct']}})
                         completed &nbsp;&nbsp;
                     </span>
                     {% endif %}
@@ -38,6 +39,7 @@
                         <strong>
                             {{task['progress']['docs_inprog_perc']}}%
                         </strong>
+                        ({{task['progress']['docs_inprog_ct']}})
                         in-progress &nbsp;&nbsp;
                     </span>
                     {% endif %}
@@ -46,6 +48,7 @@
                         <strong>
                             {{task['progress']['docs_conflict_perc']}}%
                         </strong>
+                        ({{task['progress']['docs_conflict_ct']}})
                         in-conflict &nbsp;&nbsp;
                     </span>
                     {% endif %}
@@ -54,19 +57,59 @@
                         <strong>
                             {{task['progress']['docs_unseen_perc']}}%
                         </strong>
+                        ({{task['progress']['docs_unseen_ct']}})
                         not yet seen
                     </span>
                     {% endif %}
                 </span>
 
                 <div class="progress">
-                    <div class="progress-bar progress-bar-done progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_done_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="{{task['progress']['docs_done_ct']}} images completed" style="width: {{task['progress']['docs_done_perc']}}%">
+                    <div class="progress-bar progress-bar-done progress-tooltip"
+                         role="progressbar"
+                         aria-valuenow="{{ task['progress']['docs_done_perc'] }}"
+                         aria-valuemin="0"
+                         aria-valuemax="100"
+                         title=""
+                         data-content="content here"
+                         data-placement="bottom"
+                         data-toggle="tooltip"
+                         data-original-title="{{ task['progress']['docs_done_ct'] }} images completed"
+                         style="width: {{task['progress']['docs_done_perc']}}%">
                     </div>
-                    <div class="progress-bar progress-bar-inprog progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_inprog_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="{{task['progress']['docs_inprog_ct']}} images in progress" style="width: {{task['progress']['docs_inprog_perc']}}%">
+                    <div class="progress-bar progress-bar-inprog progress-tooltip"
+                         role="progressbar"
+                         aria-valuenow="{{task['progress']['docs_inprog_perc']}}"
+                         aria-valuemin="0"
+                         aria-valuemax="100"
+                         title=""
+                         data-content="content here"
+                         data-placement="bottom"
+                         data-toggle="tooltip"
+                         data-original-title="{{task['progress']['docs_inprog_ct']}} images in progress"
+                         style="width: {{task['progress']['docs_inprog_perc']}}%">
                     </div>
-                    <div class="progress-bar progress-bar-conflict progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_conflict_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="{{task['progress']['docs_conflict_ct']}} images with conflicting transcriptions" style="width: {{task['progress']['docs_conflict_perc']}}%">
+                    <div class="progress-bar progress-bar-conflict progress-tooltip"
+                         role="progressbar"
+                         aria-valuenow="{{task['progress']['docs_conflict_perc']}}"
+                         aria-valuemin="0" aria-valuemax="100"
+                         title=""
+                         data-content="content here"
+                         data-placement="bottom"
+                         data-toggle="tooltip"
+                         data-original-title="{{task['progress']['docs_conflict_ct']}} images with conflicting transcriptions"
+                         style="width: {{task['progress']['docs_conflict_perc']}}%">
                     </div>
-                    <div class="progress-bar progress-bar-unseen progress-tooltip" role="progressbar" aria-valuenow="{{task['progress']['docs_unseen_perc']}}" aria-valuemin="0" aria-valuemax="100" title="" data-content="content here" data-placement="bottom" data-toggle="tooltip" data-original-title="{{task['progress']['docs_unseen_ct']}} images without any transcriptions yet" style="width: {{task['progress']['docs_unseen_perc']}}%">
+                    <div class="progress-bar progress-bar-unseen progress-tooltip"
+                         role="progressbar"
+                         aria-valuenow="{{task['progress']['docs_unseen_perc']}}"
+                         aria-valuemin="0"
+                         aria-valuemax="100"
+                         title=""
+                         data-content="content here"
+                         data-placement="bottom"
+                         data-toggle="tooltip"
+                         data-original-title="{{task['progress']['docs_unseen_ct']}} images without any transcriptions yet"
+                         style="width: {{task['progress']['docs_unseen_perc']}}%">
                     </div>
                 </div>
             </div>

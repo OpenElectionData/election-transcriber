@@ -254,7 +254,7 @@ class FormCreatorManager(object):
                 server_default=sa.text('CURRENT_TIMESTAMP')),
             sa.Column('transcriber', sa.String),
             sa.Column('id', sa.Integer, primary_key=True),
-            sa.Column('image_id', sa.Integer),
+            sa.Column('image_id', sa.String),
             sa.Column('transcription_status', sa.String, default="raw"),
             sa.Column('flag_irrelevant', sa.Boolean)
         ]

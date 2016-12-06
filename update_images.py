@@ -1,8 +1,7 @@
 
 if __name__ == "__main__":
-    from transcriber.tasks import update_all_document_cloud, update_task_images
+    from transcriber.tasks import update_all_document_cloud
     update_all_document_cloud()
-    update_task_images()
 
     # from transcriber import create_app
 

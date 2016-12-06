@@ -31,6 +31,7 @@ def update_images(image_id=None):
         LEFT JOIN image_task_assignment AS ita
           ON fm.id = ita.form_id
         WHERE ita.form_id IS NULL
+        ON CONFLICT (image_id, form_id) DO NOTHING
     '''
     
     q_args = {}
@@ -43,7 +44,7 @@ def update_images(image_id=None):
         conn.execute(sa.text(insert), **q_args)
 
 
-def update_all_document_cloud():
+def update_all_document_cloud(overwrite=False):
     client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
     projects = client.projects.all()
     
@@ -65,7 +66,14 @@ def update_all_document_cloud():
           :is_page_url,
           :is_current
         )
-        ON CONFLICT (dc_id) DO NOTHING
+        ON CONFLICT (dc_id) DO UPDATE SET
+          image_type = :image_type,
+          fetch_url = :fetch_url,
+          dc_project = :dc_project,
+          hierarchy = :hierarchy,
+          is_page_url = :is_page_url,
+          is_current = :is_current
+          
     '''
     
     inserts = []
@@ -87,7 +95,7 @@ def update_all_document_cloud():
             
             document_path = os.path.join(project_dir, '{}.json'.format(document_id))
             
-            if not os.path.exists(document_path):
+            if not os.path.exists(document_path) or overwrite:
                 document = client.documents.get(document_id)
                 document = {
                     'pdf_url': document.pdf_url,
@@ -124,6 +132,7 @@ def update_all_document_cloud():
             print('inserted {}'.format(count))
 
             inserts = []
+            count = 0
 
     update_images()
 

@@ -437,7 +437,7 @@ def download_transcriptions():
             SELECT t.*, i.hierarchy as image_hierarchy, i.fetch_url as image_url 
             from "{0}" as t 
             join document_cloud_image as i 
-            on t.image_id = i.id 
+            on t.image_id = i.dc_id 
             order by t.image_id, transcription_status
         ) TO STDOUT WITH CSV HEADER DELIMITER ','
     '''.format(task.table_name)
@@ -503,7 +503,7 @@ def transcriptions():
               {columns}
             FROM document_cloud_image AS i
             JOIN "{table_name}" AS t 
-              ON i.id = t.image_id
+              ON i.dc_id = t.image_id
             WHERE t.transcription_status = 'raw'
             ORDER BY i.id, t.id
         '''.format(columns=columns, 
