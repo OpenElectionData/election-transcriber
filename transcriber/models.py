@@ -90,7 +90,7 @@ def string_start_match(full_string, match_strings):
 class ImageTaskAssignment(db.Model):
     __tablename__ = 'image_task_assignment'
     id = Column(Integer, primary_key=True)
-    image_id = Column(Integer, ForeignKey('document_cloud_image.dc_id'))
+    image_id = Column(String, ForeignKey('document_cloud_image.dc_id'))
     image = relationship('DocumentCloudImage', backref='taskassignments')
     form_id = Column(Integer, ForeignKey('form_meta.id'))
     checkout_expire = Column(DateTime(timezone=True))

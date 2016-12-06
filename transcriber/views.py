@@ -376,6 +376,9 @@ def transcribe(task_id):
     
     supercede = request.args.get('supercede')
     image_id = request.args.get('image_id')
+    
+    if not image_id:
+        image_id = request.form.get('image_id')
 
     transcription_task = TranscriptionManager(task_id, 
                                               username=username,
@@ -390,10 +393,8 @@ def transcribe(task_id):
 
     checkinImages()
     
-    transcription_task.getImageTaskAssignment()
-
     if request.method == 'POST':
-
+        
         if transcription_task.validateTranscription(request.form):
             
             if transcription_task.transcription_id:
@@ -406,6 +407,7 @@ def transcribe(task_id):
             flash("Saved! Let's do another!", "saved")
             return redirect(url_for('views.transcribe', task_id=task_id))
 
+    transcription_task.getImageTaskAssignment()
 
     if transcription_task.image_task_assignment == None:
 
@@ -497,7 +499,7 @@ def transcriptions():
 
     q = ''' 
             SELECT 
-              i.id AS dc_image_id,
+              i.dc_id AS dc_image_id,
               i.fetch_url,
               i.hierarchy,
               {columns}

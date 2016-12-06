@@ -22,6 +22,7 @@
         <div class="col-sm-6" id="form-area">
             <form id="transcriber" role="form" class="form-horizontal" method="POST" action="">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <input type="hidden" name="image_id" value="{{ task.image_id }}" />
                 {% for section in task.sections %}
                     <div class="well">
                         <h3>{{ section.name }}</h3>

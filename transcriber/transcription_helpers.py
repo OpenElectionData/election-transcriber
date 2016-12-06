@@ -157,6 +157,8 @@ class TranscriptionManager(object):
         
         self.post_data = post_data
         
+        # del post_data['image_id']
+
         self.form = self.dynamic_form(post_data)
 
         return self.form.validate()
@@ -222,6 +224,7 @@ class TranscriptionManager(object):
                 ins_args[f] = False
         
         self.insertTranscription(ins_args)
+        self.getImageTaskAssignment()
 
     def insertTranscription(self, transcription):
         transcription_fields = transcription.keys()
@@ -235,7 +238,8 @@ class TranscriptionManager(object):
 
         with self.engine.begin() as conn:
             self.transcription_id = conn.execute(sa.text(ins), **transcription)
-    
+        
+
     def updateImage(self):
         
         update_image = '''
