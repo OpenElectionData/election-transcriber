@@ -21,11 +21,15 @@
     </div>
     <div class="col-md-6 form-fit" id="form-wrapper">
         <div class='well well-sm well-info'>
-            <p>Image source</p>
+            <p>Image source
+                <span class="label label-default" id="refresh-images" style="cursor:pointer">
+                    <i class="fa fa-refresh"></i>
+                </span>
+            </p>
             <div class="row">
                 <div class="col-xs-4 text-xs">
                     <strong>Project</strong><br>
-                    {{session.dc_project}}
+                    {{form_meta.dc_project}}
                 </div>
                 {% if dc_filter_list %}
                 <div class="col-xs-8 text-xs">
@@ -386,6 +390,15 @@
                     .append('<a data-groupid="' + item.id + '">' + item.name + '</a>')
                     .appendTo(ul);
             };
+
+            $('#refresh-images').on('click', function(e){
+                $.getJSON('/refresh-project/', {'project_title': '{{ form_meta.dc_project }}'},
+                    function(data){
+                        console.log(data);
+                    }
+                )
+            })
+
         })
         function getFieldID(section_id){
             if(typeof field_ids[section_id] === 'undefined'){

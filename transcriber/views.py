@@ -38,7 +38,7 @@ from transcriber.auth import csrf
 
 from transcriber.transcription_helpers import TranscriptionManager, checkinImages
 from transcriber.form_creator_helpers import FormCreatorManager
-from transcriber.tasks import ImageUpdater
+from transcriber.tasks import ImageUpdater, update_from_document_cloud
 
 from documentcloud import DocumentCloud
 
@@ -635,3 +635,14 @@ def uploaded_image(filename):
 @views.route('/viewer/')
 def viewer():
     return render_template('viewer.html')
+
+@views.route('/refresh-project/')
+def refresh_project():
+    project_title = request.args.get('project_title')
+
+    update_from_document_cloud.delay(project_title)
+
+    response = make_response(json.dumps({'status': 'ok'}))
+    response.headers['Content-Type'] = 'application/json'
+
+    return response

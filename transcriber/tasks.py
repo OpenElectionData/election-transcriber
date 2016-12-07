@@ -8,8 +8,20 @@ from documentcloud import DocumentCloud
 
 from transcriber.app_config import DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW, DB_CONN
 from transcriber.models import FormMeta, DocumentCloudImage, ImageTaskAssignment
+from transcriber.queue import queuefunc
 
 engine = sa.create_engine(DB_CONN)
+
+@queuefunc
+def update_from_document_cloud(project_title, overwrite=False):
+    updater = ImageUpdater(overwrite=overwrite)
+
+    if project_title == 'Emailed documents':
+        updater.updateEmailedDocuments()
+    else:
+        updater.updateDocumentCloudProject(project_title)
+    
+    print('complete!')
 
 
 class ImageUpdater(object):
@@ -50,7 +62,7 @@ class ImageUpdater(object):
               
         '''
 
-    def updateImages(self, image_id=None):
+    def updateImages(self):
         
         insert = ''' 
             INSERT INTO image_task_assignment (
@@ -63,22 +75,16 @@ class ImageUpdater(object):
               fm.id AS form_id,
               FALSE AS is_complete
             FROM document_cloud_image AS dc
-            JOIN form_meta AS fm 
-              USING(dc_project)
             LEFT JOIN image_task_assignment AS ita
-              ON fm.id = ita.form_id
+              ON dc.dc_id = ita.image_id
+            LEFT JOIN form_meta AS fm
+              ON dc.dc_project = fm.dc_project
             WHERE ita.form_id IS NULL
-            ON CONFLICT (image_id, form_id) DO NOTHING
+              AND fm.id IS NOT NULL
         '''
         
-        q_args = {}
-        
-        if image_id:
-            insert = '{} AND dc.id = :image_id'
-            q_args['image_id'] = image_id
-
         with engine.begin() as conn:
-            conn.execute(sa.text(insert), **q_args)
+            conn.execute(sa.text(insert))
     
     def fetchOrWrite(self, project_dir, document_id):
         
@@ -96,7 +102,7 @@ class ImageUpdater(object):
                 f.write(json.dumps(document))
         else:
             document = json.load(open(document_path))
-        
+
         return document
     
     def updateAllDocumentCloud(self):
@@ -106,27 +112,31 @@ class ImageUpdater(object):
     def updateDocumentCloudProjects(self):
         projects = self.client.projects.all()
         
-        self.inserts = []
-        
         for project in projects:
+            self.updateDocumentCloudProject(project.title)
+
+        self.updateImages()
+    
+    def updateDocumentCloudProject(self, project_title):
+        
+        print('getting images for project {}'.format(project_title))
+        
+        self.inserts = []
+
+        project = self.client.projects.get_by_title(project_title)
+        
+        project_dir = os.path.join(self.download_folder, str(project.id))
+        os.makedirs(project_dir, exist_ok=True)
+
+        for document_id in project.document_ids:
             
-            print('getting images for project {}'.format(project.title))
-            
-            project_dir = os.path.join(self.download_folder, str(project.id))
-            os.makedirs(project_dir, exist_ok=True)
-
-            project = self.client.projects.get_by_title(project.title)
-
-            for document_id in project.document_ids:
-                
-                document = self.fetchOrWrite(project_dir, document_id)
-                self.addToDCInserts(project.title, document)
-
+            document = self.fetchOrWrite(project_dir, document_id)
+            self.addToDCInserts(project.title, document)
+        
         if self.inserts:
             with engine.begin() as conn:
                 conn.execute(sa.text(self.document_cloud_upsert), *self.inserts)
 
-        self.updateImages()
 
     def addToDCInserts(self, project_title, document):
         
