@@ -269,6 +269,4 @@ def getTranscriptionSelect(transcribed_fields):
         
         cases.append(case)
     
-    print(','.join(cases))
-
     return ', '.join(cases)

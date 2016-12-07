@@ -38,7 +38,7 @@ from transcriber.auth import csrf
 
 from transcriber.transcription_helpers import TranscriptionManager, checkinImages
 from transcriber.form_creator_helpers import FormCreatorManager
-from transcriber.tasks import update_images
+from transcriber.tasks import ImageUpdater
 
 from documentcloud import DocumentCloud
 
@@ -117,8 +117,12 @@ def upload():
         hierarchy_filter = json.dumps(request.form.get('hierarchy_filter')) if request.form.get('hierarchy_filter') else None
         doc_list = DocumentCloudImage.grab_relevant_images(project_name,hierarchy_filter)
 
-        h_str_list = [doc.hierarchy for doc in doc_list]
-        h_obj = construct_hierarchy_object(h_str_list)
+        h_str_list = [doc.hierarchy for doc in doc_list if doc.hierarchy]
+        h_obj = {}
+
+        if h_str_list:
+            h_obj = construct_hierarchy_object(h_str_list)
+
 
         client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
         sample_page_count = client.documents.get(doc_list[0].dc_id).pages
@@ -280,7 +284,8 @@ def form_creator():
         
         creator_manager.saveFormParts()
         
-        update_images()
+        updater = ImageUpdater()
+        updater.updateImages()
 
         return redirect(url_for('views.index'))
 

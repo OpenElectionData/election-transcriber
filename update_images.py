@@ -1,17 +1,14 @@
 
 if __name__ == "__main__":
-    from transcriber.tasks import update_all_document_cloud
-    update_all_document_cloud()
+    from transcriber.tasks import ImageUpdater
+    
+    import argparse
+    parser = argparse.ArgumentParser(description='Update images from document cloud')
+    parser.add_argument('--overwrite', action='store_true',
+                   help='Overwrite images with newer versions on the server')
 
-    # from transcriber import create_app
+    args = parser.parse_args()
 
-    # app = create_app()
+    updater = ImageUpdater(overwrite=args.overwrite)
+    updater.updateAllDocumentCloud()
 
-    # with app.test_request_context():
-    #     from transcriber.database import db
-    #     from transcriber.models import FormMeta
-    #     from transcriber.views import update_task_images
-
-    #     all_forms = db.session.query(FormMeta).all()
-    #     for form in all_forms:
-    #         update_task_images(form.id)
