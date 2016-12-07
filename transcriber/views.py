@@ -33,7 +33,7 @@ from transcriber.models import FormMeta, FormSection, FormField, \
     DocumentCloudImage, ImageTaskAssignment, TaskGroup, User
 from transcriber.database import db
 from transcriber.helpers import slugify, pretty_task_transcriptions, \
-    get_user_activity
+    get_user_activity, getTranscriptionSelect
 from transcriber.auth import csrf
 
 from transcriber.transcription_helpers import TranscriptionManager, checkinImages
@@ -430,19 +430,42 @@ def download_transcriptions():
 
     task = db.session.query(FormMeta).get(request.args['task_id'])
     
-    # TODO: Do some switch statements to get the word "blank" or "illegible"
-    # instead of "None" in the case where there is a NULL in the field and
-    # blank or illigible is true
+    engine = db.session.bind
+
+    table = Table(task.table_name, 
+                  MetaData(), 
+                  autoload=True, 
+                  autoload_with=engine)
+    
+    common_fields = [
+        'date_added', 
+        'transcriber', 
+        'id', 
+        'image_id', 
+        'transcription_status', 
+        'flag_irrelevant'
+    ]
+    
+    dynamic_fields = ['{}'.format(c.name) for c in table.columns \
+                          if c.name not in common_fields]
+    
+    dynamic_fields_select = getTranscriptionSelect(dynamic_fields)
 
     copy = '''
         COPY (
-            SELECT t.*, i.hierarchy as image_hierarchy, i.fetch_url as image_url 
-            from "{0}" as t 
+            SELECT 
+              {common},
+              i.hierarchy as image_hierarchy, 
+              i.fetch_url as image_url 
+              {dynamic}, 
+            from "{table_name}" as t 
             join document_cloud_image as i 
             on t.image_id = i.dc_id 
             order by t.image_id, transcription_status
         ) TO STDOUT WITH CSV HEADER DELIMITER ','
-    '''.format(task.table_name)
+    '''.format(common=', '.join(['t.{}'.format(f) for f in common_fields]),
+               dynamic=dynamic_fields_select,
+               table_name=task.table_name)
 
     engine = db.session.bind
     
@@ -458,7 +481,7 @@ def download_transcriptions():
     resp = make_response(outp.getvalue())
     resp.headers['Content-Type'] = 'text/csv'
     filedate = datetime.now().strftime('%Y-%m-%d')
-    resp.headers['Content-Disposition'] = 'attachment; filename=transcriptions_{0}_{1}.csv'.format(task_dict['slug'], filedate)
+    resp.headers['Content-Disposition'] = 'attachment; filename=transcriptions_{0}_{1}.csv'.format(task.slug, filedate)
     return resp
 
 @views.route('/transcriptions/', methods=['GET', 'POST'])
@@ -493,10 +516,6 @@ def transcriptions():
     t_header = [c.name for c in table.columns if 'irrelevant' not in c.name.lower()]
     columns = ', '.join(['t."{}"'.format(c) for c in t_header])
     
-    # TODO: Do some switch statements to get the word "blank" or "illegible"
-    # instead of "None" in the case where there is a NULL in the field and
-    # blank or illigible is true
-
     q = ''' 
             SELECT 
               i.dc_id AS dc_image_id,

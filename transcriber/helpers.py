@@ -102,14 +102,16 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
 
         image_id = row[0]
         image_url = row[1]
-        image_link = "<a href='"+image_url+"' target='_blank'>"+str(image_id)+"</a>"
-        dt_formatted = "<span class='text-xs'>"+row[3].strftime("%Y-%m-%d %H:%M:%S")+"</span>"
-        src_formatted = "<span class='text-xs'>"+row[2]+"</span>"
+        image_link = "<a href='{0}' target='_blank'>{1}</a>".format(image_url, image_id)
+
+        transcription_date = row[3].strftime("%Y-%m-%d %H:%M:%S")
+        dt_formatted = "<span class='text-xs'>{}</span>".format(transcription_date)
+        src_formatted = "<span class='text-xs'>{}</span>".format(row[2])
 
         transcription_id = row[5]
         user_name = row[4]
-        user_link = '<a href="/user/?user='+user_name+'" target="_blank">'+user_name+'</a>'
-        row_pretty = [image_link, dt_formatted, src_formatted, row[5], user_link]
+        user_link = '<a href="/user/?user={0}" target="_blank">{0}</a>'.format(user_name)
+        row_pretty = [image_link, dt_formatted, src_formatted, transcription_id, user_link]
 
         # adding a link to delete, link to transcribe
         delete_url = url_for('views.delete_transcription', 
@@ -139,21 +141,25 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
         else:
             include_row = False
 
-        for field in row_transcribed:
-            field_pretty = str(field[0])
-            if field[1]:
+        for field_group in row_transcribed:
+            value, blank, not_legible, altered = field_group
+
+            if blank:
                 if row_filter == 'blank':
                     include_row = True
-                field_pretty = field_pretty+'<i class="fa fa-times fa-fw"></i>'
-            if field[2]:
+                value = 'Blank <i class="fa fa-times fa-fw"></i>'
+
+            if not_legible:
                 if row_filter == 'illegible':
                     include_row = True
-                field_pretty = field_pretty+'<i class="fa fa-question fa-fw"></i>'
-            if field[3]:
+                value = 'Not Legible <i class="fa fa-question fa-fw"></i>'
+            
+            if altered:
                 if row_filter == 'altered':
                     include_row = True
-                field_pretty = field_pretty+'<i class="fa fa-exclamation-triangle fa-fw"></i>'
-            row_pretty.append(field_pretty)
+                value = 'Altered <i class="fa fa-exclamation-triangle fa-fw"></i>'
+            
+            row_pretty.append(value)
 
         # TODO: a less hacky & more elegant way to get image task assignment status
         cls = ''
@@ -224,3 +230,45 @@ def get_user_activity(user_name):
             user_transcriptions.append((task_info, transcriptions))
 
     return (user, user_transcriptions)
+
+def getTranscriptionSelect(transcribed_fields):
+    switches = []
+    
+    value_states = [
+        ('Blank', 'blank',), 
+        ('Illegible', 'not_legible',), 
+        ('Altered', 'altered',),
+    ]
+    
+    cases = []
+    for field in transcribed_fields:
+        
+        ending = field.rsplit('_', 1)[1]
+        
+        if ending in ['blank', 'legible', 'altered']:
+            continue
+
+        switches = []
+        
+        for value, state in value_states:
+            switch = """
+                WHEN {field}_{state} = TRUE 
+                THEN '{value}'
+            """.format(field=field, 
+                       state=state, 
+                       value=value)
+
+            switches.append(switch)
+
+        case = '''
+            CASE 
+              {0} 
+            ELSE {1}::VARCHAR
+            END AS {1}
+        '''.format(' '.join(switches), field)
+        
+        cases.append(case)
+    
+    print(','.join(cases))
+
+    return ', '.join(cases)
