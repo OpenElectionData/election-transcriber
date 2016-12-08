@@ -461,7 +461,7 @@ def download_transcriptions():
             SELECT 
               {common},
               i.hierarchy as image_hierarchy, 
-              i.fetch_url as image_url 
+              i.fetch_url as image_url, 
               {dynamic}, 
             from "{table_name}" as t 
             join document_cloud_image as i 
