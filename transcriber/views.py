@@ -462,7 +462,7 @@ def download_transcriptions():
               {common},
               i.hierarchy as image_hierarchy, 
               i.fetch_url as image_url, 
-              {dynamic}, 
+              {dynamic} 
             from "{table_name}" as t 
             join document_cloud_image as i 
             on t.image_id = i.dc_id 
