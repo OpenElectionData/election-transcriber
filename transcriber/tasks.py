@@ -13,14 +13,16 @@ from transcriber.queue import queuefunc
 engine = sa.create_engine(DB_CONN)
 
 @queuefunc
-def update_from_document_cloud(project_title, overwrite=False):
+def update_from_document_cloud(project_title=None, overwrite=False):
     updater = ImageUpdater(overwrite=overwrite)
 
     if project_title == 'Emailed documents':
         updater.updateEmailedDocuments()
-    else:
+    elif project_title:
         updater.updateDocumentCloudProject(project_title)
-    
+    else:
+        updater.updateAllDocumentCloud()
+
     print('complete!')
 
 

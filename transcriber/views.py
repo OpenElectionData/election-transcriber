@@ -637,12 +637,35 @@ def viewer():
     return render_template('viewer.html')
 
 @views.route('/refresh-project/')
+@login_required
+@manager_permission.require()
 def refresh_project():
     project_title = request.args.get('project_title')
 
-    update_from_document_cloud.delay(project_title)
+    key = update_from_document_cloud.delay(project_title=project_title)
+    
+    flask_session['refresh_key'] = key
 
     response = make_response(json.dumps({'status': 'ok'}))
     response.headers['Content-Type'] = 'application/json'
 
     return response
+
+@views.route('/check-work/')
+@login_required
+@manager_permission.require()
+def check_work():
+    key = flask_session['refresh_key']
+
+    engine = db.session.bind
+    complete = engine.execute(text('select completed from work_table where key = :key'), key=key).first()
+
+    result = {'completed': complete.completed}
+    
+    if complete.completed == True:
+        del flask_session['refresh_key']
+
+    response = make_response(json.dumps(result))
+    response.headers['Content-Type'] = 'application/json'
+    return response
+
