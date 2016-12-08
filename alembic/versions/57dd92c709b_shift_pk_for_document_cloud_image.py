@@ -17,7 +17,6 @@ import sqlalchemy as sa
 
 
 def upgrade():
-    op.drop_column('document_cloud_image', 'id')
     op.execute(''' 
         ALTER TABLE document_cloud_image 
         DROP CONSTRAINT document_cloud_image_pkey 
