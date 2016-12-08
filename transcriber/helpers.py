@@ -252,7 +252,7 @@ def getTranscriptionSelect(transcribed_fields):
         
         for value, state in value_states:
             switch = """
-                WHEN {field}_{state} = TRUE 
+                WHEN "{field}_{state}" = TRUE 
                 THEN '{value}'
             """.format(field=field, 
                        state=state, 
@@ -263,8 +263,8 @@ def getTranscriptionSelect(transcribed_fields):
         case = '''
             CASE 
               {0} 
-            ELSE {1}::VARCHAR
-            END AS {1}
+            ELSE "{1}"::VARCHAR
+            END AS "{1}"
         '''.format(' '.join(switches), field)
         
         cases.append(case)
