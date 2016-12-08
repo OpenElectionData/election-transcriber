@@ -40,10 +40,6 @@ def upgrade():
         UNIQUE (image_id, form_id)
     ''')
     op.execute(''' 
-        ALTER TABLE document_cloud_image 
-        ADD CONSTRAINT unique_dc_id UNIQUE (dc_id)
-    ''')
-    op.execute(''' 
         UPDATE image_task_assignment SET
           image_id = s.image_id
         FROM (
