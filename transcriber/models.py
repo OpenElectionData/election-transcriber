@@ -37,7 +37,7 @@ class DocumentCloudImage(db.Model):
     image_type = Column(String)
     fetch_url = Column(String)
     dc_project = Column(String)
-    dc_id = Column(String)
+    dc_id = Column(String, unique=True)
     hierarchy = Column(String)
     is_page_url = Column(Boolean)
     is_current = Column(Boolean)
@@ -106,16 +106,6 @@ class ImageTaskAssignment(db.Model):
                 .filter(cls.form_id == task_id)\
                 .count()
 
-    @classmethod
-    def get_next_image_to_transcribe(cls, task_id, username):
-        # add in a filter so that one user does not review the same image multiple times
-        # images left & images total (for progress bar) should be specific to the user
-        return db.session.query(cls)\
-                .filter(cls.form_id == task_id)\
-                .filter(cls.checkout_expire == None)\
-                .filter(cls.is_complete == False)\
-                .order_by(cls.view_count)\
-                .first()
 
     @classmethod
     def is_task_complete(cls, task_id):
@@ -174,7 +164,6 @@ class ImageTaskAssignment(db.Model):
         
         engine = db.session.bind
         
-
         doc_counts = ''' 
             SELECT 
               COUNT(*) AS count,

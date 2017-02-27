@@ -12,22 +12,27 @@ def init_db():
 
     with fake_app.test_request_context():
 
+        db.create_all()
+
         datastore = SQLAlchemyUserDatastore(db, User, Role)
 
-
-        print "\n** ADDING ROLES **"
+        print("\n** ADDING ROLES **")
         for role in ['admin', 'manager']:
             try:
-                print "adding role '%s'" %role
+                print("adding role '%s'" % role)
                 datastore.create_role(name=role, description=role)
                 datastore.commit()
-                print "   ...OK"
-            except IntegrityError, r:
-                print "   '%s' role already exists" % role
+                print("   ...OK")
+            except IntegrityError as r:
+                print("   '%s' role already exists" % role)
                 db.session.rollback()
 
-        print "\n** ADDING USERS **"
-        users = [fake_app.config['ADMIN_USER'], fake_app.config['MANAGER_USER'], fake_app.config['CLERK_USER']]
+        print("\n** ADDING USERS **")
+        users = [
+            fake_app.config['ADMIN_USER'],
+            fake_app.config['MANAGER_USER'],
+            fake_app.config['CLERK_USER']
+        ]
         for user in users:
             if user:
                 name = user['name']
@@ -35,29 +40,35 @@ def init_db():
                 role = user['role']
                 password = user['password']
                 try:
-                    print "adding user '%s'" % name
+                    print("adding user '%s'" % name)
                     password = encrypt_password(password)
-                    datastore.create_user(email=email, 
-                                          password=password, 
-                                          name=name, 
+                    datastore.create_user(email=email,
+                                          password=password,
+                                          name=name,
                                           active=True)
                     datastore.commit()
-                    print "   ...OK"
-                except IntegrityError, e:
-                    print "   user '%s' already exists" % name
+                    print("   ...OK")
+                except IntegrityError as e:
+                    print("   user '%s' already exists" % name)
                     db.session.rollback()
 
                 if role:
                     try:
-                        print "adding '%s' role to user '%s'" %(role, name)
+                        print("adding '%s' role to user '%s'" % (role, name))
                         this_user = db.session.query(User)\
                             .filter(User.name == name).first()
                         this_role = db.session.query(Role).filter(Role.name == role).first()
                         datastore.add_role_to_user(this_user, this_role)
                         datastore.commit()
-                        print "   ...OK"
-                    except IntegrityError, e:
-                        print "   unable to add role '%s' to user '%s'" %(role, name)
+                        print("   ...OK")
+                    except IntegrityError as e:
+                        print("   unable to add role '%s' to user '%s'" % (role, name))
+
+        with db.session.bind.begin() as conn:
+            conn.execute('''
+                ALTER TABLE image_task_assignment
+                ADD CONSTRAINT image_task_form unique (image_id, form_id)
+            ''')
 
 
     from alembic.config import Config
@@ -68,4 +79,4 @@ def init_db():
 
 if __name__ == "__main__":
     init_db()
-    print "Done!"
+    print("Done!")

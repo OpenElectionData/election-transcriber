@@ -93,7 +93,7 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
         field = FormField.query.filter(FormField.form_id == task_id).filter(FormField.slug == f_slug).first().as_dict()
         field_h.append(field["name"])
     # meta fields + transcription fields + space for delete button
-    
+
     header = meta_h + field_h
 
     transcriptions = []
@@ -114,20 +114,20 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
         row_pretty = [image_link, dt_formatted, src_formatted, transcription_id, user_link]
 
         # adding a link to delete, link to transcribe
-        delete_url = url_for('views.delete_transcription', 
-                             user=user_name, 
-                             transcription_id=transcription_id, 
-                             task_id=task_id, 
+        delete_url = url_for('views.delete_transcription',
+                             user=user_name,
+                             transcription_id=transcription_id,
+                             task_id=task_id,
                              next='task')
 
         delete_template = '<a title="Delete transcription {t_id}" href="{d_url}"><i class="fa fa-trash-o fa-fw"></i></a>'
         delete_html = delete_template.format(t_id=transcription_id, d_url=delete_url)
 
-        edit_url = url_for('views.transcribe', 
-                           task_id=task_id, 
-                           image_id=image_id, 
+        edit_url = url_for('views.transcribe',
+                           task_id=task_id,
+                           image_id=image_id,
                            supercede=transcription_id)
-        
+
         edit_template = '<a title="Edit transcription {t_id}" href="{e_url}"><i class="fa fa-pencil fa-fw"></i></a>'
         transcribe_html = edit_template.format(t_id=transcription_id, e_url=edit_url)
 
@@ -135,7 +135,7 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
 
 
         row_transcribed = [row[i:i + cpf] for i in range(t_col_start+3, num_cols, cpf)] # transcribed fields
-        
+
         if not row_filter:
             include_row = True
         else:
@@ -153,28 +153,28 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
                 if row_filter == 'illegible':
                     include_row = True
                 value = 'Not Legible <i class="fa fa-question fa-fw"></i>'
-            
+
             if altered:
                 if row_filter == 'altered':
                     include_row = True
                 value = 'Altered <i class="fa fa-exclamation-triangle fa-fw"></i>'
-            
+
             row_pretty.append(value)
 
         # TODO: a less hacky & more elegant way to get image task assignment status
         cls = ''
-        for s in img_statuses:
-            if image_id in [i.id for i in img_statuses[s]]:
-                cls = s
+        for status, value in img_statuses.items():
+            if image_id in [i.dc_id for i in img_statuses[status]]:
+                cls = status
 
-        if row_filter=='conflict' and cls=='conflict':
+        if row_filter == 'conflict' and cls == 'conflict':
             include_row = True
-        if row_filter=='irrelevant' and row[8]:
+        if row_filter == 'irrelevant' and row[9]:
             include_row = True
 
         if include_row:
             transcriptions.append((cls, row_pretty))
-
+        
     return (header, transcriptions)
 
 
@@ -185,7 +185,7 @@ def get_user_activity(user_name):
     user_row = db.session.query(User)\
                 .filter(User.name == user_name)\
                 .first()
-    
+
     if user_row:
         user = {
         'id': user_row.id,
@@ -200,7 +200,7 @@ def get_user_activity(user_name):
         }
 
     all_tasks = db.session.query(FormMeta)\
-            .filter(or_(FormMeta.status != 'deleted', 
+            .filter(or_(FormMeta.status != 'deleted',
                         FormMeta.status == None)).all()
 
     engine = db.session.bind
@@ -209,13 +209,13 @@ def get_user_activity(user_name):
         task_info = task.as_dict()
         table_name = task_info['table_name']
 
-        q = ''' 
+        q = '''
                 SELECT * from (SELECT id, fetch_url from document_cloud_image) i
-                JOIN "{0}" t 
+                JOIN "{0}" t
                 ON (i.id = t.image_id)
                 WHERE transcriber = '{1}' and transcription_status = 'raw'
             '''.format(table_name, user['name'])
-        h = ''' 
+        h = '''
             SELECT column_name
             FROM information_schema.columns
             WHERE table_name = '{0}'
@@ -233,40 +233,40 @@ def get_user_activity(user_name):
 
 def getTranscriptionSelect(transcribed_fields):
     switches = []
-    
+
     value_states = [
-        ('Blank', 'blank',), 
-        ('Illegible', 'not_legible',), 
+        ('Blank', 'blank',),
+        ('Illegible', 'not_legible',),
         ('Altered', 'altered',),
     ]
-    
+
     cases = []
     for field in transcribed_fields:
-        
+
         ending = field.rsplit('_', 1)[1]
-        
+
         if ending in ['blank', 'legible', 'altered']:
             continue
 
         switches = []
-        
+
         for value, state in value_states:
             switch = """
-                WHEN "{field}_{state}" = TRUE 
+                WHEN "{field}_{state}" = TRUE
                 THEN '{value}'
-            """.format(field=field, 
-                       state=state, 
+            """.format(field=field,
+                       state=state,
                        value=value)
 
             switches.append(switch)
 
         case = '''
-            CASE 
-              {0} 
+            CASE
+              {0}
             ELSE "{1}"::VARCHAR
             END AS "{1}"
         '''.format(' '.join(switches), field)
-        
+
         cases.append(case)
-    
+
     return ', '.join(cases)

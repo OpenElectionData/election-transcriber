@@ -28,15 +28,13 @@ def create_app():
 
     app.register_blueprint(views)
     app.register_blueprint(auth)
-    
+
     db.init_app(app)
-    with app.test_request_context():
-        db.create_all()
-    
+
     datastore = SQLAlchemyUserDatastore(db, User, Role)
-    security.init_app(app, 
-                      datastore, 
-                      login_form=LoginForm, 
+    security.init_app(app,
+                      datastore,
+                      login_form=LoginForm,
                       confirm_register_form=RegisterForm)
 
     mail.init_app(app)
@@ -55,16 +53,16 @@ def create_app():
             return s.strftime(fmt)
         else:
             return '0'
-    
+
     @app.template_filter('format_date_sort')
     def format_date_sort(s, fmt='%Y%m%d%H%M'): # pragma: no cover
         if s:
             return s.strftime(fmt)
         else:
             return '0'
-    
+
     app.config['sentry'] = None
-    
+
     if sentry:
         sentry.init_app(app)
         app.config['sentry'] = sentry

@@ -59,7 +59,7 @@ def allowed_file(filename):
 @views.route('/')
 def index():
     tasks = db.session.query(FormMeta)\
-            .filter(or_(FormMeta.status != 'deleted', 
+            .filter(or_(FormMeta.status != 'deleted',
                         FormMeta.status == None))\
             .order_by(FormMeta.task_group_id, FormMeta.index)\
             .all()
@@ -87,12 +87,12 @@ def index():
             has_inprog_tasks = True
         else:
             has_complete_tasks = True
-        
+
         t.append([task, progress_dict, is_top_task])
-    
-    return render_template('index.html', 
-                           tasks=t, 
-                           has_inprog_tasks=has_inprog_tasks, 
+
+    return render_template('index.html',
+                           tasks=t,
+                           has_inprog_tasks=has_inprog_tasks,
                            has_complete_tasks=has_complete_tasks)
 
 @views.route('/about/')
@@ -103,7 +103,7 @@ def about():
 @login_required
 @roles_required('admin')
 def upload():
-    
+
     q = 'SELECT distinct dc_project from document_cloud_image'
     engine = db.session.bind
     with engine.begin() as conn:
@@ -114,7 +114,11 @@ def upload():
     if request.method == 'POST':
 
         project_name = request.form.get('project_name')
-        hierarchy_filter = json.dumps(request.form.get('hierarchy_filter')) if request.form.get('hierarchy_filter') else None
+        hierarchy_filter = None
+
+        if request.form.get('hierarchy_filter'):
+            json.dumps(request.form.get('hierarchy_filter'))
+
         doc_list = DocumentCloudImage.grab_relevant_images(project_name,hierarchy_filter)
 
         h_str_list = [doc.hierarchy for doc in doc_list if doc.hierarchy]
@@ -139,11 +143,11 @@ def upload():
                 dc_filter_list = [thing for thing in dc_filter_list] if dc_filter_list else []
                 flask_session['dc_filter_list'] = dc_filter_list
 
-                return render_template('upload.html', 
-                                       project_list=project_list, 
-                                       project_name=project_name, 
-                                       hierarchy_filter=hierarchy_filter, 
-                                       h_obj=h_obj, 
+                return render_template('upload.html',
+                                       project_list=project_list,
+                                       project_name=project_name,
+                                       hierarchy_filter=hierarchy_filter,
+                                       h_obj=h_obj,
                                        doc_count=len(doc_list))
             else:
                 flash("No DocumentCloud images found")
@@ -213,6 +217,13 @@ def delete_part():
             r['message'] = '"{0}" is not a valid component type'.format(part_type)
             status_code = 400
     if part_type == 'form':
+
+        with db.session.bind.begin() as conn:
+            conn.execute(text('''
+                DELETE FROM image_task_assignment
+                WHERE form_id = :form_id
+            '''), form_id=part_id)
+
         flash("Task deleted")
     response = make_response(json.dumps(r), status_code)
     response.headers['Content-Type'] = 'application/json'
@@ -227,10 +238,10 @@ def delete_transcription():
     username = request.args.get('user')
     next = request.args.get('next')
 
-    transcription_task = TranscriptionManager(task_id, 
+    transcription_task = TranscriptionManager(task_id,
                                               username=username,
                                               transcription_id=transcription_id)
-    
+
     transcription_task.getFormMeta()
     image_id = transcription_task.deleteOldTranscription()
 
@@ -249,7 +260,7 @@ def delete_transcription():
 @login_required
 @roles_required('admin')
 def form_creator():
-    
+
     dc_project = flask_session.get('dc_project')
     dc_filter = flask_session.get('dc_filter')
 
@@ -257,7 +268,7 @@ def form_creator():
 
     if creator_manager.existing_form:
         image_url = creator_manager.form_meta.sample_image
-        
+
         dc_project = creator_manager.form_meta.dc_project
         dc_filter = creator_manager.form_meta.dc_filter
 
@@ -266,24 +277,24 @@ def form_creator():
         image_url = flask_session['image_url']
         creator_manager.dc_project = dc_project
         creator_manager.dc_filter = dc_filter
-    
+
     dc_filter_list = []
     if dc_filter:
-        dc_filter_list = ast.literal_eval(json.loads(dc_filter)) 
+        dc_filter_list = ast.literal_eval(json.loads(dc_filter))
         dc_filter_list = [thing for thing in dc_filter_list]
-    
+
     if not image_url:
         return redirect(url_for('views.upload'))
-    
+
     engine = db.session.bind
-    
+
     if request.method == 'POST':
-        
-        creator_manager.updateFormMeta(request.form, 
+
+        creator_manager.updateFormMeta(request.form,
                                        sample_image=image_url)
-        
+
         creator_manager.saveFormParts()
-        
+
         updater = ImageUpdater()
         updater.updateImages()
 
@@ -293,13 +304,13 @@ def form_creator():
         creator_manager.getNextIndices()
 
     form_meta = creator_manager.form_meta.as_dict()
-    
+
     if form_meta['sections']:
         for section in form_meta['sections']:
             section['fields'] = sorted(section['fields'], key=itemgetter('index'))
         form_meta['sections'] = sorted(form_meta['sections'], key=itemgetter('index'))
-    
-    return render_template('form-creator.html', 
+
+    return render_template('form-creator.html',
                            form_meta=form_meta,
                            next_section_index=creator_manager.next_section_index,
                            next_field_index=creator_manager.next_field_indices,
@@ -373,40 +384,40 @@ def transcribe(task_id):
         return redirect(url_for('views.index'))
 
     engine = db.session.bind
-    
+
     if current_user.is_anonymous():
         username = request.remote_addr
     else:
         username = current_user.name
-    
+
     supercede = request.args.get('supercede')
     image_id = request.args.get('image_id')
-    
+
     if not image_id:
         image_id = request.form.get('image_id')
 
-    transcription_task = TranscriptionManager(task_id, 
+    transcription_task = TranscriptionManager(task_id,
                                               username=username,
                                               transcription_id=supercede,
                                               image_id=image_id)
-    
+
     transcription_task.getFormMeta()
     transcription_task.setupDynamicForm()
-    
+
     if image_id and supercede:
         transcription_task.prepopulateFields()
 
     checkinImages()
-    
+
     if request.method == 'POST':
-        
+
         if transcription_task.validateTranscription(request.form):
-            
+
             if transcription_task.transcription_id:
                 transcription_task.deleteOldTranscription()
-            
+
             transcription_task.saveTranscription()
-            
+
             transcription_task.updateImage()
 
             flash("Saved! Let's do another!", "saved")
@@ -423,7 +434,7 @@ def transcribe(task_id):
             flash("All images associated with '%s' have been checked out" % transcription_task.task.name)
             return redirect(url_for('views.index'))
 
-    return render_template('transcribe.html', 
+    return render_template('transcribe.html',
                            task=transcription_task)
 
 @views.route('/download-transcriptions/', methods=['GET', 'POST'])
@@ -434,38 +445,38 @@ def download_transcriptions():
         return redirect(url_for('views.index'))
 
     task = db.session.query(FormMeta).get(request.args['task_id'])
-    
+
     engine = db.session.bind
 
-    table = Table(task.table_name, 
-                  MetaData(), 
-                  autoload=True, 
+    table = Table(task.table_name,
+                  MetaData(),
+                  autoload=True,
                   autoload_with=engine)
-    
+
     common_fields = [
-        'date_added', 
-        'transcriber', 
-        'id', 
-        'image_id', 
-        'transcription_status', 
+        'date_added',
+        'transcriber',
+        'id',
+        'image_id',
+        'transcription_status',
         'flag_irrelevant'
     ]
-    
+
     dynamic_fields = ['{}'.format(c.name) for c in table.columns \
                           if c.name not in common_fields]
-    
+
     dynamic_fields_select = getTranscriptionSelect(dynamic_fields)
 
     copy = '''
         COPY (
-            SELECT 
+            SELECT
               {common},
-              i.hierarchy as image_hierarchy, 
-              i.fetch_url as image_url, 
-              {dynamic} 
-            from "{table_name}" as t 
-            join document_cloud_image as i 
-            on t.image_id = i.dc_id 
+              i.hierarchy as image_hierarchy,
+              i.fetch_url as image_url,
+              {dynamic}
+            from "{table_name}" as t
+            join document_cloud_image as i
+            on t.image_id = i.dc_id
             order by t.image_id, transcription_status
         ) TO STDOUT WITH CSV HEADER DELIMITER ','
     '''.format(common=', '.join(['t.{}'.format(f) for f in common_fields]),
@@ -473,14 +484,14 @@ def download_transcriptions():
                table_name=task.table_name)
 
     engine = db.session.bind
-    
+
     conn = engine.raw_connection()
     curs = conn.cursor()
-    
+
     outp = StringIO()
     curs.copy_expert(copy, outp)
     conn.close()
-    
+
     outp.seek(0)
 
     resp = make_response(outp.getvalue())
@@ -510,31 +521,31 @@ def transcriptions():
     task_dict['image_count'] = ImageTaskAssignment.count_images(task_id)
 
     table_name = task_dict['table_name']
-    
+
     engine = db.session.bind
-    
-    table = Table(table_name, 
-                  MetaData(), 
-                  autoload=True, 
+
+    table = Table(table_name,
+                  MetaData(),
+                  autoload=True,
                   autoload_with=engine)
-    
+
     t_header = [c.name for c in table.columns if 'irrelevant' not in c.name.lower()]
     columns = ', '.join(['t."{}"'.format(c) for c in t_header])
-    
-    q = ''' 
-            SELECT 
+
+    q = '''
+            SELECT
               i.dc_id AS dc_image_id,
               i.fetch_url,
               i.hierarchy,
               {columns}
             FROM document_cloud_image AS i
-            JOIN "{table_name}" AS t 
+            JOIN "{table_name}" AS t
               ON i.dc_id = t.image_id
             WHERE t.transcription_status = 'raw'
             ORDER BY i.id, t.id
-        '''.format(columns=columns, 
+        '''.format(columns=columns,
                    table_name=table_name)
-    
+
     with engine.begin() as conn:
         rows_all = conn.execute(text(q)).fetchall()
 
@@ -552,7 +563,12 @@ def transcriptions():
 
     row_filter = request.args.get('filter')
     if len(rows_all) > 0:
-        transcription_tbl_header, transcriptions_tbl_rows = pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_filter)
+        transcription_tbl_header, transcriptions_tbl_rows = \
+                pretty_task_transcriptions(t_header,
+                                           rows_all,
+                                           task_id,
+                                           img_statuses,
+                                           row_filter)
     else:
         transcription_tbl_header = []
         transcriptions_tbl_rows = []
@@ -577,7 +593,7 @@ def all_users():
 
     if table_names:
         # get anonymous transcribers as well as registered users
-        sels = ['SELECT transcriber, date_added FROM "{0}" WHERE (transcription_status = \'raw\')'.format(table_name) 
+        sels = ['SELECT transcriber, date_added FROM "{0}" WHERE (transcription_status = \'raw\')'.format(table_name)
                 for table_name in table_names]
         sel_all = ' UNION ALL '.join(sels)
         users_t = 'SELECT t.transcriber from ({0}) as t'.format(sel_all)
@@ -625,7 +641,7 @@ def view_activity():
         username = current_user.name
 
     user, user_transcriptions = get_user_activity(username)
-    
+
     return render_template('view-activity.html', user=user, user_transcriptions = user_transcriptions)
 
 @views.route('/uploads/<filename>')
@@ -643,7 +659,7 @@ def refresh_project():
     project_title = request.args.get('project_title')
 
     key = update_from_document_cloud.delay(project_title=project_title)
-    
+
     flask_session['refresh_key'] = key
 
     response = make_response(json.dumps({'status': 'ok'}))
@@ -661,7 +677,7 @@ def check_work():
     complete = engine.execute(text('select completed from work_table where key = :key'), key=key).first()
 
     result = {'completed': complete.completed}
-    
+
     if complete.completed == True:
         del flask_session['refresh_key']
 
