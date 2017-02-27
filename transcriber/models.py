@@ -260,21 +260,18 @@ class ImageTaskAssignment(db.Model):
         docs_conflict = engine.execute(text(conflict), **q_args).first().count
         docs_unseen = engine.execute(text(unseen), **q_args).first().count
 
-        reviews_complete = 0
-
-        for i in range(1, (reviewer_count + 1)):
-
-            n = db.session.query(cls)\
-                .filter(cls.form_id == task_id)\
-                .filter(cls.view_count == i).count()
-
-            reviews_complete += (n * i)
-
-        reviews_complete += docs_done*reviewer_count + docs_conflict*(reviewer_count-1)
-
+        reviews_total = ''' 
+            SELECT SUM(view_count) AS total
+            FROM image_task_assignment
+            WHERE form_id = :form_id
+        '''
+        
+        reviews_total = engine.execute(text(reviews_total), 
+                                       form_id=task_id).first().total
+        
+        reviews_complete = (reviews_total - docs_conflict)
 
         progress_dict['docs_total'] = docs_total
-        reviews_total = reviewer_count * docs_total
         progress_dict['reviews_total'] = reviews_total
 
         progress_dict['reviews_done_ct'] = reviews_complete
