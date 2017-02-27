@@ -6,13 +6,14 @@
         <h1>Election Results Transcriber</h1>
         {% if tasks %}
             {% if current_user.has_role('admin') %}
-            <p>
-                <a href="{{ url_for('views.upload') }}" class="btn btn-info"><strong>New transcription task</strong> &raquo;</a>
-            </p>
-            <br>
+                <p>
+                    <a href="{{ url_for('views.upload') }}" class="btn btn-info"><strong>New transcription task</strong> &raquo;</a>
+                </p>
+                <br>
             {% endif %}
+
             {% if current_user.has_role('admin') or current_user.has_role('manager') %}
-            <h3>In progress</h3>
+                <h3>In progress</h3>
             {% endif %}
 
             <table class='table' id='transcription_tasks'>
@@ -27,67 +28,79 @@
                 </thead>
                 <tbody>
                     {% if current_user.has_role('admin') or current_user.has_role('manager') %}
-                        {% for t in tasks %}
-                            {% if (t[1]['reviews_done_ct'] < t[1]['reviews_total']) or t[1]['reviews_total'] == 0 %}
+                        {% for task, progress, is_top in tasks %}
+                            {% if (progress['reviews_done_ct'] < progress['reviews_total']) or progress['reviews_total'] == 0 %}
                             <tr>
                                 <td>
-                                    <a href="{{ url_for('views.edit_task_group', group_id=t[0].task_group.id) }}">{{ t[0].task_group.name }}</a>
+                                    <a href="{{ url_for('views.edit_task_group', group_id=task.task_group.id) }}">{{ task.task_group.name }}</a>
                                 </td>
-                                <td>{{t[0].name}}</td>
+                                <td>{{task.name}}</td>
                                 <td>
-                                    <span datetime='{{t[0].deadline | format_date_sort}}'>
-                                        <small>{{t[0].deadline | format_date }}</small>
+                                    <span datetime='{{task.deadline | format_date_sort}}'>
+                                        <small>{{task.deadline | format_date }}</small>
                                     </span>
                                 </td>
                                 <td class='progress-info' data-container="body" data-toggle="popover" data-placement="top" data-content="
-                                {{t[1]['docs_total']}} documents<br /> {{t[0]['reviewer_count']}} reviewer(s) each">
-                                    {{t[1]['reviews_done_perc']}}% transcribed
+                                {{ progress['docs_total'] }} documents<br /> {{ task['reviewer_count']}} reviewer(s) each">
+                                    {{ progress['reviews_done_perc'] }}% transcribed
                                     <div class="progress">
-                                        <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{{t[1]['reviews_done_perc']}}" aria-valuemin="0" aria-valuemax="100" style="width: {{t[1]['reviews_done_perc']}}%;">
+                                        <div class="progress-bar progress-bar-success"
+                                             role="progressbar"
+                                             aria-valuenow="{{ progress['reviews_done_perc'] }}"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100"
+                                             style="width: {{ progress['reviews_done_perc'] }}%;">
                                         </div>
                                     </div>
-                                    {% set reviews_left = t[1]['reviews_total'] - t[1]['reviews_done_ct'] %}
-                                    {% if reviews_left < 100 and t[1]['reviews_done_perc'] > 50 %}
+                                    {% set reviews_left = progress['reviews_total'] - progress['reviews_done_ct'] %}
+                                    {% if reviews_left < 100 and progress['reviews_done_perc'] > 50 %}
                                         <span class="encouragement">
-                                            so close! <strong>{{reviews_left}}</strong> entries left
+                                            so close! <strong>{{ reviews_left }}</strong> entries left
                                         </span>
                                     {% endif %}
                                 </td>
                                 <td>
                                     {% if current_user.has_role('admin') %}
-                                    <a href="{{ url_for('views.form_creator', form_id=t[0].id) }}"><i class="fa fa-cog fa-fw"></i> Task settings</a><br />
+                                    <a href="{{ url_for('views.form_creator', form_id=task.id) }}"><i class="fa fa-cog fa-fw"></i> Task settings</a><br />
                                     {% endif %}
-                                    <a href="{{ url_for('views.transcriptions', task_id=t[0].id) }}"><i class="fa fa-eye fa-fw"></i> Review transcriptions</a><br />
-                                    <a href='{{ url_for('views.transcribe_intro', task_id=t[0].id )}}'><i class="fa fa-pencil fa-fw"></i> <strong>Start transcribing!</strong></a>
+                                    <a href="{{ url_for('views.transcriptions', task_id=task.id) }}"><i class="fa fa-eye fa-fw"></i> Review transcriptions</a><br />
+                                    <a href='{{ url_for('views.transcribe_intro', task_id=task.id )}}'><i class="fa fa-pencil fa-fw"></i> <strong>Start transcribing!</strong></a>
                                 </td>
                             </tr>
                             {% endif %}
                         {% endfor %}
 
                     {% else %} {# if current user is not admin #}
-                        {% for t in tasks %}
-                            {% if t[2] %}
+                        {% for task, progress, is_top in tasks %}
+                            {% if is_top %}
                             <tr>
                                 <td>
-                                    {{ t[0].task_group.name }}
+                                    {{ task.task_group.name }}
                                 </td>
-                                <td>{{t[0].name}}</td>
+                                <td>{{ task.name }}</td>
                                 <td>
-                                    <span datetime='{{t[0].deadline | format_date_sort}}'>
-                                        <small>{{t[0].deadline | format_date }}</small>
+                                    <span datetime='{{ task.deadline | format_date_sort }}'>
+                                        <small>{{ task.deadline | format_date }}</small>
                                     </span>
                                 </td>
                                 <td class='progress-info' data-container="body" data-toggle="popover" data-placement="top" data-content="
-                                {{t[1]['docs_total']}} documents<br /> {{t[0]['reviewer_count']}} reviewer(s) each">
-                                    {{t[1]['reviews_done_perc']}}% transcribed
+                                {{ progress['docs_total'] }} documents<br /> {{ progress['reviewer_count'] }} reviewer(s) each">
+                                    {{ progress['reviews_done_perc'] }}% transcribed
                                     <div class="progress">
-                                        <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{{t[1]['reviews_done_perc']}}" aria-valuemin="0" aria-valuemax="100" style="width: {{t[1]['reviews_done_perc']}}%;">
+                                        <div class="progress-bar progress-bar-success"
+                                             role="progressbar"
+                                             aria-valuenow="{{ progress['reviews_done_perc'] }}"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100"
+                                             style="width: {{ progress['reviews_done_perc'] }}%;">
                                         </div>
                                     </div>
                                 </td>
                                 <td>
-                                    {% if t[1]['reviews_done_ct'] < t[1]['reviews_total'] %}
-                                    <a href='{{ url_for('views.transcribe_intro', task_id=t[0].id )}}' class="btn btn-info btn-lg"><i class="fa fa-pencil fa-fw"></i> <strong>Start transcribing!</strong></a>
+                                    {% if progress['reviews_done_ct'] < progress['reviews_total'] %}
+                                    <a href='{{ url_for('views.transcribe_intro', task_id=task.id )}}' class="btn btn-info btn-lg">
+                                        <i class="fa fa-pencil fa-fw"></i> <strong>Start transcribing!</strong>
+                                    </a>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -111,23 +124,23 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for t in tasks %}
-                        {% if t[1]['reviews_done_perc'] == 100 %}
+                    {% for task, progress, is_top in tasks %}
+                        {% if progress['reviews_done_perc'] == 100 %}
                             <tr>
                                 <td>
-                                    <a href="{{ url_for('views.edit_task_group', group_id=t[0].task_group.id) }}">{{ t[0].task_group.name }}</a>
+                                    <a href="{{ url_for('views.edit_task_group', group_id=task.task_group.id) }}">{{ task.task_group.name }}</a>
                                 </td>
-                                <td>{{t[0].name}}</td>
+                                <td>{{ task.name }}</td>
                                 <td>
-                                    <span datetime='{{t[0].deadline | format_date_sort}}'>
-                                        <small>{{t[0].deadline | format_date }}</small>
+                                    <span datetime='{{task.deadline | format_date_sort}}'>
+                                        <small>{{task.deadline | format_date }}</small>
                                     </span>
                                 </td>
                                 <td>
                                 {% if current_user.has_role('admin') %}
-                                    <a href="{{ url_for('views.form_creator', form_id=t[0].id) }}"><i class="fa fa-cog fa-fw"></i> Task settings</a><br />
+                                    <a href="{{ url_for('views.form_creator', form_id=task.id) }}"><i class="fa fa-cog fa-fw"></i> Task settings</a><br />
                                 {% endif %}
-                                    <a href="{{ url_for('views.transcriptions', task_id=t[0].id) }}"><i class="fa fa-eye fa-fw"></i> Review transcriptions</a><br />
+                                    <a href="{{ url_for('views.transcriptions', task_id=task.id) }}"><i class="fa fa-eye fa-fw"></i> Review transcriptions</a><br />
                                 </td>
                             </tr>
                         {% endif %}

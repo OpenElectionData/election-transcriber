@@ -142,12 +142,8 @@ class TranscriptionManager(object):
                                            .filter(ImageTaskAssignment.form_id == self.task_id)\
                                            .filter(ImageTaskAssignment.image_id == self.image_id)\
                                            .first()
-            print('existing')
         else:
             self.image_task_assignment = self.getNextImage()
-            print('new')
-        
-        print(self.image_task_assignment)
 
         if self.image_task_assignment:
             self.image_id = self.image_task_assignment.image_id
@@ -165,25 +161,28 @@ class TranscriptionManager(object):
         self.form = self.dynamic_form(post_data)
 
         return self.form.validate()
-    
+
     def getNextImage(self):
-        
-        next_image = ''' 
-            SELECT 
-              ita.* 
+
+        next_image = '''
+            SELECT
+              ita.*
             FROM image_task_assignment AS ita
-            JOIN "{}" AS data
+            LEFT JOIN "{}" AS data
               USING(image_id)
             WHERE ita.form_id = :form_id
               AND ita.is_complete = FALSE
               AND ita.checkout_expire IS NULL
-              AND data.transcriber != :user
+              AND (data.transcriber != :user OR
+                   data.image_id IS NULL)
+              AND ita.view_count < :reviewer_count
         '''.format(self.task.table_name)
-        
-        return db.session.bind.execute(sa.text(next_image), 
+
+        return db.session.bind.execute(sa.text(next_image),
                                        form_id=self.task_id,
-                                       user=self.username).first()
-        
+                                       user=self.username,
+                                       reviewer_count=self.task.reviewer_count).first()
+
 
     def saveFinal(self):
 
@@ -246,6 +245,20 @@ class TranscriptionManager(object):
                 ins_args[f] = False
 
         self.insertTranscription(ins_args)
+
+        add_view = '''
+            UPDATE image_task_assignment SET
+              view_count = (view_count + 1),
+              checkout_expire = NULL
+            WHERE image_id = :image_id
+              AND form_id = :form_id
+        '''
+
+        with self.engine.begin() as conn:
+            conn.execute(sa.text(add_view),
+                         image_id=self.image_id,
+                         form_id=self.task_id)
+
         self.getImageTaskAssignment()
 
     def insertTranscription(self, transcription):
@@ -262,36 +275,37 @@ class TranscriptionManager(object):
             self.transcription_id = conn.execute(sa.text(ins), **transcription)
 
 
-    def updateImage(self):
-        
-        current_view_count = ''' 
-            SELECT view_count FROM image_task_assignment
-            WHERE image_id = :image_id
-              AND form_id = :form_id
-        '''
-        
-        current_view_count = self.engine.execute(sa.text(current_view_count), 
-                                                 image_id=self.image_id, 
-                                                 form_id=self.task_id).first().view_count
+    def checkComplete(self):
 
-        update_image = '''
-            UPDATE image_task_assignment SET
-              view_count = (view_count + 1),
-              checkout_expire = NULL
-        '''
+        conflicting_images = [i.dc_id for i in
+                              ImageTaskAssignment.get_conflict_images_by_task(self.task_id)]
 
-        if current_view_count >= self.task.reviewer_count:
-            
-            print('SAVING FINAL for {}'.format(self.image_id), current_view_count)
+        if not self.image_id in conflicting_images:
 
-            self.saveFinal()
+            current_view_count = '''
+                SELECT view_count FROM image_task_assignment
+                WHERE image_id = :image_id
+                  AND form_id = :form_id
+            '''
 
-            update_image = '{}, is_complete = TRUE'.format(update_image)
+            current_view_count = self.engine.execute(sa.text(current_view_count),
+                                                     image_id=self.image_id,
+                                                     form_id=self.task_id).first().view_count
 
-        update_image = '{} WHERE image_id = :image_id'.format(update_image)
+            if current_view_count >= self.task.reviewer_count:
 
-        with self.engine.begin() as conn:
-            conn.execute(sa.text(update_image), image_id=self.image_id)
+                self.saveFinal()
+
+                update_image = '''
+                    UPDATE image_task_assignment SET
+                      is_complete = TRUE
+                    WHERE image_id = :image_id AND form_id = :form_id
+                '''
+
+                with self.engine.begin() as conn:
+                    conn.execute(sa.text(update_image),
+                                 image_id=self.image_id,
+                                 form_id=self.task_id)
 
     def deleteOldTranscription(self):
 
@@ -329,7 +343,7 @@ class TranscriptionManager(object):
     def checkoutImage(self):
         checkout = '''
             UPDATE image_task_assignment SET
-              checkout_expire = NOW() + INTERVAL '5 minutes'
+              checkout_expire = NOW() + INTERVAL '1 minutes'
             WHERE image_id = :image_id
         '''
 

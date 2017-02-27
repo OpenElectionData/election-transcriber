@@ -169,12 +169,13 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
 
         if row_filter == 'conflict' and cls == 'conflict':
             include_row = True
+
         if row_filter == 'irrelevant' and row[9]:
             include_row = True
 
         if include_row:
             transcriptions.append((cls, row_pretty))
-        
+
     return (header, transcriptions)
 
 

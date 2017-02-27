@@ -29,7 +29,7 @@
             <div class="row">
                 <div class="col-xs-4 text-xs">
                     <strong>Project</strong><br>
-                    {{form_meta.dc_project}}
+                    {{ dc_project }}
                 </div>
                 {% if dc_filter_list %}
                 <div class="col-xs-8 text-xs">
@@ -392,7 +392,7 @@
             };
 
             $('#refresh-images').on('click', function(e){
-                $.getJSON('/refresh-project/', {'project_title': '{{ form_meta.dc_project }}'},
+                $.getJSON('/refresh-project/', {'project_title': '{{ dc_project }}'},
                     function(data){
                         console.log(data);
                     }

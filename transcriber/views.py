@@ -418,7 +418,7 @@ def transcribe(task_id):
 
             transcription_task.saveTranscription()
 
-            transcription_task.updateImage()
+            transcription_task.checkComplete()
 
             flash("Saved! Let's do another!", "saved")
             return redirect(url_for('views.transcribe', task_id=task_id))
@@ -562,6 +562,7 @@ def transcriptions():
     }
 
     row_filter = request.args.get('filter')
+
     if len(rows_all) > 0:
         transcription_tbl_header, transcriptions_tbl_rows = \
                 pretty_task_transcriptions(t_header,

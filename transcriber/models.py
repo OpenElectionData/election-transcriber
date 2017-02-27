@@ -1,6 +1,6 @@
 from flask_bcrypt import Bcrypt
 from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
-    DateTime, text, Text, or_, LargeBinary
+    DateTime, text, Text, or_, LargeBinary, MetaData
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import synonym, backref, relationship
 from flask.ext.security import UserMixin, RoleMixin
@@ -52,10 +52,10 @@ class DocumentCloudImage(db.Model):
     @classmethod
     def grab_relevant_images(cls, project_name, hierarchy_filter=None):
         # this only grabs image urls without page numbers
-        
+
         if hierarchy_filter:
             hierarchy_filter = ast.literal_eval(json.loads(hierarchy_filter))
-        
+
         doc_list = [row for row in db.session.query(cls)\
                         .filter(cls.dc_project == project_name)\
                         .filter(cls.is_page_url == False)
@@ -67,7 +67,7 @@ class DocumentCloudImage(db.Model):
     @classmethod
     def grab_relevant_image_pages(cls, project_name, hierarchy_filter):
         # this only grabs image urls with page numbers
-        
+
         hierarchy_filter = ast.literal_eval(json.loads(hierarchy_filter)) \
                                if hierarchy_filter else None
 
@@ -109,7 +109,7 @@ class ImageTaskAssignment(db.Model):
 
     @classmethod
     def is_task_complete(cls, task_id):
-        
+
         not_complete = db.session.query(cls)\
                 .filter(cls.form_id == task_id)\
                 .filter(cls.is_complete == False)\
@@ -146,14 +146,57 @@ class ImageTaskAssignment(db.Model):
                                     .all()]
 
     @classmethod
+    def conflict_query(cls, task_id):
+
+        table_name = db.session.bind.execute(text('''
+            SELECT table_name FROM form_meta
+            WHERE id = :form_id
+        '''), form_id=task_id).first().table_name
+
+        data_table = Table(table_name,
+                           MetaData(),
+                           autoload=True,
+                           autoload_with=db.session.bind)
+
+        skip_cols = [
+            'date_added',
+            'transcriber',
+            'id',
+            'image_id',
+            'transription_status'
+        ]
+
+        select_cols = [c.name for c in data_table.columns
+                       if c.name not in skip_cols]
+
+        having = ' OR '.join(['array_length(array_agg(DISTINCT {}), 1) > 1'.format(c)
+                              for c in select_cols])
+
+        return '''
+              SELECT image_id FROM "{data_table}"
+              WHERE transcription_status NOT LIKE '%_deleted'
+              GROUP BY image_id
+              HAVING ({having})
+        '''.format(data_table=table_name, having=having)
+
+
+    @classmethod
     def get_conflict_images_by_task(cls, task_id):
-        reviewer_count = db.session.query(FormMeta).get(task_id).reviewer_count
-        return [row.image for row in db.session.query(cls)\
-                                    .filter(cls.form_id == task_id)\
-                                    .filter(cls.view_count >= reviewer_count)\
-                                    .filter(cls.is_complete == False)\
-                                    .order_by(cls.id)\
-                                    .all()]
+
+        conflict = '''
+            SELECT dc.*
+            FROM document_cloud_image AS dc
+            JOIN (
+                {conflict_query}
+            ) AS conflict
+              ON dc.dc_id = conflict.image_id
+            JOIN image_task_assignment AS ita
+              ON dc.dc_id = ita.image_id
+            WHERE ita.form_id = :form_id
+        '''.format(conflict_query=cls.conflict_query(task_id))
+
+        return [i for i in db.session.bind.execute(text(conflict), 
+                                                   form_id=task_id)]
 
     @classmethod
     def get_task_progress(cls, task_id):
@@ -161,11 +204,11 @@ class ImageTaskAssignment(db.Model):
         reviewer_count = db.session.query(FormMeta).get(task_id).reviewer_count
         if reviewer_count == None: # clean this up
             reviewer_count = 1
-        
+
         engine = db.session.bind
-        
-        doc_counts = ''' 
-            SELECT 
+
+        doc_counts = '''
+            SELECT
               COUNT(*) AS count,
               is_complete
             FROM image_task_assignment
@@ -173,44 +216,43 @@ class ImageTaskAssignment(db.Model):
             GROUP BY is_complete
         '''
 
-        doc_counts = list(engine.execute(text(doc_counts), 
+        doc_counts = list(engine.execute(text(doc_counts),
                                          task_id=task_id))
 
         docs_total = 0
         docs_done = 0
 
         for row in doc_counts:
-            
+
             docs_total += row.count
-            
+
             if row.is_complete:
                 docs_done += row.count
 
-        in_prog = ''' 
+        in_prog = '''
             SELECT COUNT(*) AS count
             FROM image_task_assignment
             WHERE form_id = :task_id
               AND view_count > 0
               AND view_count < :reviewer_count
         '''
-        
-        conflict = ''' 
+
+        conflict = '''
             SELECT COUNT(*) AS count
-            FROM image_task_assignment
-            WHERE form_id = :task_id
-              AND view_count >= :reviewer_count
-              AND is_complete = FALSE
-        '''
-        
-        unseen = ''' 
+            FROM (
+              {conflict_query}
+            ) As conflict
+        '''.format(conflict_query=cls.conflict_query(task_id))
+
+        unseen = '''
             SELECT COUNT(*) AS count
             FROM image_task_assignment
             WHERE form_id = :task_id
               AND view_count = 0
         '''
-        
+
         q_args = {
-            'task_id': task_id, 
+            'task_id': task_id,
             'reviewer_count': reviewer_count
         }
 
@@ -219,23 +261,24 @@ class ImageTaskAssignment(db.Model):
         docs_unseen = engine.execute(text(unseen), **q_args).first().count
 
         reviews_complete = 0
-        
+
         for i in range(1, (reviewer_count + 1)):
-            
+
             n = db.session.query(cls)\
                 .filter(cls.form_id == task_id)\
                 .filter(cls.view_count == i).count()
-            
+
             reviews_complete += (n * i)
-        
+
         reviews_complete += docs_done*reviewer_count + docs_conflict*(reviewer_count-1)
 
 
-        progress_dict['docs_total'] = docs_total 
-        progress_dict['reviews_total'] = reviewer_count*docs_total
+        progress_dict['docs_total'] = docs_total
+        reviews_total = reviewer_count * docs_total
+        progress_dict['reviews_total'] = reviews_total
 
         progress_dict['reviews_done_ct'] = reviews_complete
-        progress_dict['reviews_done_perc'] = percentage(reviews_complete, reviewer_count*docs_total)
+        progress_dict['reviews_done_perc'] = percentage(reviews_complete, reviews_total)
 
         progress_dict['docs_done_ct'] = docs_done
         progress_dict['docs_done_perc'] = percentage(docs_done, docs_total)
@@ -262,10 +305,10 @@ class TaskGroup(db.Model):
     id = Column(Integer, primary_key=True)
     name = Column(String)
     description = Column(Text)
-    date_added = Column(DateTime(timezone=True), 
+    date_added = Column(DateTime(timezone=True),
             server_default=text('CURRENT_TIMESTAMP'))
     last_update = Column(DateTime(timezone=True), onupdate=datetime.now)
-    
+
     def __repr__(self):
         return '<TaskGroup %r>' % self.id
 
@@ -273,7 +316,7 @@ class TaskGroup(db.Model):
         d = {c.name: getattr(self, c.name) for c in self.__table__.columns}
         d['task_count'] = len(self.tasks)
         return d
-    
+
     def as_dict(self):
         base_d = {c.name: getattr(self, c.name) for c in self.__table__.columns}
         base_d['tasks'] = []
@@ -289,13 +332,13 @@ class FormMeta(db.Model):
     slug = Column(String)
     status = Column(String)
     index = Column(Integer)
-    date_added = Column(DateTime(timezone=True), 
+    date_added = Column(DateTime(timezone=True),
             server_default=text('CURRENT_TIMESTAMP'))
     last_update = Column(DateTime(timezone=True), onupdate=datetime.now)
     sample_image = Column(String)
     table_name = Column(String)
     task_group_id = Column(Integer, ForeignKey('task_group.id'))
-    task_group = relationship('TaskGroup', backref=backref('tasks', 
+    task_group = relationship('TaskGroup', backref=backref('tasks',
                 cascade="all, delete-orphan"))
     reviewer_count = Column(Integer)
     deadline = Column(DateTime(timezone=True), onupdate=datetime.now)
@@ -330,12 +373,12 @@ class FormSection(db.Model):
     index = Column(Integer)
     status = Column(String)
     form_id = Column(Integer, ForeignKey('form_meta.id'))
-    form = relationship('FormMeta', backref=backref('sections', 
+    form = relationship('FormMeta', backref=backref('sections',
                 cascade="all, delete-orphan"))
 
     def __repr__(self):
         return '<FormSection %r>' % self.name
-    
+
     def as_dict(self):
         base_d = {c.name: getattr(self, c.name) for c in self.__table__.columns}
         base_d['fields'] = []
@@ -352,10 +395,10 @@ class FormField(db.Model):
     status = Column(String)
     data_type = Column(String)
     section_id = Column(Integer, ForeignKey('form_section.id'))
-    section = relationship('FormSection', backref=backref('fields', 
+    section = relationship('FormSection', backref=backref('fields',
                 cascade="all, delete-orphan"))
     form_id = Column(Integer, ForeignKey('form_meta.id'))
-    form = relationship('FormMeta', backref=backref('fields', 
+    form = relationship('FormMeta', backref=backref('fields',
                 cascade="all, delete-orphan"))
 
     def __repr__(self):
@@ -377,7 +420,7 @@ class Role(db.Model, RoleMixin):
     def __eq__(self, other):
         return (self.name == other or
                 self.name == getattr(other, 'name', None))
-    
+
     def __ne__(self, other):
         return not self.__eq__(other)
 
@@ -392,8 +435,8 @@ class User(db.Model, UserMixin):
     confirmed_at = Column(DateTime)
     password = Column('password', String, nullable=False)
     active = Column(Boolean, default=False)
-    roles = relationship('Role', secondary=roles_users, 
-                            backref=backref('users', lazy='dynamic')) 
+    roles = relationship('Role', secondary=roles_users,
+                            backref=backref('users', lazy='dynamic'))
     def __repr__(self): # pragma: no cover
         return '<User %r>' % self.name
 
