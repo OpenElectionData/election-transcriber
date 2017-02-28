@@ -169,7 +169,7 @@ class ImageTaskAssignment(db.Model):
         select_cols = [c.name for c in data_table.columns
                        if c.name not in skip_cols]
 
-        having = ' OR '.join(['array_length(array_agg(DISTINCT {}), 1) > 1'.format(c)
+        having = ' OR '.join(['array_length(array_agg(DISTINCT "{}"), 1) > 1'.format(c)
                               for c in select_cols])
 
         return '''
