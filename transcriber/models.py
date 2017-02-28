@@ -182,7 +182,6 @@ class ImageTaskAssignment(db.Model):
 
     @classmethod
     def get_conflict_images_by_task(cls, task_id):
-
         conflict = '''
             SELECT dc.*
             FROM document_cloud_image AS dc
@@ -259,17 +258,12 @@ class ImageTaskAssignment(db.Model):
         docs_inprog = engine.execute(text(in_prog), **q_args).first().count
         docs_conflict = engine.execute(text(conflict), **q_args).first().count
         docs_unseen = engine.execute(text(unseen), **q_args).first().count
+        
+        # Total number of reviews that will need to happen
+        reviews_total = (docs_total * reviewer_count)
 
-        reviews_total = ''' 
-            SELECT SUM(view_count) AS total
-            FROM image_task_assignment
-            WHERE form_id = :form_id
-        '''
-        
-        reviews_total = engine.execute(text(reviews_total), 
-                                       form_id=task_id).first().total
-        
-        reviews_complete = (reviews_total - docs_conflict)
+        # Total number of reviews that have happened
+        reviews_complete = (reviews_total - docs_inprog)
 
         progress_dict['docs_total'] = docs_total
         progress_dict['reviews_total'] = reviews_total

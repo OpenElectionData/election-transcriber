@@ -76,14 +76,14 @@ def index():
         task_id = task_dict['id']
 
         progress_dict = ImageTaskAssignment.get_task_progress(task_id)
-
+        
         if task.task_group_id not in groups and progress_dict['docs_done_ct'] < progress_dict['docs_total']:
             is_top_task = True
             groups.append(task.task_group_id)
         else:
             is_top_task = False
 
-        if progress_dict['docs_done_ct'] < progress_dict['docs_total']:
+        if progress_dict['docs_inprog_ct'] > 0:
             has_inprog_tasks = True
         else:
             has_complete_tasks = True
@@ -392,6 +392,7 @@ def transcribe(task_id):
 
     supercede = request.args.get('supercede')
     image_id = request.args.get('image_id')
+    edit_mode = False
 
     if not image_id:
         image_id = request.form.get('image_id')
@@ -406,9 +407,10 @@ def transcribe(task_id):
 
     if image_id and supercede:
         transcription_task.prepopulateFields()
+        edit_mode = True
 
     checkinImages()
-
+    
     if request.method == 'POST':
 
         if transcription_task.validateTranscription(request.form):
@@ -419,9 +421,13 @@ def transcribe(task_id):
             transcription_task.saveTranscription()
 
             transcription_task.checkComplete()
-
-            flash("Saved! Let's do another!", "saved")
-            return redirect(url_for('views.transcribe', task_id=task_id))
+            
+            if not edit_mode:
+                flash("Saved! Let's do another!", "saved")
+                return redirect(url_for('views.transcribe', task_id=task_id))
+            else:
+                flash('New transcription saved!', 'saved')
+                return redirect(url_for('views.transcriptions', task_id=task_id))
 
     transcription_task.getImageTaskAssignment()
 
@@ -509,7 +515,7 @@ def transcriptions():
     transcriptions_final = None
     header = None
     task_id = request.args.get('task_id')
-
+    
     task = db.session.query(FormMeta).get(task_id)
     task_dict = task.as_dict()
 
@@ -529,21 +535,21 @@ def transcriptions():
                   autoload=True,
                   autoload_with=engine)
 
-    t_header = [c.name for c in table.columns if 'irrelevant' not in c.name.lower()]
+    t_header = [c.name for c in table.columns if c.name != 'image_id']
     columns = ', '.join(['t."{}"'.format(c) for c in t_header])
-
+    
     q = '''
-            SELECT
-              i.dc_id AS dc_image_id,
-              i.fetch_url,
-              i.hierarchy,
-              {columns}
-            FROM document_cloud_image AS i
-            JOIN "{table_name}" AS t
-              ON i.dc_id = t.image_id
-            WHERE t.transcription_status = 'raw'
-            ORDER BY i.id, t.id
-        '''.format(columns=columns,
+        SELECT
+          i.dc_id AS dc_image_id,
+          i.fetch_url,
+          i.hierarchy,
+          {columns}
+        FROM document_cloud_image AS i
+        JOIN "{table_name}" AS t
+          ON i.dc_id = t.image_id
+        WHERE t.transcription_status = 'raw'
+        ORDER BY i.id, t.id
+    '''.format(columns=columns,
                    table_name=table_name)
 
     with engine.begin() as conn:

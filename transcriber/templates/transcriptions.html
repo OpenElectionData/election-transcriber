@@ -134,7 +134,7 @@
 
                 <div class="btn-group" role="group">
                     <a type="button" class="btn btn-default btn-sm {% if row_filter=='conflict' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='conflict') }}">In-conflict</a>
-                    <a type="button" class="btn btn-default btn-sm {% if row_filter=='irrelevant' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='irrelevant') }}">Irrelevant</a>
+                    <a type="button" class="btn btn-default btn-sm {% if row_filter=='irrelevant' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='irrelevant') }}"><i class="fa fa-ban fa-fw"></i> Irrelevant</a>
                     <a type="button" class="btn btn-default btn-sm {% if row_filter=='blank' %}selected{% endif %}" href="{{ url_for('views.transcriptions', task_id=task.id, filter='blank') }}">
                         <i class="fa fa-times fa-fw"></i>
                         Blank

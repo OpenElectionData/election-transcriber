@@ -80,7 +80,7 @@ def pretty_user_transcriptions(t_header, rows_all, task_id, user_name):
 # colors rows based on transcription status & includes a delete link to delete a transcription
 def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_filter):
     num_cols = len(rows_all[0])
-
+    
     # 4 cols per field: fieldname/fieldname_blank/fieldname_not_legible/fieldname_altered
     cpf = 4
     # transcription field start index (first 5 fields are meta info abt transcription)
@@ -131,16 +131,16 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
         edit_template = '<a title="Edit transcription {t_id}" href="{e_url}"><i class="fa fa-pencil fa-fw"></i></a>'
         transcribe_html = edit_template.format(t_id=transcription_id, e_url=edit_url)
 
-        row_pretty.append(delete_html+transcribe_html)
+        row_pretty.append(delete_html + transcribe_html)
 
-
-        row_transcribed = [row[i:i + cpf] for i in range(t_col_start+3, num_cols, cpf)] # transcribed fields
+        row_transcribed = [row[i:i + cpf] for i in range(t_col_start + 3, num_cols, cpf)] # transcribed fields
 
         if not row_filter:
             include_row = True
         else:
             include_row = False
-
+        
+        
         for field_group in row_transcribed:
             value, blank, not_legible, altered = field_group
 
@@ -158,6 +158,9 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
                 if row_filter == 'altered':
                     include_row = True
                 value = 'Altered <i class="fa fa-exclamation-triangle fa-fw"></i>'
+            
+            if row[7]: 
+                value = 'Irrelevant <i class="fa fa-ban"></i>'
 
             row_pretty.append(value)
 
@@ -169,8 +172,8 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
 
         if row_filter == 'conflict' and cls == 'conflict':
             include_row = True
-
-        if row_filter == 'irrelevant' and row[9]:
+        
+        if row_filter == 'irrelevant' and row[7]:
             include_row = True
 
         if include_row:
