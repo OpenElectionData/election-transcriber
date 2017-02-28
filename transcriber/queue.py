@@ -14,6 +14,7 @@ from transcriber.app_config import DB_CONN
 
 try:
     from raven import Client
+    from transcriber.app_config import WORKER_SENTRY
     client = Client(dsn=WORKER_SENTRY)
 except ImportError: # pragma: no cover
     client = None
