@@ -89,7 +89,7 @@ class ImageUpdater(object):
                 LEFT JOIN image_task_assignment AS ita
                   ON dc.dc_id = ita.image_id
                 WHERE dc.dc_project = :dc_project
-                ON CONFLICT ON CONSTRAINT image_task_form
+                ON CONFLICT ON CONSTRAINT image_to_form
                 DO NOTHING
             '''
 

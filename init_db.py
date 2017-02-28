@@ -64,12 +64,6 @@ def init_db():
                     except IntegrityError as e:
                         print("   unable to add role '%s' to user '%s'" % (role, name))
 
-        with db.session.bind.begin() as conn:
-            conn.execute('''
-                ALTER TABLE image_task_assignment
-                ADD CONSTRAINT image_task_form unique (image_id, form_id)
-            ''')
-
 
     from alembic.config import Config
     from alembic import command
