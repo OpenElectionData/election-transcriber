@@ -250,6 +250,12 @@ class ImageTaskAssignment(db.Model):
               AND view_count = 0
         '''
 
+        reviews_complete = '''
+            SELECT SUM(view_count) AS count
+            FROM image_task_assignment
+            WHERE form_id = :task_id
+        '''
+        
         q_args = {
             'task_id': task_id,
             'reviewer_count': reviewer_count
@@ -258,12 +264,10 @@ class ImageTaskAssignment(db.Model):
         docs_inprog = engine.execute(text(in_prog), **q_args).first().count
         docs_conflict = engine.execute(text(conflict), **q_args).first().count
         docs_unseen = engine.execute(text(unseen), **q_args).first().count
-        
+        reviews_complete = engine.execute(text(reviews_complete), **q_args).first().count
+
         # Total number of reviews that will need to happen
         reviews_total = (docs_total * reviewer_count)
-
-        # Total number of reviews that have happened
-        reviews_complete = (reviews_total - docs_inprog)
 
         progress_dict['docs_total'] = docs_total
         progress_dict['reviews_total'] = reviews_total

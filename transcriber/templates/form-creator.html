@@ -296,7 +296,13 @@
         var field_ids = {{ next_field_index|tojson|safe }}
 
         $(document).ready(function(){
-            $('#id_deadline > input').datetimepicker({minDate: moment()});
+            var datepicker_opts = {}
+
+            {% if form_meta.deadline %}
+                datepicker_opts['defaultDate'] = moment('{{ form_meta.deadline|format_date("%m/%d/%Y") }}');
+            {% endif %}
+
+            $('#id_deadline > input').datetimepicker(datepicker_opts);
 
             if (sections.length > 0){ // if editing instead of creating
                 $.each(sections, function(i, section){
@@ -319,6 +325,7 @@
                 var valid = true;
                 $.each(inputs, function(i, inp){
                     if ($(inp).val() == ''){
+                        console.log('blank input', $(inp));
                         valid = false;
                         $(inp).parent().addClass('has-error');
                         $(inp).parent().append('<span class="help-block">This field is required</span>')
@@ -329,6 +336,7 @@
                 });
                 $.each(selects, function(i, inp){
                     if ($(inp).val() == ''){
+                        console.log('blank select', $(inp));
                         valid = false;
                         $(inp).parent().addClass('has-error');
                         $(inp).parent().append('<span class="help-block">Pick a field type</span>')
@@ -337,6 +345,7 @@
                         $(inp).parent().find('span').remove();
                     }
                 });
+                console.log('valid', valid);
                 if(valid){
                     if($('#id_task_group').data('groupid')){
                         var groupid = $('#id_task_group').data('groupid');

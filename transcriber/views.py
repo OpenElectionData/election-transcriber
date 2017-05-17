@@ -89,7 +89,7 @@ def index():
             has_complete_tasks = True
 
         t.append([task, progress_dict, is_top_task])
-
+    
     return render_template('index.html',
                            tasks=t,
                            has_inprog_tasks=has_inprog_tasks,
@@ -309,7 +309,7 @@ def form_creator():
         for section in form_meta['sections']:
             section['fields'] = sorted(section['fields'], key=itemgetter('index'))
         form_meta['sections'] = sorted(form_meta['sections'], key=itemgetter('index'))
-
+    
     return render_template('form-creator.html',
                            form_meta=form_meta,
                            next_section_index=creator_manager.next_section_index,
