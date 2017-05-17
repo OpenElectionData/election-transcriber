@@ -1,6 +1,6 @@
 from flask_bcrypt import Bcrypt
 from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
-    DateTime, text, Text, or_, LargeBinary, MetaData
+    DateTime, text, Text, or_, LargeBinary, MetaData, BigInteger
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import synonym, backref, relationship
 from flask.ext.security import UserMixin, RoleMixin
@@ -33,7 +33,7 @@ class WorkTable(db.Model):
 
 class DocumentCloudImage(db.Model):
     __tablename__ = 'document_cloud_image'
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     image_type = Column(String)
     fetch_url = Column(String)
     dc_project = Column(String)
@@ -89,7 +89,7 @@ def string_start_match(full_string, match_strings):
 
 class ImageTaskAssignment(db.Model):
     __tablename__ = 'image_task_assignment'
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     image_id = Column(String, ForeignKey('document_cloud_image.dc_id'))
     image = relationship('DocumentCloudImage', backref='taskassignments')
     form_id = Column(Integer, ForeignKey('form_meta.id'))
@@ -293,7 +293,7 @@ class ImageTaskAssignment(db.Model):
 
 class TaskGroup(db.Model):
     __tablename__ = 'task_group'
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     name = Column(String)
     description = Column(Text)
     date_added = Column(DateTime(timezone=True),
@@ -317,7 +317,7 @@ class TaskGroup(db.Model):
 
 class FormMeta(db.Model):
     __tablename__ = 'form_meta'
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     name = Column(String)
     description = Column(Text)
     slug = Column(String)
@@ -358,7 +358,7 @@ class FormMeta(db.Model):
 
 class FormSection(db.Model):
     __tablename__ = 'form_section'
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     name = Column(String)
     slug = Column(String)
     index = Column(Integer)
@@ -379,7 +379,7 @@ class FormSection(db.Model):
 
 class FormField(db.Model):
     __tablename__ = 'form_field'
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     name = Column(String)
     slug = Column(String)
     index = Column(Integer)
@@ -404,7 +404,7 @@ roles_users = Table('roles_users', db.Model.metadata,
 
 class Role(db.Model, RoleMixin):
     __tablename__ = 'ndi_role'
-    id = Column(Integer(), primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     name = Column(String, unique=True)
     description = Column(String)
 
@@ -420,7 +420,7 @@ class Role(db.Model, RoleMixin):
 
 class User(db.Model, UserMixin):
     __tablename__ = 'ndi_user'
-    id = Column(Integer, primary_key=True)
+    id = Column(BigInteger, primary_key=True)
     name = Column(String, nullable=False, unique=True)
     email = Column(String, nullable=False, unique=True)
     confirmed_at = Column(DateTime)
