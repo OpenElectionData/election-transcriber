@@ -83,7 +83,6 @@ class SyncGoogle(object):
                     file_id = folder_file['id']
 
                     if title not in self.synced_images:
-                        self.addSyncedImage(title)
 
                         contents = self.service.files().get_media(fileId=file_id)
 
@@ -92,12 +91,15 @@ class SyncGoogle(object):
                             done = False
 
                             while done is False:
-                                try:
-                                    status, done = media.next_chunk()
-                                except HttpError as e:
-                                    print('Google returned {}'.format(str(e)))
+                                status, done = media.next_chunk()
 
-                        yield title
+                                if not status.total_size:
+                                    print('Could not get file {}'.format(file_id))
+                                    break
+                        if done:
+
+                            yield title
+                            self.addSyncedImage(title)
 
                     file_count += 1
 
