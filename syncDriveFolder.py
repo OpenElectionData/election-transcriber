@@ -94,8 +94,8 @@ class SyncGoogle(object):
                             while done is False:
                                 try:
                                     status, done = media.next_chunk()
-                                except HttpError:
-                                    pass
+                                except HttpError as e:
+                                    print('Google returned {}'.format(str(e)))
 
                         yield title
 
