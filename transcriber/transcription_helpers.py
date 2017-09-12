@@ -168,6 +168,8 @@ class TranscriptionManager(object):
             SELECT
               ita.*
             FROM image_task_assignment AS ita
+            JOIN document_cloud_image AS dc
+              ON ita.image_id = dc.dc_id
             LEFT JOIN "{}" AS data
               USING(image_id)
             WHERE ita.form_id = :form_id
@@ -176,6 +178,7 @@ class TranscriptionManager(object):
               AND (data.transcriber != :user OR
                    data.image_id IS NULL)
               AND ita.view_count < :reviewer_count
+            ORDER BY dc.hierarchy
         '''.format(self.task.table_name)
 
         return db.session.bind.execute(sa.text(next_image),
