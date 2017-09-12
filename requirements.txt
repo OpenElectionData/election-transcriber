@@ -11,3 +11,5 @@ boto==2.36.0
 flask_sqlalchemy==2.0
 python-documentcloud==1.0.4
 flask-login==0.2.11
+gunicorn==19.7.1
+google-api-python-client==1.6.3
