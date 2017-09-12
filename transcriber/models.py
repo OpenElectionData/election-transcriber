@@ -81,6 +81,22 @@ class DocumentCloudImage(db.Model):
 
         return doc_list
 
+
+class ProjectGeography(db.Model):
+    __tablename__ = 'project_geography'
+    id = Column(BigInteger, primary_key=True)
+    project = Column(String, index=True)
+    geo_type = Column(String, index=True)
+    code = Column(String)
+    name = Column(String)
+    voter_count = Column(Integer)
+
+    def __repr__(self):
+        return '<ProjectGeography %r, %r (%r)>' % (self.name,
+                                                   self.geo_type,
+                                                   self.code)
+
+
 def string_start_match(full_string, match_strings):
     for match_string in match_strings:
         if match_string in full_string:
@@ -194,7 +210,7 @@ class ImageTaskAssignment(db.Model):
             WHERE ita.form_id = :form_id
         '''.format(conflict_query=cls.conflict_query(task_id))
 
-        return [i for i in db.session.bind.execute(text(conflict), 
+        return [i for i in db.session.bind.execute(text(conflict),
                                                    form_id=task_id)]
 
     @classmethod
@@ -255,7 +271,7 @@ class ImageTaskAssignment(db.Model):
             FROM image_task_assignment
             WHERE form_id = :task_id
         '''
-        
+
         q_args = {
             'task_id': task_id,
             'reviewer_count': reviewer_count
