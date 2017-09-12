@@ -7,6 +7,7 @@ import httplib2
 from oauth2client.service_account import ServiceAccountCredentials
 from apiclient.discovery import build
 from apiclient.http import MediaIoBaseDownload
+from apiclient.errors import HttpError
 
 from documentcloud import DocumentCloud
 
@@ -91,7 +92,10 @@ class SyncGoogle(object):
                             done = False
 
                             while done is False:
-                                status, done = media.next_chunk()
+                                try:
+                                    status, done = media.next_chunk()
+                                except HttpError:
+                                    pass
 
                         yield title
 
