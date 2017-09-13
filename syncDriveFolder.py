@@ -65,7 +65,8 @@ class SyncGoogle(object):
             page_token = None
 
             params = {
-                'q': "'{}' in parents".format(folder_id)
+                'q': "'{}' in parents".format(folder_id),
+                'orderBy': 'name',
             }
 
             while True:
