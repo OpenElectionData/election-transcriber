@@ -251,7 +251,7 @@ class ImageTaskAssignment(db.Model):
         '''
 
         reviews_complete = '''
-            SELECT SUM(view_count) AS count
+            SELECT COALESCE(SUM(view_count), 0) AS count
             FROM image_task_assignment
             WHERE form_id = :task_id
         '''
