@@ -91,9 +91,10 @@ class SyncGoogle(object):
                             done = False
 
                             while done is False:
-                                status, done = media.next_chunk()
 
-                                if not status.total_size:
+                                try:
+                                    status, done = media.next_chunk()
+                                except HttpError:
                                     print('Could not get file {}'.format(file_id))
                                     break
                         if done:
