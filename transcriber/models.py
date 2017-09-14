@@ -36,7 +36,7 @@ class DocumentCloudImage(db.Model):
     id = Column(BigInteger, primary_key=True)
     image_type = Column(String)
     fetch_url = Column(String)
-    dc_project = Column(String)
+    dc_project = Column(String, index=True)
     dc_id = Column(String, unique=True)
     hierarchy = Column(String)
     is_page_url = Column(Boolean)
@@ -129,21 +129,37 @@ class ImageTaskAssignment(db.Model):
 
     @classmethod
     def get_unseen_images_by_task(cls, task_id):
-        return [row.image for row in db.session.query(cls)\
-                                    .filter(cls.form_id == task_id)\
-                                    .filter(cls.view_count == 0)\
-                                    .order_by(cls.id)\
-                                    .all()]
+        select = '''
+            SELECT image.*
+            FROM image_task_assignment AS ita
+            JOIN document_cloud_image AS image
+              ON ita.image_id = image.dc_id
+            WHERE ita.form_id = :task_id
+              AND ita.view_count = 0
+            ORDER BY ita.id
+        '''
+
+        return [image for image in db.session.bind.execute(text(select),
+                                                           task_id=task_id)]
 
     @classmethod
     def get_inprog_images_by_task(cls, task_id):
         reviewer_count = db.session.query(FormMeta).get(task_id).reviewer_count
-        return [row.image for row in db.session.query(cls)\
-                                    .filter(cls.form_id == task_id)\
-                                    .filter(cls.view_count > 0)\
-                                    .filter(cls.view_count < reviewer_count)\
-                                    .order_by(cls.id)\
-                                    .all()]
+
+        select = '''
+            SELECT image.*
+            FROM image_task_assignment AS ita
+            JOIN document_cloud_image AS image
+              ON ita.image_id = image.dc_id
+            WHERE ita.form_id = :task_id
+              AND ita.view_count > 0
+              AND ita.view_count < :reviewer_count
+            ORDER BY ita.id
+        '''
+
+        return [image for image in db.session.bind.execute(text(select),
+                                                           task_id=task_id,
+                                                           reviewer_count=reviewer_count)]
 
     @classmethod
     def conflict_query(cls, task_id):
@@ -194,7 +210,7 @@ class ImageTaskAssignment(db.Model):
             WHERE ita.form_id = :form_id
         '''.format(conflict_query=cls.conflict_query(task_id))
 
-        return [i for i in db.session.bind.execute(text(conflict), 
+        return [i for i in db.session.bind.execute(text(conflict),
                                                    form_id=task_id)]
 
     @classmethod
@@ -255,7 +271,7 @@ class ImageTaskAssignment(db.Model):
             FROM image_task_assignment
             WHERE form_id = :task_id
         '''
-        
+
         q_args = {
             'task_id': task_id,
             'reviewer_count': reviewer_count
