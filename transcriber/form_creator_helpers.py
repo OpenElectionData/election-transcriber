@@ -234,7 +234,7 @@ class FormCreatorManager(object):
 
         if field.slug != slugify(field_name, truncate=True):
             self.alterFieldName(field.slug, slugify(field_name, truncate=True))
-            field.slug = slugify(field_name)
+            field.slug = slugify(field_name, truncate=True)
 
         if field.name != field_name:
             field.name = field_name
