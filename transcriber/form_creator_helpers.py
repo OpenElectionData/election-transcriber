@@ -226,13 +226,13 @@ class FormCreatorManager(object):
         if not field:
 
             field = FormField(name=field_name,
-                              slug=slugify(field_name),
+                              slug=slugify(field_name, truncate=True),
                               index=field_index,
                               form=self.form_meta,
                               section=section,
                               data_type=field_data_type)
 
-        elif field.slug != slugify(field_name):
+        elif field.slug != slugify(field_name, truncate=True):
             self.alterFieldName(field.slug, slugify(field_name))
             field.slug = slugify(field_name)
 

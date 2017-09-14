@@ -2,242 +2,242 @@
 {% block title %}Task Creator - New Task{% endblock %}
 {% block content %}
 <div class="row">
-    <div class='col-sm-8'>
-        <h3>New transcription task</h3>
-        <p>Specify the collection of documents you want transcribed for this task. <br />
-            All documents are stored in <a href='https://www.documentcloud.org' target='_blank'>DocumentCloud</a> under the NDI account. <br />
-            <span class="label label-default" id="refresh-projects" style="cursor:pointer">
-                Refresh project list &nbsp;&nbsp;<i class="fa fa-refresh"></i>
-            </span>
-        </p>
-        <div class='well'>
-          <form role="form" class="form" method="POST" action="" enctype="multipart/form-data">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-            <div class="form-group">
-              <label for="project_name" class="control-label">
-                  Select a DocumentCloud project
-              </label>
-
-
-              <select class="form-control" id="project_name" name="project_name">
-                {% if not project_name %}
-                <option disabled selected> -- </option>
-                  {% for project_option in project_list %}
-                  <option>{{project_option}}</option>
-                  {% endfor %}
-                {% else %}
-                  <option>{{project_name}}</option>
-                  {% for project_option in project_list %}
-                    {% if project_option != project_name %}
-                    <option>{{project_option}}</option>
-                    {% endif %}
-                  {% endfor %}
-                {% endif %}
-              </select>
-              <br />
-              <span id="spinner"></span>
-              {% if doc_count and not hierarchy_filter%}
-                <p>
-                  <strong>{{ doc_count }}</strong> images found for {{ project_name }}
+        <div class='col-sm-8'>
+                <h3>New transcription task</h3>
+                <p>Specify the collection of documents you want transcribed for this task. <br />
+                    All documents are stored in <a href='https://www.documentcloud.org' target='_blank'>DocumentCloud</a> under the NDI account. <br />
+                    <span class="label label-default" id="refresh-projects" style="cursor:pointer">
+                        Refresh project list &nbsp;&nbsp;<i class="fa fa-refresh"></i>
+                    </span>
                 </p>
-              {% endif %}
+                <div class='well'>
+                    <form role="form" class="form" method="POST" action="" enctype="multipart/form-data">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                        <div class="form-group">
+                            <label for="project_name" class="control-label">
+                                    Select a DocumentCloud project
+                            </label>
 
-              <br>
-              {% if project_name %}
+
+                            <select class="form-control" id="project_name" name="project_name">
+                                {% if not project_name %}
+                                <option disabled selected> -- </option>
+                                    {% for project_option in project_list %}
+                                    <option>{{project_option}}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option>{{project_name}}</option>
+                                    {% for project_option in project_list %}
+                                        {% if project_option != project_name %}
+                                        <option>{{project_option}}</option>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endif %}
+                            </select>
+                            <br />
+                            <span id="spinner"></span>
+                            {% if doc_count and not hierarchy_filter%}
+                                <p>
+                                    <strong>{{ doc_count }}</strong> images found for {{ project_name }}
+                                </p>
+                            {% endif %}
+
+                            <br>
+                            {% if project_name %}
 
 
 
-              <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
-                <div class="panel panel-default">
-                  <div class="panel-heading" role="tab" id="headingOne" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-                    <h4 class="panel-title">
-                        <i class="fa fa-plus"></i> Filter documents
-                    </h4>
-                  </div>
+                            <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+                                <div class="panel panel-default">
+                                    <div class="panel-heading" role="tab" id="headingOne" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                        <h4 class="panel-title">
+                                                <i class="fa fa-plus"></i> Filter documents
+                                        </h4>
+                                    </div>
 
-                  {% if hierarchy_filter %}
-                  <div id="collapseOne" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
-                  {% else %}
-                  <div id="collapseOne" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
-                  {% endif %}
-                    <div class="panel-body">
+                                    {% if hierarchy_filter %}
+                                    <div id="collapseOne" class="panel-collapse collapse in" role="tabpanel" aria-labelledby="headingOne">
+                                    {% else %}
+                                    <div id="collapseOne" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
+                                    {% endif %}
+                                        <div class="panel-body">
 
-                      <p>Filter documents by hierarchy</p>
-                      <div id="h-representation" class="tree">
-                        <ul>
-                        </ul>
-                      </div>
+                                            <p>Filter documents by hierarchy</p>
+                                            <div id="h-representation" class="tree">
+                                                <ul>
+                                                </ul>
+                                            </div>
 
-                      <input type="hidden"
-                         class="form-control"
-                         id="hierarchy_filter"
-                         name="hierarchy_filter"
-                        {% if hierarchy_filter %}
-                          value={{hierarchy_filter}}
-                        {% endif %}
-                         aria-describedby="section-name-addon"/>
+                                            <input type="hidden"
+                                                 class="form-control"
+                                                 id="hierarchy_filter"
+                                                 name="hierarchy_filter"
+                                                {% if hierarchy_filter %}
+                                                    value={{hierarchy_filter}}
+                                                {% endif %}
+                                                 aria-describedby="section-name-addon"/>
 
-                      <button id="filter-images-hierarchy" type="submit" class="btn btn-default btn-sm">Apply filters</button>
-                      <span id="spinner-2">
-                      </span>
-                      {% if doc_count and hierarchy_filter %}
-                        <span class="post-button-text-2">
-                          <strong>{{ doc_count }}</strong> images found for {{ project_name }}
-                        </span>
-                      {% endif %}
+                                            <button id="filter-images-hierarchy" type="submit" class="btn btn-default btn-sm">Apply filters</button>
+                                            <span id="spinner-2">
+                                            </span>
+                                            {% if doc_count and hierarchy_filter %}
+                                                <span class="post-button-text-2">
+                                                    <strong>{{ doc_count }}</strong> images found for {{ project_name }}
+                                                </span>
+                                            {% endif %}
 
-                    </div>
-                  </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endif %}
+
+                        </div>
+
+                    </form>
                 </div>
-              </div>
-              {% endif %}
-
-            </div>
-
-          </form>
+                {% if doc_count %}
+                    <a href="{{ url_for('views.form_creator') }}" class="btn btn-success" id="next-step">Create task with {{doc_count}} images ></a>
+                {% endif %}
         </div>
-        {% if doc_count %}
-          <a href="{{ url_for('views.form_creator') }}" class="btn btn-success" id="next-step">Create task with {{doc_count}} images ></a>
-        {% endif %}
-    </div>
 </div>
 {% endblock %}
 {% block extra_javascript %}
-  <script>
-    $(document).ready(function(){
-      $('#project_name').change(function() {
-        $(".post-button-text").empty()
-        $("#accordion").remove()
-        $("#spinner").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>Searching DocumentCloud...</small>')
-        this.form.submit();
-      });
+    <script>
+        $(document).ready(function(){
+            $('#project_name').change(function() {
+                $(".post-button-text").empty()
+                $("#accordion").remove()
+                $("#spinner").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>Searching DocumentCloud...</small>')
+                this.form.submit();
+            });
 
-      $( "#filter-images-hierarchy" ).click(function() {
-        $(".post-button-text").empty()
-        $(".post-button-text-2").empty()
-        $("#next-step").hide()
-        $("#spinner-2").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>Searching DocumentCloud...</small>')
-      });
+            $( "#filter-images-hierarchy" ).click(function() {
+                $(".post-button-text").empty()
+                $(".post-button-text-2").empty()
+                $("#next-step").hide()
+                $("#spinner-2").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>Searching DocumentCloud...</small>')
+            });
 
 
-      {% if h_obj %}
-      var h_obj = $.parseJSON('{{h_obj|safe}}');
-      makeHTML(h_obj)
-      {% endif %}
+            {% if h_obj %}
+            var h_obj = $.parseJSON('{{h_obj|safe}}');
+            makeHTML(h_obj)
+            {% endif %}
 
-      $('#refresh-projects').on('click', function(e){
-          $.when($.getJSON('/refresh-project/')).then(
-              function(data){
-                  $('#refresh-projects i').addClass('fa-spin');
-                  setTimeout(pollWorkChecker, 3000);
-              }
-          )
-      })
+            $('#refresh-projects').on('click', function(e){
+                $.when($.getJSON('/refresh-project/')).then(
+                    function(data){
+                        $('#refresh-projects i').addClass('fa-spin');
+                        setTimeout(pollWorkChecker, 3000);
+                    }
+                )
+            })
 
-    });
+        });
 
-    function pollWorkChecker(){
-        $.getJSON('/check-work/', function(data){
-            if(data.completed == true){
-                $('#refresh-projects i').removeClass('fa-spin');
-            } else {
-                setTimeout(pollWorkChecker, 3000);
-            }
-        })
-    }
+        function pollWorkChecker(){
+                $.getJSON('/check-work/', function(data){
+                        if(data.completed == true){
+                                $('#refresh-projects i').removeClass('fa-spin');
+                        } else {
+                                setTimeout(pollWorkChecker, 3000);
+                        }
+                })
+        }
 
-    function makeHTML(h_obj){
-      var box = '<input type="checkbox"/> select'
+        function makeHTML(h_obj){
+            var box = '<input type="checkbox"/> select'
 
-      for (var h0 in h_obj) {
-        if (h_obj.hasOwnProperty(h0)) {
-          var h1_html = ''
+            for (var h0 in h_obj) {
+                if (h_obj.hasOwnProperty(h0)) {
+                    var h1_html = ''
 
-          for (var h1 in h_obj[h0]) {
-            if (h_obj[h0].hasOwnProperty(h1)) {
-              var h2_html = ''
+                    for (var h1 in h_obj[h0]) {
+                        if (h_obj[h0].hasOwnProperty(h1)) {
+                            var h2_html = ''
 
-              for (var h2 in h_obj[h0][h1]) {
-                if (h_obj[h0][h1].hasOwnProperty(h2)) {
-                  var h3_html = ''
+                            for (var h2 in h_obj[h0][h1]) {
+                                if (h_obj[h0][h1].hasOwnProperty(h2)) {
+                                    var h3_html = ''
 
-                  h2_html = h2_html+"<li><span>"+h2+"</span>"+box+h3_html+"</li>"
+                                    h2_html = h2_html+"<li><span>"+h2+"</span>"+box+h3_html+"</li>"
+                                }
+                            }
+                            fa=''
+                            if(h2_html){
+                                fa = "<i class='fa fa-plus fa-fw'></i>"
+                                h2_html = "<ul>"+h2_html+"</ul>"
+                            }
+                            h1_html = h1_html+"<li><span>"+fa+h1+"</span>"+box+h2_html+"</li>"
+                        }
+                    }
+                    fa=''
+                    if(h1_html){
+                        fa = "<i class='fa fa-plus fa-fw'></i>"
+                        h1_html = "<ul>"+h1_html+"</ul>"
+                    }
+                    $('#h-representation > ul').append("<li><span>"+fa+h0+"</span>"+box+h1_html+"</li>");
                 }
-              }
-              fa=''
-              if(h2_html){
-                fa = "<i class='fa fa-plus fa-fw'></i>"
-                h2_html = "<ul>"+h2_html+"</ul>"
-              }
-              h1_html = h1_html+"<li><span>"+fa+h1+"</span>"+box+h2_html+"</li>"
             }
-          }
-          fa=''
-          if(h1_html){
-            fa = "<i class='fa fa-plus fa-fw'></i>"
-            h1_html = "<ul>"+h1_html+"</ul>"
-          }
-          $('#h-representation > ul').append("<li><span>"+fa+h0+"</span>"+box+h1_html+"</li>");
+
+            makeTree()
+
         }
-      }
 
-      makeTree()
+        function makeTree(){
+            $('.tree li:has(ul)').addClass('parent_li').find(' > span').attr('title', 'Collapse this branch');
 
-    }
+            var all_children = $('.tree li.parent_li').find(' > ul > li');
+            if (all_children) {
+                // collapse all children by default
+                all_children.hide();
+                $(this).attr('title', 'Expand this branch').find(' > i').addClass('fa-plus').removeClass('fa-minus');
+            }
 
-    function makeTree(){
-      $('.tree li:has(ul)').addClass('parent_li').find(' > span').attr('title', 'Collapse this branch');
+            $('.tree li.parent_li > span').on('click', function (e) {
+                var children = $(this).parent('li.parent_li').find(' > ul > li');
+                if (children.is(":visible")) {
+                    children.hide('fast');
+                    $(this).attr('title', 'Expand this branch').find(' > i').addClass('fa-plus').removeClass('fa-minus');
+                } else {
+                    children.show('fast');
+                    $(this).attr('title', 'Collapse this branch').find(' > i').addClass('fa-minus').removeClass('fa-plus');
+                }
+                e.stopPropagation();
+            });
 
-      var all_children = $('.tree li.parent_li').find(' > ul > li');
-      if (all_children) {
-        // collapse all children by default
-        all_children.hide();
-        $(this).attr('title', 'Expand this branch').find(' > i').addClass('fa-plus').removeClass('fa-minus');
-      }
+            $('.tree li > input').on('click', function (e) {
+                var children_boxes = $(this).parent('li.parent_li').find(' > ul > li > input');
+                if ($(this).is(":checked")){
+                    children_boxes.prop("checked", true);
+                } else{
+                    var parent_boxes = $(this).parent().parents('li.parent_li').find(' > input');
+                    parent_boxes.prop("checked", false);
+                    children_boxes.prop("checked", false);
+                }
+                $('#hierarchy_filter').val(JSON.stringify(getMatchPatterns()))
+            });
 
-      $('.tree li.parent_li > span').on('click', function (e) {
-        var children = $(this).parent('li.parent_li').find(' > ul > li');
-        if (children.is(":visible")) {
-          children.hide('fast');
-          $(this).attr('title', 'Expand this branch').find(' > i').addClass('fa-plus').removeClass('fa-minus');
-        } else {
-          children.show('fast');
-          $(this).attr('title', 'Collapse this branch').find(' > i').addClass('fa-minus').removeClass('fa-plus');
         }
-        e.stopPropagation();
-      });
 
-      $('.tree li > input').on('click', function (e) {
-        var children_boxes = $(this).parent('li.parent_li').find(' > ul > li > input');
-        if ($(this).is(":checked")){
-          children_boxes.prop("checked", true);
-        } else{
-          var parent_boxes = $(this).parent().parents('li.parent_li').find(' > input');
-          parent_boxes.prop("checked", false);
-          children_boxes.prop("checked", false);
+        function getMatchPatterns(){
+            var checked_boxes = $('#h-representation').find('input:checked');
+            var match_patterns = []
+            checked_boxes.each(function(idx, checkbox){
+                if (!$(checkbox).parent().parent().parent().find('> input').is(':checked')){
+                    var this_level = $(checkbox).parent().find(' > span').text()
+                    var other_levels = $(checkbox).parent().parents('li.parent_li').find(' > span')
+                    var match_pattern = ''
+                    $(other_levels).each(function(idx, h_name){
+                        match_pattern += '/'+$(h_name).text()
+                    });
+                    match_pattern += '/'+this_level;
+                    match_patterns.push(match_pattern)
+                }
+            });
+            return match_patterns;
         }
-        $('#hierarchy_filter').val(JSON.stringify(getMatchPatterns()))
-      });
 
-    }
-
-    function getMatchPatterns(){
-      var checked_boxes = $('#h-representation').find('input:checked');
-      var match_patterns = []
-      checked_boxes.each(function(idx, checkbox){
-        if (!$(checkbox).parent().parent().parent().find('> input').is(':checked')){
-          var this_level = $(checkbox).parent().find(' > span').text()
-          var other_levels = $(checkbox).parent().parents('li.parent_li').find(' > span')
-          var match_pattern = ''
-          $(other_levels).each(function(idx, h_name){
-            match_pattern += '/'+$(h_name).text()
-          });
-          match_pattern += '/'+this_level;
-          match_patterns.push(match_pattern)
-        }
-      });
-      return match_patterns;
-    }
-
-  </script>
+    </script>
 {% endblock %}
