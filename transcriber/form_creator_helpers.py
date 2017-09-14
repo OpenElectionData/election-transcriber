@@ -232,11 +232,11 @@ class FormCreatorManager(object):
                               section=section,
                               data_type=field_data_type)
 
-        elif field.slug != slugify(field_name, truncate=True):
+        if field.slug != slugify(field_name, truncate=True):
             self.alterFieldName(field.slug, slugify(field_name, truncate=True))
             field.slug = slugify(field_name)
 
-        elif field.name != field_name:
+        if field.name != field_name:
             field.name = field_name
 
         db.session.add(field)
