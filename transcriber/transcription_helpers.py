@@ -97,7 +97,10 @@ class TranscriptionManager(object):
         for section in sorted(self.task.sections, key=lambda x: x.index):
             section_dict = {'name': section.name, 'fields': []}
 
-            for field in sorted(section.fields, key=lambda x: x.index):
+            fields = [f for f in sorted(section.fields, key=lambda x: x.index) 
+                      if f.status != 'deleted']
+
+            for field in fields:
 
                 if field.data_type == 'boolean':
                     self.bools.append(field.slug)
@@ -234,9 +237,9 @@ class TranscriptionManager(object):
             ('image_id', self.image_id,),
             ('transcription_status', 'raw',),
         ])
-        
+
         irrelevant = self.post_data.get('flag_irrelevant') == 'y'
-        
+
         for k,v in self.post_data.items():
 
             if k != 'csrf_token':
@@ -248,7 +251,7 @@ class TranscriptionManager(object):
         if not set(self.bools).intersection(set(ins_args.keys())):
             for f in self.bools:
                 ins_args[f] = False
-        
+
         self.insertTranscription(ins_args)
 
         add_view = '''
@@ -275,7 +278,7 @@ class TranscriptionManager(object):
         '''.format(self.task.table_name,
                    ','.join(['"{}"'.format(f) for f in transcription_fields]),
                    ','.join([':{}'.format(f) for f in transcription_fields]))
-        
+
         with self.engine.begin() as conn:
             self.transcription_id = conn.execute(sa.text(ins), **transcription)
 
@@ -338,7 +341,7 @@ class TranscriptionManager(object):
             WHERE form_id = :task_id
               AND image_id = :image_id
         '''.format(self.task.table_name)
-        
+
         with self.engine.begin() as conn:
             conn.execute(sa.text(update_task_assignment),
                          image_id=self.image_id,
