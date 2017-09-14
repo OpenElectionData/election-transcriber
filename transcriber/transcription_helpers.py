@@ -94,10 +94,13 @@ class TranscriptionManager(object):
 
         self.sections = []
 
-        for section in sorted(self.task.sections, key=lambda x: x.index):
+        sections = [s for s in sorted(self.task.sections, key=lambda x: x.index)
+                    if s.status != 'deleted']
+
+        for section in sections:
             section_dict = {'name': section.name, 'fields': []}
 
-            fields = [f for f in sorted(section.fields, key=lambda x: x.index) 
+            fields = [f for f in sorted(section.fields, key=lambda x: x.index)
                       if f.status != 'deleted']
 
             for field in fields:

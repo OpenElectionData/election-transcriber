@@ -366,6 +366,7 @@ def edit_task_group():
     return render_template('edit-task-group.html',task_group=task_group)
 
 @views.route('/transcribe-intro/<task_id>', methods=['GET', 'POST'])
+@login_required
 def transcribe_intro(task_id):
 
     task_id = int(task_id)
@@ -377,6 +378,7 @@ def transcribe_intro(task_id):
     return render_template('transcribe-intro.html', task=task_dict)
 
 @views.route('/transcribe/<task_id>', methods=['GET', 'POST'])
+@login_required
 def transcribe(task_id):
 
     task_id = int(task_id)
@@ -641,6 +643,7 @@ def user():
 
 
 @views.route('/view-activity/', methods=['GET', 'POST'])
+@login_required
 def view_activity():
     if current_user.is_anonymous():
         username = request.remote_addr
@@ -656,6 +659,7 @@ def uploaded_image(filename):
     return send_from_directory(UPLOAD_FOLDER, filename)
 
 @views.route('/viewer/')
+@login_required
 def viewer():
     return render_template('viewer.html')
 
