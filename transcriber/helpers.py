@@ -220,9 +220,9 @@ def get_user_activity(user_name):
         table_name = task_info['table_name']
 
         q = '''
-                SELECT * from (SELECT id, fetch_url from document_cloud_image) i
-                JOIN "{0}" t
-                ON (i.id = t.image_id)
+                SELECT * FROM document_cloud_image AS i
+                JOIN "{0}" AS t
+                  ON i.doc_id = t.image_id
                 WHERE transcriber = '{1}' and transcription_status = 'raw'
             '''.format(table_name, user['name'])
         h = '''
