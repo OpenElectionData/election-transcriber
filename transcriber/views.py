@@ -27,8 +27,7 @@ from wtforms.validators import DataRequired
 
 import pytz
 
-from transcriber.app_config import UPLOAD_FOLDER, DOCUMENTCLOUD_USER, \
-    DOCUMENTCLOUD_PW, TIME_ZONE
+from transcriber.app_config import UPLOAD_FOLDER, TIME_ZONE
 from transcriber.models import FormMeta, FormSection, FormField, \
     Image, ImageTaskAssignment, TaskGroup, User
 from transcriber.database import db

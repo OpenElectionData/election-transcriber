@@ -6,7 +6,7 @@ import sqlalchemy as sa
 
 from documentcloud import DocumentCloud
 
-from transcriber.app_config import DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW, DB_CONN
+from transcriber.app_config import DB_CONN
 from transcriber.models import FormMeta, Image, ImageTaskAssignment
 from transcriber.queue import queuefunc
 

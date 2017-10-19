@@ -41,7 +41,7 @@ class Image(db.Model):
                 primary_key=True)
     image_type = Column(String)
     fetch_url = Column(String)
-    bucket = Column(String, index=True)
+    election_name = Column(String, index=True)
     hierarchy = Column(JSONB)
     is_page_url = Column(Boolean)
     is_current = Column(Boolean)

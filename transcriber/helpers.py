@@ -1,5 +1,3 @@
-from transcriber.app_config import AWS_KEY, AWS_SECRET
-from boto.s3.connection import S3Connection
 import re
 from unicodedata import normalize
 from wtforms.form import Form
