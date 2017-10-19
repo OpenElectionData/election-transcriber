@@ -37,7 +37,7 @@ from transcriber.auth import csrf
 
 from transcriber.transcription_helpers import TranscriptionManager, checkinImages
 from transcriber.form_creator_helpers import FormCreatorManager
-from transcriber.tasks import ImageUpdater
+from transcriber.tasks import ImageUpdater, update_from_s3
 
 from documentcloud import DocumentCloud
 
@@ -103,22 +103,20 @@ def about():
 @roles_required('admin')
 def upload():
 
-    q = 'SELECT distinct dc_project from document_cloud_image'
     engine = db.session.bind
-    with engine.begin() as conn:
-        result = conn.execute(q).fetchall()
+    result = engine.execute('SELECT DISTINCT election_name FROM image')
 
-    project_list = [thing[0] for thing in result]
+    election_list = [thing[0] for thing in result]
 
     if request.method == 'POST':
 
-        project_name = request.form.get('project_name')
+        election_name = request.form.get('election_name')
         hierarchy_filter = None
 
         if request.form.get('hierarchy_filter'):
             json.dumps(request.form.get('hierarchy_filter'))
 
-        doc_list = Image.grab_relevant_images(project_name,hierarchy_filter)
+        doc_list = Image.grab_relevant_images(election_name,hierarchy_filter)
 
         h_str_list = [doc.hierarchy for doc in doc_list if doc.hierarchy]
         h_obj = {}
@@ -136,22 +134,22 @@ def upload():
                 flask_session['image_url'] = first_doc.fetch_url
                 flask_session['page_count'] = sample_page_count
                 flask_session['image_type'] = 'pdf'
-                flask_session['dc_project'] = project_name
+                flask_session['dc_project'] = election_name
                 flask_session['dc_filter'] = hierarchy_filter if hierarchy_filter else None
                 dc_filter_list = ast.literal_eval(json.loads(hierarchy_filter)) if hierarchy_filter else None
                 dc_filter_list = [thing for thing in dc_filter_list] if dc_filter_list else []
                 flask_session['dc_filter_list'] = dc_filter_list
 
                 return render_template('upload.html',
-                                       project_list=project_list,
-                                       project_name=project_name,
+                                       election_list=election_list,
+                                       election_name=election_name,
                                        hierarchy_filter=hierarchy_filter,
                                        h_obj=h_obj,
                                        doc_count=len(doc_list))
             else:
                 flash("No DocumentCloud images found")
 
-    return render_template('upload.html', project_list=project_list)
+    return render_template('upload.html', election_list=election_list)
 
 
 def construct_hierarchy_object(str_list):
@@ -482,8 +480,8 @@ def download_transcriptions():
               i.fetch_url as image_url,
               {dynamic}
             from "{table_name}" as t
-            join document_cloud_image as i
-            on t.image_id = i.dc_id
+            join image as i
+            on t.image_id = i.id
             order by t.image_id, transcription_status
         ) TO STDOUT WITH CSV HEADER DELIMITER ','
     '''.format(common=', '.join(['t.{}'.format(f) for f in common_fields]),
@@ -541,13 +539,13 @@ def transcriptions():
 
     q = '''
         SELECT
-          i.dc_id AS dc_image_id,
+          i.id AS image_id,
           i.fetch_url,
           i.hierarchy,
           {columns}
-        FROM document_cloud_image AS i
+        FROM image AS i
         JOIN "{table_name}" AS t
-          ON i.dc_id = t.image_id
+          ON i.id = t.image_id
         WHERE t.transcription_status = 'raw'
         ORDER BY i.id, t.id
     '''.format(columns=columns,
@@ -668,7 +666,7 @@ def viewer():
 def refresh_project():
     project_title = request.args.get('project_title')
 
-    key = update_from_document_cloud.delay(project_title=project_title)
+    key = update_from_s3.delay(project_title=project_title)
 
     flask_session['refresh_key'] = key
 

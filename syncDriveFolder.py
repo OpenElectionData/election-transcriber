@@ -156,8 +156,14 @@ class SyncGoogle(object):
                 key = '{0}/{1}'.format(self.election_slug,
                                        '{}.pdf'.format(title.rsplit('.', 1)[0]))
 
+                try:
+                    body = img2pdf.convert(fd)
+                except img2pdf.ImageOpenError:
+                    print("Couldn't convert: {}".format(title))
+                    continue
+
                 self.s3_client.put_object(ACL='public-read',
-                                          Body=img2pdf.convert(fd),
+                                          Body=body,
                                           Bucket=self.bucket,
                                           Key=key,
                                           ContentType='application/pdf',

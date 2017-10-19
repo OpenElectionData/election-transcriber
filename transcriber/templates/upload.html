@@ -14,21 +14,21 @@
                     <form role="form" class="form" method="POST" action="" enctype="multipart/form-data">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
                         <div class="form-group">
-                            <label for="project_name" class="control-label">
-                                    Select a DocumentCloud project
+                            <label for="election_name" class="control-label">
+                                    Select an Election
                             </label>
 
 
-                            <select class="form-control" id="project_name" name="project_name">
-                                {% if not project_name %}
+                            <select class="form-control" id="election_name" name="election_name">
+                                {% if not election_name %}
                                 <option disabled selected> -- </option>
-                                    {% for project_option in project_list %}
+                                    {% for project_option in election_list %}
                                     <option>{{project_option}}</option>
                                     {% endfor %}
                                 {% else %}
-                                    <option>{{project_name}}</option>
-                                    {% for project_option in project_list %}
-                                        {% if project_option != project_name %}
+                                    <option>{{election_name}}</option>
+                                    {% for project_option in election_list %}
+                                        {% if project_option != election_name %}
                                         <option>{{project_option}}</option>
                                         {% endif %}
                                     {% endfor %}
