@@ -1,16 +1,19 @@
-from flask_bcrypt import Bcrypt
-from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
-    DateTime, text, Text, or_, LargeBinary, MetaData, BigInteger
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import synonym, backref, relationship
-from flask.ext.security import UserMixin, RoleMixin
-from flask.ext.security.utils import md5
-from werkzeug.local import LocalProxy
-from flask import current_app
 from datetime import datetime
-from transcriber.database import db
 import json
 import ast
+
+from flask_bcrypt import Bcrypt
+from flask.ext.security import UserMixin, RoleMixin
+from flask.ext.security.utils import md5
+from flask import current_app
+
+from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
+    DateTime, text, Text, or_, LargeBinary, MetaData, BigInteger
+from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.orm import synonym, backref, relationship
+
+from werkzeug.local import LocalProxy
+from transcriber.database import db
 
 _security = LocalProxy(lambda: current_app.extensions['security'])
 
@@ -31,19 +34,20 @@ class WorkTable(db.Model):
     def __repr__(self):
         return '<WorkTable {0}>'.format(str(self.key))
 
-class DocumentCloudImage(db.Model):
-    __tablename__ = 'document_cloud_image'
-    id = Column(BigInteger, primary_key=True)
+class Image(db.Model):
+    __tablename__ = 'image'
+    id = Column(UUID,
+                server_default=text('gen_random_uuid()'),
+                primary_key=True)
     image_type = Column(String)
     fetch_url = Column(String)
-    dc_project = Column(String, index=True)
-    dc_id = Column(String, unique=True)
-    hierarchy = Column(String)
+    bucket = Column(String, index=True)
+    hierarchy = Column(JSONB)
     is_page_url = Column(Boolean)
     is_current = Column(Boolean)
 
     def __repr__(self):
-        return '<DocumentCloudImage %r>' % self.fetch_url
+        return '<Image %r>' % self.fetch_url
 
     @classmethod
     def get_id_by_url(cls, url):
@@ -90,8 +94,8 @@ def string_start_match(full_string, match_strings):
 class ImageTaskAssignment(db.Model):
     __tablename__ = 'image_task_assignment'
     id = Column(BigInteger, primary_key=True)
-    image_id = Column(String, ForeignKey('document_cloud_image.dc_id'))
-    image = relationship('DocumentCloudImage', backref='taskassignments')
+    image_id = Column(UUID, ForeignKey('image.id'))
+    image = relationship('Image', backref='taskassignments')
     form_id = Column(Integer, ForeignKey('form_meta.id'))
     checkout_expire = Column(DateTime(timezone=True))
     view_count = Column(Integer, server_default=text('0'))
@@ -133,7 +137,7 @@ class ImageTaskAssignment(db.Model):
             SELECT image.*
             FROM image_task_assignment AS ita
             JOIN document_cloud_image AS image
-              ON ita.image_id = image.dc_id
+              ON ita.image_id = image.id
             WHERE ita.form_id = :task_id
               AND ita.view_count = 0
             ORDER BY ita.id
@@ -150,7 +154,7 @@ class ImageTaskAssignment(db.Model):
             SELECT image.*
             FROM image_task_assignment AS ita
             JOIN document_cloud_image AS image
-              ON ita.image_id = image.dc_id
+              ON ita.image_id = image.id
             WHERE ita.form_id = :task_id
               AND ita.view_count > 0
               AND ita.view_count < :reviewer_count
@@ -204,9 +208,9 @@ class ImageTaskAssignment(db.Model):
             JOIN (
                 {conflict_query}
             ) AS conflict
-              ON dc.dc_id = conflict.image_id
+              ON dc.id = conflict.image_id
             JOIN image_task_assignment AS ita
-              ON dc.dc_id = ita.image_id
+              ON dc.id = ita.image_id
             WHERE ita.form_id = :form_id
         '''.format(conflict_query=cls.conflict_query(task_id))
 
