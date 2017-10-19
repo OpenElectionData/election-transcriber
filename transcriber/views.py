@@ -37,7 +37,7 @@ from transcriber.auth import csrf
 
 from transcriber.transcription_helpers import TranscriptionManager, checkinImages
 from transcriber.form_creator_helpers import FormCreatorManager
-from transcriber.tasks import ImageUpdater, update_from_document_cloud
+from transcriber.tasks import ImageUpdater
 
 from documentcloud import DocumentCloud
 

@@ -13,3 +13,4 @@ flask-login==0.2.11
 gunicorn==19.7.1
 google-api-python-client==1.6.3
 boto3==1.4.7
+img2pdf==0.2.4

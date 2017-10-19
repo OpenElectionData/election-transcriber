@@ -11,5 +11,5 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     updater = ImageUpdater(overwrite=args.overwrite)
-    updater.updateAllDocumentCloud()
+    updater.updateAllElections()
 

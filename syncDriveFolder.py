@@ -2,6 +2,7 @@ import os
 from io import BytesIO
 import json
 import csv
+from uuid import uuid4
 
 import httplib2
 
@@ -11,6 +12,8 @@ from apiclient.http import MediaIoBaseDownload
 from apiclient.errors import HttpError
 
 import boto3
+
+import img2pdf
 
 from transcriber.app_config import S3_BUCKET
 from transcriber.helpers import slugify
@@ -147,14 +150,17 @@ class SyncGoogle(object):
                     'hierarchy': hierarchy,
                     'election_name': self.election_name,
                     'election_slug': self.election_slug,
+                    'image_id': str(uuid4()),
                 }
 
-                key = '{0}/{1}'.format(self.election_slug, title)
+                key = '{0}/{1}'.format(self.election_slug,
+                                       '{}.pdf'.format(title.rsplit('.', 1)[0]))
 
                 self.s3_client.put_object(ACL='public-read',
-                                          Body=fd,
+                                          Body=img2pdf.convert(fd),
                                           Bucket=self.bucket,
                                           Key=key,
+                                          ContentType='application/pdf',
                                           Metadata=metadata)
 
             os.remove(os.path.join(self.this_dir, title))

@@ -36,9 +36,7 @@ class WorkTable(db.Model):
 
 class Image(db.Model):
     __tablename__ = 'image'
-    id = Column(UUID,
-                server_default=text('gen_random_uuid()'),
-                primary_key=True)
+    id = Column(UUID, primary_key=True)
     image_type = Column(String)
     fetch_url = Column(String)
     election_name = Column(String, index=True)
@@ -61,7 +59,7 @@ class Image(db.Model):
             hierarchy_filter = ast.literal_eval(json.loads(hierarchy_filter))
 
         doc_list = [row for row in db.session.query(cls)\
-                        .filter(cls.dc_project == project_name)\
+                        .filter(cls.election_name == project_name)\
                         .filter(cls.is_page_url == False)
                         .all()]
         if hierarchy_filter:
@@ -76,7 +74,7 @@ class Image(db.Model):
                                if hierarchy_filter else None
 
         doc_list = [row for row in db.session.query(cls)\
-                        .filter(cls.dc_project == project_name)\
+                        .filter(cls.election_name == project_name)\
                         .filter(cls.is_page_url == True)
                         .all()]
         if hierarchy_filter:
@@ -357,7 +355,7 @@ class FormMeta(db.Model):
                 cascade="all, delete-orphan"))
     reviewer_count = Column(Integer)
     deadline = Column(DateTime(timezone=True), onupdate=datetime.now)
-    dc_project = Column(String)
+    election_name = Column(String)
     dc_filter = Column(Text)
     split_image = Column(Boolean)
 
