@@ -8,7 +8,7 @@ import sqlalchemy as sa
 
 from transcriber.database import db
 from transcriber.models import FormSection, FormField, FormMeta, \
-    ImageTaskAssignment, DocumentCloudImage
+    ImageTaskAssignment, Image
 from transcriber.dynamic_form import NullableIntegerField as IntegerField, \
     NullableDateTimeField as DateTimeField, \
     NullableDateField as DateField, validate_blank_not_legible
@@ -154,8 +154,8 @@ class TranscriptionManager(object):
         if self.image_task_assignment:
             self.image_id = self.image_task_assignment.image_id
             self.checkoutImage()
-            self.dc_image = db.session.query(DocumentCloudImage)\
-                                      .filter(DocumentCloudImage.dc_id == self.image_id)\
+            self.dc_image = db.session.query(Image)\
+                                      .filter(Image.dc_id == self.image_id)\
                                       .first()
 
     def validateTranscription(self, post_data):

@@ -7,7 +7,7 @@ import sqlalchemy as sa
 from documentcloud import DocumentCloud
 
 from transcriber.app_config import DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW, DB_CONN
-from transcriber.models import FormMeta, DocumentCloudImage, ImageTaskAssignment
+from transcriber.models import FormMeta, Image, ImageTaskAssignment
 from transcriber.queue import queuefunc
 
 engine = sa.create_engine(DB_CONN)
@@ -94,7 +94,7 @@ class ImageUpdater(object):
             '''
 
             with engine.begin() as conn:
-                conn.execute(sa.text(insert), 
+                conn.execute(sa.text(insert),
                              form_id=form.form_id,
                              dc_project=form.dc_project)
 

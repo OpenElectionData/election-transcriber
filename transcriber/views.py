@@ -30,7 +30,7 @@ import pytz
 from transcriber.app_config import UPLOAD_FOLDER, DOCUMENTCLOUD_USER, \
     DOCUMENTCLOUD_PW, TIME_ZONE
 from transcriber.models import FormMeta, FormSection, FormField, \
-    DocumentCloudImage, ImageTaskAssignment, TaskGroup, User
+    Image, ImageTaskAssignment, TaskGroup, User
 from transcriber.database import db
 from transcriber.helpers import slugify, pretty_task_transcriptions, \
     get_user_activity, getTranscriptionSelect
@@ -76,7 +76,7 @@ def index():
         task_id = task_dict['id']
 
         progress_dict = ImageTaskAssignment.get_task_progress(task_id)
-        
+
         if task.task_group_id not in groups and progress_dict['docs_done_ct'] < progress_dict['docs_total']:
             is_top_task = True
             groups.append(task.task_group_id)
@@ -89,7 +89,7 @@ def index():
             has_complete_tasks = True
 
         t.append([task, progress_dict, is_top_task])
-    
+
     return render_template('index.html',
                            tasks=t,
                            has_inprog_tasks=has_inprog_tasks,
@@ -119,7 +119,7 @@ def upload():
         if request.form.get('hierarchy_filter'):
             json.dumps(request.form.get('hierarchy_filter'))
 
-        doc_list = DocumentCloudImage.grab_relevant_images(project_name,hierarchy_filter)
+        doc_list = Image.grab_relevant_images(project_name,hierarchy_filter)
 
         h_str_list = [doc.hierarchy for doc in doc_list if doc.hierarchy]
         h_obj = {}
@@ -309,7 +309,7 @@ def form_creator():
         for section in form_meta['sections']:
             section['fields'] = sorted(section['fields'], key=itemgetter('index'))
         form_meta['sections'] = sorted(form_meta['sections'], key=itemgetter('index'))
-    
+
     return render_template('form-creator.html',
                            form_meta=form_meta,
                            next_section_index=creator_manager.next_section_index,
@@ -412,7 +412,7 @@ def transcribe(task_id):
         edit_mode = True
 
     checkinImages()
-    
+
     if request.method == 'POST':
 
         if transcription_task.validateTranscription(request.form):
@@ -423,7 +423,7 @@ def transcribe(task_id):
             transcription_task.saveTranscription()
 
             transcription_task.checkComplete()
-            
+
             if not edit_mode:
                 flash("Saved! Let's do another!", "saved")
                 return redirect(url_for('views.transcribe', task_id=task_id))
@@ -517,7 +517,7 @@ def transcriptions():
     transcriptions_final = None
     header = None
     task_id = request.args.get('task_id')
-    
+
     task = db.session.query(FormMeta).get(task_id)
     task_dict = task.as_dict()
 
@@ -539,7 +539,7 @@ def transcriptions():
 
     t_header = [c.name for c in table.columns if c.name != 'image_id']
     columns = ', '.join(['t."{}"'.format(c) for c in t_header])
-    
+
     q = '''
         SELECT
           i.dc_id AS dc_image_id,
