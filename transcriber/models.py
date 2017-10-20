@@ -52,35 +52,18 @@ class Image(db.Model):
         return db.session.query(cls).filter(cls.fetch_url == url).first().id
 
     @classmethod
-    def grab_relevant_images(cls, project_name, hierarchy_filter=None):
+    def grab_relevant_images(cls, election_name, hierarchy_filter=None):
         # this only grabs image urls without page numbers
 
         if hierarchy_filter:
             hierarchy_filter = ast.literal_eval(json.loads(hierarchy_filter))
 
         doc_list = [row for row in db.session.query(cls)\
-                        .filter(cls.election_name == project_name)\
+                        .filter(cls.election_name == election_name)\
                         .filter(cls.is_page_url == False)
                         .all()]
         if hierarchy_filter:
             doc_list = [row for row in doc_list if string_start_match(row.hierarchy, hierarchy_filter)]
-        return doc_list
-
-    @classmethod
-    def grab_relevant_image_pages(cls, project_name, hierarchy_filter):
-        # this only grabs image urls with page numbers
-
-        hierarchy_filter = ast.literal_eval(json.loads(hierarchy_filter)) \
-                               if hierarchy_filter else None
-
-        doc_list = [row for row in db.session.query(cls)\
-                        .filter(cls.election_name == project_name)\
-                        .filter(cls.is_page_url == True)
-                        .all()]
-        if hierarchy_filter:
-            doc_list = [row for row in doc_list \
-                            if string_start_match(row.hierarchy, hierarchy_filter)]
-
         return doc_list
 
 def string_start_match(full_string, match_strings):
@@ -134,7 +117,7 @@ class ImageTaskAssignment(db.Model):
         select = '''
             SELECT image.*
             FROM image_task_assignment AS ita
-            JOIN document_cloud_image AS image
+            JOIN image
               ON ita.image_id = image.id
             WHERE ita.form_id = :task_id
               AND ita.view_count = 0
@@ -151,7 +134,7 @@ class ImageTaskAssignment(db.Model):
         select = '''
             SELECT image.*
             FROM image_task_assignment AS ita
-            JOIN document_cloud_image AS image
+            JOIN image
               ON ita.image_id = image.id
             WHERE ita.form_id = :task_id
               AND ita.view_count > 0
@@ -201,14 +184,14 @@ class ImageTaskAssignment(db.Model):
     @classmethod
     def get_conflict_images_by_task(cls, task_id):
         conflict = '''
-            SELECT dc.*
-            FROM document_cloud_image AS dc
+            SELECT image.*
+            FROM image
             JOIN (
                 {conflict_query}
             ) AS conflict
-              ON dc.id = conflict.image_id
+              ON image.id = conflict.image_id
             JOIN image_task_assignment AS ita
-              ON dc.id = ita.image_id
+              ON image.id = ita.image_id
             WHERE ita.form_id = :form_id
         '''.format(conflict_query=cls.conflict_query(task_id))
 
@@ -356,7 +339,7 @@ class FormMeta(db.Model):
     reviewer_count = Column(Integer)
     deadline = Column(DateTime(timezone=True), onupdate=datetime.now)
     election_name = Column(String)
-    dc_filter = Column(Text)
+    hierarchy_filter = Column(JSONB)
     split_image = Column(Boolean)
 
     def __repr__(self):

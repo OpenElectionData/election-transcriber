@@ -43,7 +43,7 @@
                             {% endif %}
 
                             <br>
-                            {% if project_name %}
+                            {% if election_name %}
 
 
 
@@ -82,7 +82,7 @@
                                             </span>
                                             {% if doc_count and hierarchy_filter %}
                                                 <span class="post-button-text-2">
-                                                    <strong>{{ doc_count }}</strong> images found for {{ project_name }}
+                                                    <strong>{{ doc_count }}</strong> images found for {{ election_name }}
                                                 </span>
                                             {% endif %}
 
@@ -105,7 +105,7 @@
 {% block extra_javascript %}
     <script>
         $(document).ready(function(){
-            $('#project_name').change(function() {
+            $('#election_name').change(function() {
                 $(".post-button-text").empty()
                 $("#accordion").remove()
                 $("#spinner").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>Searching DocumentCloud...</small>')
@@ -120,9 +120,8 @@
             });
 
 
-            {% if h_obj %}
-            var h_obj = $.parseJSON('{{h_obj|safe}}');
-            makeHTML(h_obj)
+            {% if hierarchy_obj %}
+            makeHTML({{ hierarchy_obj|tojson|safe }})
             {% endif %}
 
             $('#refresh-projects').on('click', function(e){
@@ -137,19 +136,20 @@
         });
 
         function pollWorkChecker(){
-                $.getJSON('/check-work/', function(data){
-                        if(data.completed == true){
-                                $('#refresh-projects i').removeClass('fa-spin');
-                        } else {
-                                setTimeout(pollWorkChecker, 3000);
-                        }
-                })
+            $.getJSON('/check-work/', function(data){
+                if(data.completed == true){
+                    $('#refresh-projects i').removeClass('fa-spin');
+                } else {
+                    setTimeout(pollWorkChecker, 3000);
+                }
+            })
         }
 
         function makeHTML(h_obj){
             var box = '<input type="checkbox"/> select'
 
             for (var h0 in h_obj) {
+                console.log(h0);
                 if (h_obj.hasOwnProperty(h0)) {
                     var h1_html = ''
 

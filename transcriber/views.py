@@ -1,12 +1,8 @@
 import ast
-import re
 import json
-import os
-from uuid import uuid4
-from operator import attrgetter, itemgetter
-from itertools import groupby
+from operator import itemgetter
 from io import StringIO
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from flask import Blueprint, make_response, request, render_template, \
     url_for, send_from_directory, session as flask_session, redirect, flash
@@ -14,33 +10,20 @@ from flask_security.decorators import login_required, roles_required
 from flask_security.core import current_user
 from flask.ext.principal import Permission, RoleNeed
 
-from sqlalchemy import Table, Column, MetaData, String, Boolean, \
-        Integer, DateTime, Date, text, and_, or_
-from sqlalchemy.exc import NoSuchTableError
-from sqlalchemy.orm import aliased
+from sqlalchemy import Table, MetaData, text, or_
 
-from werkzeug import secure_filename
-
-from flask_wtf import Form
-
-from wtforms.validators import DataRequired
-
-import pytz
-
-from transcriber.app_config import UPLOAD_FOLDER, TIME_ZONE
+from transcriber.app_config import UPLOAD_FOLDER
 from transcriber.models import FormMeta, FormSection, FormField, \
-    Image, ImageTaskAssignment, TaskGroup, User
+    Image, ImageTaskAssignment, TaskGroup
 from transcriber.database import db
-from transcriber.helpers import slugify, pretty_task_transcriptions, \
+from transcriber.helpers import pretty_task_transcriptions, \
     get_user_activity, getTranscriptionSelect
-from transcriber.auth import csrf
 
 from transcriber.transcription_helpers import TranscriptionManager, checkinImages
 from transcriber.form_creator_helpers import FormCreatorManager
 from transcriber.tasks import ImageUpdater, update_from_s3
 
 from documentcloud import DocumentCloud
-
 
 views = Blueprint('views', __name__)
 
@@ -116,26 +99,25 @@ def upload():
         if request.form.get('hierarchy_filter'):
             json.dumps(request.form.get('hierarchy_filter'))
 
-        doc_list = Image.grab_relevant_images(election_name,hierarchy_filter)
+        doc_list = Image.grab_relevant_images(election_name, hierarchy_filter)
 
-        h_str_list = [doc.hierarchy for doc in doc_list if doc.hierarchy]
-        h_obj = {}
+        hierarchy_list = [doc.hierarchy for doc in doc_list if doc.hierarchy]
+        hierarchy_obj = {}
 
-        if h_str_list:
-            h_obj = construct_hierarchy_object(h_str_list)
+        if hierarchy_list:
+            hierarchy_obj = construct_hierarchy_object(hierarchy_list)
 
-
-        client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
-        sample_page_count = client.documents.get(doc_list[0].dc_id).pages
+        # client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
+        # sample_page_count = client.documents.get(doc_list[0].dc_id).pages
 
         if doc_list:
             if len(doc_list) > 0:
                 first_doc = doc_list[0]
                 flask_session['image_url'] = first_doc.fetch_url
-                flask_session['page_count'] = sample_page_count
+                # flask_session['page_count'] = sample_page_count
                 flask_session['image_type'] = 'pdf'
                 flask_session['dc_project'] = election_name
-                flask_session['dc_filter'] = hierarchy_filter if hierarchy_filter else None
+                flask_session['dc_filter'] = hierarchy_filter
                 dc_filter_list = ast.literal_eval(json.loads(hierarchy_filter)) if hierarchy_filter else None
                 dc_filter_list = [thing for thing in dc_filter_list] if dc_filter_list else []
                 flask_session['dc_filter_list'] = dc_filter_list
@@ -144,7 +126,7 @@ def upload():
                                        election_list=election_list,
                                        election_name=election_name,
                                        hierarchy_filter=hierarchy_filter,
-                                       h_obj=h_obj,
+                                       hierarchy_obj=hierarchy_obj,
                                        doc_count=len(doc_list))
             else:
                 flash("No DocumentCloud images found")
@@ -152,24 +134,21 @@ def upload():
     return render_template('upload.html', election_list=election_list)
 
 
-def construct_hierarchy_object(str_list):
-    h_obj = {}
-    for string in str_list:
-        if string and string[0] == '/':
-            string = string[1:]
-        h = string.split('/')
+def construct_hierarchy_object(hierarchy_list):
+    hierarchy_obj = {}
 
-        if len(h)>0 and h[0] not in h_obj:
-            h_obj[h[0]] = {}
-        if len(h)>1 and h[1] not in h_obj[h[0]]:
-            h_obj[h[0]][h[1]] = {}
-        if len(h)>2 and h[2] not in h_obj[h[0]][h[1]]:
-            h_obj[h[0]][h[1]][h[2]] = {}
-        if len(h)>3 and h[3] not in h_obj[h[0]][h[1]][h[2]]:
-            h_obj[h[0]][h[1]][h[2]] = {}
+    for hierarchy in hierarchy_list:
 
-    io = StringIO()
-    return json.dumps(h_obj, io)
+        if len(hierarchy) > 0 and hierarchy[0] not in hierarchy_obj:
+            hierarchy_obj[hierarchy[0]] = {}
+        if len(hierarchy) > 1 and hierarchy[1] not in hierarchy_obj[hierarchy[0]]:
+            hierarchy_obj[hierarchy[0]][hierarchy[1]] = {}
+        if len(hierarchy) > 2 and hierarchy[2] not in hierarchy_obj[hierarchy[0]][hierarchy[1]]:
+            hierarchy_obj[hierarchy[0]][hierarchy[1]][hierarchy[2]] = {}
+        if len(hierarchy) > 3 and hierarchy[3] not in hierarchy_obj[hierarchy[0]][hierarchy[1]][hierarchy[2]]:
+            hierarchy_obj[hierarchy[0]][hierarchy[1]][hierarchy[2]] = {}
+
+    return hierarchy_obj
 
 
 @views.route('/delete-part/', methods=['DELETE'])
