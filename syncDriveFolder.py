@@ -173,14 +173,7 @@ class SyncGoogle(object):
 
     def constructHierarchy(self, title):
         geographies = title.split('-', 1)[1].rsplit('.', 1)[0]
-        county, constituency, ward, polling_center, polling_station = geographies.split('_')
-        return {
-            'county': county,
-            'constituency': constituency,
-            'ward': ward,
-            'polling_center': polling_center,
-            'polling_station': polling_station,
-        }
+        return  geographies.split('_')
 
 syncer = SyncGoogle(election_name="Kenya rerun -- TEST")
 thing = syncer.sync()

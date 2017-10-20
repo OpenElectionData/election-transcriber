@@ -23,7 +23,7 @@ def upgrade():
     sa.Column('image_type', sa.String(), nullable=True),
     sa.Column('fetch_url', sa.String(), nullable=True),
     sa.Column('bucket', sa.String(), nullable=True),
-    sa.Column('hierarchy', postgresql.JSONB(), nullable=True),
+    sa.Column('hierarchy', postgresql.ARRAY(sa.String()), nullable=True),
     sa.Column('is_page_url', sa.Boolean(), nullable=True),
     sa.Column('is_current', sa.Boolean(), nullable=True),
     sa.PrimaryKeyConstraint('id')

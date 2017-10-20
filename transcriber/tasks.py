@@ -220,7 +220,7 @@ class ImageUpdater(object):
         hierarchy = None
 
         if image_metadata.get('hierarchy'):
-            hierarchy = image_metadata['hierarchy']
+            hierarchy = json.loads(image_metadata['hierarchy'])
 
         values = dict(image_type='pdf',
                       fetch_url=fetch_url,

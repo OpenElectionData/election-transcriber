@@ -9,7 +9,7 @@ from flask import current_app
 
 from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
     DateTime, text, Text, or_, LargeBinary, MetaData, BigInteger
-from sqlalchemy.dialects.postgresql import JSONB, UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID, ARRAY
 from sqlalchemy.orm import synonym, backref, relationship
 
 from werkzeug.local import LocalProxy
@@ -40,7 +40,7 @@ class Image(db.Model):
     image_type = Column(String)
     fetch_url = Column(String)
     election_name = Column(String, index=True)
-    hierarchy = Column(JSONB)
+    hierarchy = Column(ARRAY(String))
     is_page_url = Column(Boolean)
     is_current = Column(Boolean)
 

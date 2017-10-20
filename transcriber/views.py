@@ -99,47 +99,55 @@ def create_task():
 @login_required
 @roles_required('admin')
 def hierarchy():
+
     election_name = request.args['election_name']
-    print(election_name)
-    geography_types = '''
-        SELECT DISTINCT jsonb_object_keys(hierarchy)
+    hierarchy_elements = request.args.get('hierarchy')
+    print(hierarchy_elements)
+    engine = db.session.bind
+
+    geographies = '''
+        SELECT DISTINCT hierarchy[1:1]
         FROM image
         WHERE election_name = :election_name
     '''
 
-    engine = db.session.bind
-    geography_types = [g[0] for g in
-                       list(engine.execute(text(geography_types),
-                                           election_name=election_name))]
+    params = {
+        'election_name': election_name
+    }
 
-    return jsonify(hierarchy=geography_types)
+    if hierarchy_elements:
 
-    #if request.args.get('hierarchy_filter'):
-    #    json.dumps(request.args.get('hierarchy_filter'))
+        hierarchy_length = '''
+            SELECT array_length(hierarchy, 1) AS length
+            FROM image
+        '''
 
-    #doc_list = Image.grab_relevant_images(election_name, hierarchy_filter)
+        next_index = engine.execute(hierarchy_length).first().length
+        elements = hierarchy_elements.split(',')
 
-    #if doc_list:
-    #    if len(doc_list) > 0:
-    #        first_doc = doc_list[0]
-    #        flask_session['image_url'] = first_doc.fetch_url
-    #        # flask_session['page_count'] = sample_page_count
-    #        flask_session['image_type'] = 'pdf'
-    #        flask_session['dc_project'] = election_name
-    #        flask_session['dc_filter'] = hierarchy_filter
-    #        dc_filter_list = ast.literal_eval(json.loads(hierarchy_filter)) if hierarchy_filter else None
-    #        dc_filter_list = [thing for thing in dc_filter_list] if dc_filter_list else []
-    #        flask_session['dc_filter_list'] = dc_filter_list
+        if next_index > len(elements):
+            next_index = len(elements) + 1
 
-    #        return render_template('create-task.html',
-    #                               election_list=election_list,
-    #                               election_name=election_name,
-    #                               hierarchy_filter=hierarchy_filter,
-    #                               hierarchy_obj=hierarchy_obj,
-    #                               doc_count=len(doc_list))
-    #    else:
-    #        flash("No DocumentCloud images found")
+            geographies = '''
+                SELECT DISTINCT hierarchy[1:{next}]
+                FROM image
+                WHERE 1=1
+            '''.format(next=next_index)
 
+            for index, element in enumerate(elements):
+                geographies = '''
+                    {geographies}
+                    AND hierarchy[{index}] = :element_{index}
+                '''.format(geographies=geographies, index=index + 1)
+
+                params['element_{}'.format(index + 1)] = element
+        else:
+            geographies = []
+
+    if geographies:
+        geographies = [g[0] for g in engine.execute(text(geographies), **params)]
+
+    return jsonify(hierarchy=geographies)
 
 
 @views.route('/delete-part/', methods=['DELETE'])
