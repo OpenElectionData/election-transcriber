@@ -220,9 +220,7 @@ class ImageUpdater(object):
         hierarchy = None
 
         if image_metadata.get('hierarchy'):
-            hierarchy = [h for h in image_metadata['hierarchy'].split('/') if h]
-            hierarchy = json.dumps(hierarchy)
-
+            hierarchy = image_metadata['hierarchy']
 
         values = dict(image_type='pdf',
                       fetch_url=fetch_url,

@@ -5,7 +5,8 @@ from io import StringIO
 from datetime import datetime
 
 from flask import Blueprint, make_response, request, render_template, \
-    url_for, send_from_directory, session as flask_session, redirect, flash
+    url_for, send_from_directory, session as flask_session, redirect, flash, \
+    jsonify
 from flask_security.decorators import login_required, roles_required
 from flask_security.core import current_user
 from flask.ext.principal import Permission, RoleNeed
@@ -81,74 +82,64 @@ def index():
 def about():
     return render_template('about.html')
 
-@views.route('/upload/',methods=['GET', 'POST'])
+@views.route('/create-task/')
 @login_required
 @roles_required('admin')
-def upload():
+def create_task():
 
     engine = db.session.bind
     result = engine.execute('SELECT DISTINCT election_name FROM image')
 
     election_list = [thing[0] for thing in result]
 
-    if request.method == 'POST':
-
-        election_name = request.form.get('election_name')
-        hierarchy_filter = None
-
-        if request.form.get('hierarchy_filter'):
-            json.dumps(request.form.get('hierarchy_filter'))
-
-        doc_list = Image.grab_relevant_images(election_name, hierarchy_filter)
-
-        hierarchy_list = [doc.hierarchy for doc in doc_list if doc.hierarchy]
-        hierarchy_obj = {}
-
-        if hierarchy_list:
-            hierarchy_obj = construct_hierarchy_object(hierarchy_list)
-
-        # client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
-        # sample_page_count = client.documents.get(doc_list[0].dc_id).pages
-
-        if doc_list:
-            if len(doc_list) > 0:
-                first_doc = doc_list[0]
-                flask_session['image_url'] = first_doc.fetch_url
-                # flask_session['page_count'] = sample_page_count
-                flask_session['image_type'] = 'pdf'
-                flask_session['dc_project'] = election_name
-                flask_session['dc_filter'] = hierarchy_filter
-                dc_filter_list = ast.literal_eval(json.loads(hierarchy_filter)) if hierarchy_filter else None
-                dc_filter_list = [thing for thing in dc_filter_list] if dc_filter_list else []
-                flask_session['dc_filter_list'] = dc_filter_list
-
-                return render_template('upload.html',
-                                       election_list=election_list,
-                                       election_name=election_name,
-                                       hierarchy_filter=hierarchy_filter,
-                                       hierarchy_obj=hierarchy_obj,
-                                       doc_count=len(doc_list))
-            else:
-                flash("No DocumentCloud images found")
-
-    return render_template('upload.html', election_list=election_list)
+    return render_template('create-task.html', election_list=election_list)
 
 
-def construct_hierarchy_object(hierarchy_list):
-    hierarchy_obj = {}
+@views.route('/hierarchy/')
+@login_required
+@roles_required('admin')
+def hierarchy():
+    election_name = request.args['election_name']
+    print(election_name)
+    geography_types = '''
+        SELECT DISTINCT jsonb_object_keys(hierarchy)
+        FROM image
+        WHERE election_name = :election_name
+    '''
 
-    for hierarchy in hierarchy_list:
+    engine = db.session.bind
+    geography_types = [g[0] for g in
+                       list(engine.execute(text(geography_types),
+                                           election_name=election_name))]
 
-        if len(hierarchy) > 0 and hierarchy[0] not in hierarchy_obj:
-            hierarchy_obj[hierarchy[0]] = {}
-        if len(hierarchy) > 1 and hierarchy[1] not in hierarchy_obj[hierarchy[0]]:
-            hierarchy_obj[hierarchy[0]][hierarchy[1]] = {}
-        if len(hierarchy) > 2 and hierarchy[2] not in hierarchy_obj[hierarchy[0]][hierarchy[1]]:
-            hierarchy_obj[hierarchy[0]][hierarchy[1]][hierarchy[2]] = {}
-        if len(hierarchy) > 3 and hierarchy[3] not in hierarchy_obj[hierarchy[0]][hierarchy[1]][hierarchy[2]]:
-            hierarchy_obj[hierarchy[0]][hierarchy[1]][hierarchy[2]] = {}
+    return jsonify(hierarchy=geography_types)
 
-    return hierarchy_obj
+    #if request.args.get('hierarchy_filter'):
+    #    json.dumps(request.args.get('hierarchy_filter'))
+
+    #doc_list = Image.grab_relevant_images(election_name, hierarchy_filter)
+
+    #if doc_list:
+    #    if len(doc_list) > 0:
+    #        first_doc = doc_list[0]
+    #        flask_session['image_url'] = first_doc.fetch_url
+    #        # flask_session['page_count'] = sample_page_count
+    #        flask_session['image_type'] = 'pdf'
+    #        flask_session['dc_project'] = election_name
+    #        flask_session['dc_filter'] = hierarchy_filter
+    #        dc_filter_list = ast.literal_eval(json.loads(hierarchy_filter)) if hierarchy_filter else None
+    #        dc_filter_list = [thing for thing in dc_filter_list] if dc_filter_list else []
+    #        flask_session['dc_filter_list'] = dc_filter_list
+
+    #        return render_template('create-task.html',
+    #                               election_list=election_list,
+    #                               election_name=election_name,
+    #                               hierarchy_filter=hierarchy_filter,
+    #                               hierarchy_obj=hierarchy_obj,
+    #                               doc_count=len(doc_list))
+    #    else:
+    #        flash("No DocumentCloud images found")
+
 
 
 @views.route('/delete-part/', methods=['DELETE'])

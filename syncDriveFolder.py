@@ -145,9 +145,9 @@ class SyncGoogle(object):
 
             with open(os.path.join(self.this_dir, title), 'rb') as fd:
 
-                hierarchy = '/{}'.format(title.rsplit('.')[0].replace('_', '/'))
+                hierarchy = self.constructHierarchy(title)
                 metadata = {
-                    'hierarchy': hierarchy,
+                    'hierarchy': json.dumps(hierarchy),
                     'election_name': self.election_name,
                     'election_slug': self.election_slug,
                     'image_id': str(uuid4()),
@@ -170,6 +170,17 @@ class SyncGoogle(object):
                                           Metadata=metadata)
 
             os.remove(os.path.join(self.this_dir, title))
+
+    def constructHierarchy(self, title):
+        geographies = title.split('-', 1)[1].rsplit('.', 1)[0]
+        county, constituency, ward, polling_center, polling_station = geographies.split('_')
+        return {
+            'county': county,
+            'constituency': constituency,
+            'ward': ward,
+            'polling_center': polling_center,
+            'polling_station': polling_station,
+        }
 
 syncer = SyncGoogle(election_name="Kenya rerun -- TEST")
 thing = syncer.sync()
