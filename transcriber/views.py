@@ -102,7 +102,6 @@ def hierarchy():
 
     election_name = request.args['election_name']
     hierarchy_elements = request.args.get('hierarchy')
-    print(hierarchy_elements)
     engine = db.session.bind
 
     geographies = '''
@@ -144,7 +143,9 @@ def hierarchy():
         else:
             geographies = []
 
+
     if geographies:
+        geographies = '{} ORDER BY hierarchy'.format(geographies)
         geographies = [g[0] for g in engine.execute(text(geographies), **params)]
 
     return jsonify(hierarchy=geographies)
