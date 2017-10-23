@@ -2,9 +2,10 @@ from datetime import datetime
 from uuid import uuid4
 
 import sqlalchemy as sa
+from sqlalchemy.dialects.postgresql import UUID
 
 from transcriber.database import db
-from transcriber.models import FormMeta, FormSection, TaskGroup, FormField
+from transcriber.models import FormMeta, FormSection, TaskGroup, FormField, Image
 from transcriber.app_config import TIME_ZONE
 from transcriber.helpers import slugify
 
@@ -27,8 +28,8 @@ DATA_TYPE = {
 class FormCreatorManager(object):
     def __init__(self,
                  form_id=None,
-                 dc_project=None,
-                 dc_filter=None):
+                 election_name=None,
+                 hierarchy_filter=None):
 
         self.form_meta = FormMeta()
         self.existing_form = False
@@ -36,14 +37,45 @@ class FormCreatorManager(object):
         self.next_section_index = 2
         self.next_field_indices = {1: 2}
 
-        self.dc_project = dc_project
-        self.dc_filter = dc_filter
+        self.election_name = election_name
+        self.hierarchy_filter = hierarchy_filter
 
         if form_id:
             self.form_meta = db.session.query(FormMeta).get(form_id)
             self.existing_form = True
-            self.dc_project = self.form_meta.dc_project
-            self.dc_filter = self.form_meta.dc_filter
+            self.election_name = self.form_meta.election_name
+            self.hierarchy_filter = self.form_meta.hierarchy_filter
+
+        else:
+
+
+            max_length_filter = max(len(f) for f in self.hierarchy_filter)
+            padded_filters = []
+
+            for filter in hierarchy_filter:
+                if len(filter) < max_length_filter:
+                    filter += [None for i in range(max_length_filter - len(filter))]
+
+                padded_filters.append(filter)
+
+            self.hierarchy_filter = padded_filters
+            existing = db.session.query(FormMeta)\
+                                 .filter(FormMeta.election_name == self.election_name)\
+                                 .filter(FormMeta.hierarchy_filter == self.hierarchy_filter).first()
+
+            if existing:
+                self.form_meta = existing
+            else:
+                self.form_meta.election_name = self.election_name
+                self.form_meta.hierarchy_filter = self.hierarchy_filter
+                sample_image = Image.grab_sample_image(self.election_name,
+                                                    hierarchy_filter=self.hierarchy_filter)
+                self.form_meta.sample_image = sample_image
+
+                db.session.add(self.form_meta)
+                db.session.commit()
+
+        db.session.refresh(self.form_meta)
 
     def getNextIndices(self):
 
@@ -103,8 +135,8 @@ class FormCreatorManager(object):
         self.form_meta.deadline = post_data['deadline']
         self.form_meta.reviewer_count = post_data['reviewer_count']
         self.form_meta.split_image = split_image
-        self.form_meta.dc_project = self.dc_project
-        self.form_meta.dc_filter = self.dc_filter
+        self.form_meta.election_name = self.election_name
+        self.form_meta.hierarchy_filter = self.hierarchy_filter
         self.form_meta.sample_image = sample_image
 
         db.session.add(task_group)
@@ -255,7 +287,7 @@ class FormCreatorManager(object):
                 server_default=sa.text('CURRENT_TIMESTAMP')),
             sa.Column('transcriber', sa.String),
             sa.Column('id', sa.Integer, primary_key=True),
-            sa.Column('image_id', sa.String),
+            sa.Column('image_id', UUID),
             sa.Column('transcription_status', sa.String, default="raw"),
             sa.Column('flag_irrelevant', sa.Boolean)
         ]

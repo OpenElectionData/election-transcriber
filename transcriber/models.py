@@ -40,7 +40,7 @@ class Image(db.Model):
     image_type = Column(String)
     fetch_url = Column(String)
     election_name = Column(String, index=True)
-    hierarchy = Column(ARRAY(String))
+    hierarchy = Column(ARRAY(Text))
     is_page_url = Column(Boolean)
     is_current = Column(Boolean)
 
@@ -51,20 +51,67 @@ class Image(db.Model):
     def get_id_by_url(cls, url):
         return db.session.query(cls).filter(cls.fetch_url == url).first().id
 
-    @classmethod
-    def grab_relevant_images(cls, election_name, hierarchy_filter=None):
+    def relevant_image_query(self, election_name, hierarchy_filter=None):
         # this only grabs image urls without page numbers
 
-        if hierarchy_filter:
-            hierarchy_filter = ast.literal_eval(json.loads(hierarchy_filter))
+        doc_list = '''
+            SELECT * FROM image
+            WHERE election_name = :election_name
+              AND is_page_url = FALSE
+        '''
 
-        doc_list = [row for row in db.session.query(cls)\
-                        .filter(cls.election_name == election_name)\
-                        .filter(cls.is_page_url == False)
-                        .all()]
+        params = {
+            'election_name': election_name
+        }
+
         if hierarchy_filter:
-            doc_list = [row for row in doc_list if string_start_match(row.hierarchy, hierarchy_filter)]
+
+            filters = []
+            condition = "hierarchy[1:{0}] = :hierarchy_{1}"
+
+            for index, filter in enumerate(hierarchy_filter):
+                filter = [f for f in filter if f]
+                filters.append(condition.format(len(filter), (index + 1)))
+
+                params['hierarchy_{}'.format(index + 1)] = filter
+
+            doc_list = '''
+                {0} AND ({1})
+            '''.format(doc_list, ' OR '.join(filters))
+
+        return doc_list, params
+
+
+    @classmethod
+    def grab_relevant_images(cls, election_name, hierarchy_filter=None):
+
+        engine = db.session.bind
+
+        query, params = cls.relevant_image_query(cls,
+                                                 election_name,
+                                                 hierarchy_filter=hierarchy_filter)
+
+        doc_list = list(engine.execute(text(query), **params))
         return doc_list
+
+    @classmethod
+    def grab_sample_image(cls, election_name, hierarchy_filter=None):
+        engine = db.session.bind
+
+        query, params = cls.relevant_image_query(cls,
+                                                 election_name,
+                                                 hierarchy_filter=hierarchy_filter)
+
+        query = '''
+            {}
+            ORDER BY RANDOM()
+            LIMIT 1
+        '''.format(query)
+
+        sample_image = engine.execute(text(query), **params).first().fetch_url
+
+        return sample_image
+
 
 def string_start_match(full_string, match_strings):
     for match_string in match_strings:
@@ -339,7 +386,7 @@ class FormMeta(db.Model):
     reviewer_count = Column(Integer)
     deadline = Column(DateTime(timezone=True), onupdate=datetime.now)
     election_name = Column(String)
-    hierarchy_filter = Column(JSONB)
+    hierarchy_filter = Column(ARRAY(Text()))
     split_image = Column(Boolean)
 
     def __repr__(self):

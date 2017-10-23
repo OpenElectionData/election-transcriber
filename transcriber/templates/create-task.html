@@ -54,9 +54,6 @@
                                     <div id="h-representation" class="tree">
                                         <ul></ul>
                                     </div>
-                                    <button id="filter-images-hierarchy" type="submit" class="btn btn-default btn-sm">Apply filters</button>
-                                    <span id="spinner-2">
-                                    </span>
                                 </div>
                             </div>
                         </div>
@@ -64,9 +61,9 @@
 
                 </div>
 
+                <button type="submit" class="btn btn-success" id="next-step" style="display:none;">Create task with selected images ></a>
             </form>
         </div>
-        <a href="{{ url_for('views.form_creator') }}" class="btn btn-success" id="next-step">Create task with {{doc_count}} images ></a>
     </div>
 </div>
 {% endblock %}
@@ -76,9 +73,10 @@
     <script type="text/EJS" id="geographyTemplate">
         <li class='parent_li hierarchy'>
             <span data-hierarchy="<%= geography %>">
+            <% var name = 'hierarchy_' + geography %>
                 <i class='fa fa-plus fa-fw'> </i><%= geography.pop() %>
             </span>
-            <input type="checkbox"> select
+            <input class="geography-check" type="checkbox" name="<%= name %>"> select
             <ul></ul>
         </li>
     </script>
@@ -86,12 +84,14 @@
         $(document).ready(function(){
             var election_name;
             $('#election_name').change(function() {
-                $(".post-button-text").empty()
+                $(".post-button-text").empty();
+                $("#spinner").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>Searching ...</small>');
                 election_name = $('#election_name').val().trim()
                 var params = {
                     "election_name": election_name
                 }
                 $('#accordion').show();
+                $('#next-step').show();
                 fetchHierarchy(params, '#h-representation > ul');
             });
 
@@ -103,12 +103,12 @@
                             $(selector).append(template.render({geography: geography}));
                         });
                     }
+                    $('#spinner').empty();
                     $('li.hierarchy > span').unbind().on('click', getHierarchy);
                 });
             }
 
             function getHierarchy(e){
-                console.log('clicked', e.target);
                 var icon = $(e.target).children('i');
                 var selector = $(e.target).next().next();
                 if ($(icon).hasClass('fa-plus')){
@@ -135,6 +135,19 @@
                     }
                 )
             })
+
+            // $('#next-step').on('click', function(e){
+            //     e.preventDefault();
+            //     var selected_geo = [];
+            //     if ($('.geography-check').is(':checked')){
+            //         $.each($('.geography-check'), function(i, check){
+            //             if ($(check).is(':checked')){
+            //                 selected_geo.push($(check).prev().data('hierarchy'));
+            //             }
+            //         });
+            //     }
+
+            // });
 
         });
 

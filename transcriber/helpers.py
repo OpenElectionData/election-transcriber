@@ -171,7 +171,7 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
         # TODO: a less hacky & more elegant way to get image task assignment status
         cls = ''
         for status, value in img_statuses.items():
-            if image_id in [i.dc_id for i in img_statuses[status]]:
+            if image_id in [i.id for i in img_statuses[status]]:
                 cls = status
 
         if row_filter == 'conflict' and cls == 'conflict':

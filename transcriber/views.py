@@ -82,7 +82,7 @@ def index():
 def about():
     return render_template('about.html')
 
-@views.route('/create-task/')
+@views.route('/create-task/', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')
 def create_task():
@@ -91,6 +91,19 @@ def create_task():
     result = engine.execute('SELECT DISTINCT election_name FROM image')
 
     election_list = [thing[0] for thing in result]
+
+    if request.method == 'POST':
+        flask_session['election_name'] = request.form['election_name']
+        hierarchy_filters = []
+
+        for key, value in request.form.items():
+            if key.startswith('hierarchy_'):
+                hierarchy_filters.append([h.replace('hierarchy_', '')
+                                          for h in key.split(',')])
+
+        flask_session['hierarchy_filters'] = hierarchy_filters
+
+        return redirect(url_for('views.form_creator'))
 
     return render_template('create-task.html', election_list=election_list)
 
@@ -205,6 +218,7 @@ def delete_part():
     response.headers['Content-Type'] = 'application/json'
     return response
 
+
 @views.route('/delete-transcription/', methods=['GET','POST'])
 @login_required
 @roles_required('admin')
@@ -237,30 +251,16 @@ def delete_transcription():
 @roles_required('admin')
 def form_creator():
 
-    dc_project = flask_session.get('dc_project')
-    dc_filter = flask_session.get('dc_filter')
+    election_name = flask_session.get('election_name')
+    hierarchy_filter = flask_session.get('hierarchy_filters')
 
-    creator_manager = FormCreatorManager(form_id=request.args.get('form_id'))
-
-    if creator_manager.existing_form:
-        image_url = creator_manager.form_meta.sample_image
-
-        dc_project = creator_manager.form_meta.dc_project
-        dc_filter = creator_manager.form_meta.dc_filter
-
+    if request.args.get('form_id'):
+        creator_manager = FormCreatorManager(form_id=request.args.get('form_id'))
     else:
-        # image info in session data from upload
-        image_url = flask_session['image_url']
-        creator_manager.dc_project = dc_project
-        creator_manager.dc_filter = dc_filter
+        creator_manager = FormCreatorManager(election_name=election_name,
+                                             hierarchy_filter=hierarchy_filter)
 
-    dc_filter_list = []
-    if dc_filter:
-        dc_filter_list = ast.literal_eval(json.loads(dc_filter))
-        dc_filter_list = [thing for thing in dc_filter_list]
-
-    if not image_url:
-        return redirect(url_for('views.upload'))
+    image_url = creator_manager.form_meta.sample_image
 
     engine = db.session.bind
 
@@ -291,8 +291,8 @@ def form_creator():
                            next_section_index=creator_manager.next_section_index,
                            next_field_index=creator_manager.next_field_indices,
                            image_url=image_url,
-                           dc_project=dc_project,
-                           dc_filter_list=dc_filter_list)
+                           election_name=election_name,
+                           hierarchy_filter=hierarchy_filter)
 
 
 @views.route('/get-task-group/')
@@ -496,10 +496,6 @@ def transcriptions():
 
     task = db.session.query(FormMeta).get(task_id)
     task_dict = task.as_dict()
-
-    if task_dict['dc_filter']:
-        task_dict['dc_filter'] = ast.literal_eval(json.loads(task_dict['dc_filter']))
-        task_dict['dc_filter'] = [thing for thing in task_dict['dc_filter']]
 
     task_dict['progress'] = ImageTaskAssignment.get_task_progress(task_id)
     task_dict['image_count'] = ImageTaskAssignment.count_images(task_id)
