@@ -84,7 +84,7 @@ class TranscriptionManager(object):
     def getOldTranscription(self):
             current_field_names = '''
                 SELECT slug FROM form_field
-                WHERE status != 'deleted'
+                WHERE (status IS NULL OR status != 'deleted')
                   AND form_id = :form_id
             '''
 
