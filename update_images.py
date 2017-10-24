@@ -12,4 +12,4 @@ if __name__ == "__main__":
 
     updater = ImageUpdater(overwrite=args.overwrite)
     updater.updateAllElections()
-
+    updater.updateImages()
