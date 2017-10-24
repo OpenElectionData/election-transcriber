@@ -6,7 +6,7 @@ from uuid import uuid4
 
 import httplib2
 
-import sqlalchemy
+import sqlalchemy as sa
 
 from oauth2client.service_account import ServiceAccountCredentials
 from apiclient.discovery import build
