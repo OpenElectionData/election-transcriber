@@ -14,6 +14,7 @@ from apiclient.http import MediaIoBaseDownload
 from apiclient.errors import HttpError
 
 import boto3
+import botocore
 
 import img2pdf
 
@@ -139,7 +140,7 @@ class SyncGoogle(object):
 
                         try:
                             image = self.s3_client.head_object(Bucket=self.bucket, Key=key)['Metadata']
-                        except boto3.exceptions.ClientError:
+                        except botocore.exceptions.ClientError:
                             continue
 
                         fetch_url_fmt = 'https://s3.amazonaws.com/{bucket}/{key}'
