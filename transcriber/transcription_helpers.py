@@ -82,9 +82,19 @@ class TranscriptionManager(object):
             self.user_transcriptions = user_transcriptions
 
     def getOldTranscription(self):
+            current_field_names = '''
+                SELECT slug FROM form_field
+                WHERE status != 'deleted'
+                  AND form_id = :form_id
+            '''
+
+            current_field_names = ', '.join('"{}"'.format(f.slug) for f in
+                                            self.engine.execute(sa.text(current_field_names),
+                                                                form_id=self.task_id))
+
             q = '''
-                    SELECT * FROM "{0}" WHERE id = :transcription_id
-                '''.format(self.task.table_name)
+                    SELECT {0} FROM "{1}" WHERE id = :transcription_id
+                '''.format(current_field_names, self.task.table_name)
 
             self.old_transcription = dict(self.engine.execute(sa.text(q),
                                           transcription_id=self.transcription_id).first())
