@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block title %}Task Creator - New Task{% endblock %}
+{% block content %}
+<div class="row">
+    <div class='col-sm-8'>
+        <h3>New transcription task</h3>
+        <p>Specify the collection of documents you want transcribed for this task. <br />
+            <span class="label label-default" id="refresh-projects" style="cursor:pointer">
+                Refresh project list &nbsp;&nbsp;<i class="fa fa-refresh"></i>
+            </span>
+        </p>
+        <div class='well'>
+            <form role="form" class="form" method="POST" action="" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+                <div class="form-group">
+                    <label for="election_name" class="control-label">
+                        Select an Election
+                    </label>
+                    <select class="form-control" id="election_name" name="election_name">
+                        {% if not election_name %}
+                        <option disabled selected> -- </option>
+                            {% for election_option in election_list %}
+                            <option>{{election_option}}</option>
+                            {% endfor %}
+                        {% else %}
+                            <option>{{election_name}}</option>
+                            {% for election_option in election_list %}
+                                {% if election_option != election_name %}
+                                <option>{{election_option}}</option>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                    <br />
+                    <span id="spinner"></span>
+                    {% if doc_count %}
+                        <p>
+                            <strong>{{ doc_count }}</strong> images found for {{ election_name }}
+                        </p>
+                    {% endif %}
+                    <br>
+                    <div class="panel-group" id="accordion" role="tablist" aria-multiselectable="true" style="display:none;">
+                        <div class="panel panel-default">
+                            <div class="panel-heading" role="tab" id="headingOne" data-toggle="collapse" data-parent="#accordion" href="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+                                <h4 class="panel-title">
+                                    <i class="fa fa-plus"></i> Filter documents
+                                </h4>
+                            </div>
+
+                            <div id="collapseOne" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingOne">
+                                <div class="panel-body">
+
+                                    <p>Filter documents by geography</p>
+                                    <div id="h-representation" class="tree">
+                                        <ul></ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <button type="submit" class="btn btn-success" id="next-step" style="display:none;">Create task with selected images ></a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block extra_javascript %}
+
+    <script src="{{ url_for('static', filename='js/ejs_production.js') }}"></script>
+    <script type="text/EJS" id="geographyTemplate">
+        <li class='parent_li hierarchy'>
+            <span data-hierarchy="<%= geography %>">
+            <% var name = 'hierarchy_' + geography %>
+                <i class='fa fa-plus fa-fw'> </i><%= geography.pop() %>
+            </span>
+            <input class="geography-check" type="checkbox" name="<%= name %>"> select
+            <ul></ul>
+        </li>
+    </script>
+    <script>
+        $(document).ready(function(){
+            var election_name;
+            $('#election_name').change(function() {
+                $(".post-button-text").empty();
+                $("#spinner").append('<i class="fa fa-circle-o-notch fa-lg fa-spin"></i> <small>Searching ...</small>');
+                election_name = $('#election_name').val().trim()
+                var params = {
+                    "election_name": election_name
+                }
+                $('#accordion').show();
+                $('#next-step').show();
+                fetchHierarchy(params, '#h-representation > ul');
+            });
+
+            function fetchHierarchy(params, selector){
+                $.when($.getJSON("{{ url_for('views.hierarchy') }}", params)).then(function(data){
+                    if (data.hierarchy.length > 0){
+                        $.each(data.hierarchy, function(i, geography){
+                            var template = new EJS({'text': $('#geographyTemplate').html()});
+                            $(selector).append(template.render({geography: geography}));
+                        });
+                    }
+                    $('#spinner').empty();
+                    $('li.hierarchy > span').unbind().on('click', getHierarchy);
+                });
+            }
+
+            function getHierarchy(e){
+                var icon = $(e.target).children('i');
+                var selector = $(e.target).next().next();
+                if ($(icon).hasClass('fa-plus')){
+                    $(icon).removeClass('fa-plus');
+                    $(icon).addClass('fa-minus');
+                    var geography = $(e.target).data('hierarchy');
+                    var params = {
+                        election_name: election_name,
+                        hierarchy: geography
+                    }
+                    fetchHierarchy(params, selector);
+                } else if ($(icon).hasClass('fa-minus')){
+                    $(icon).removeClass('fa-minus');
+                    $(icon).addClass('fa-plus');
+                    $(selector).empty();
+                }
+            }
+
+            $('#refresh-projects').on('click', function(e){
+                $.when($.getJSON('/refresh-project/')).then(
+                    function(data){
+                        $('#refresh-projects i').addClass('fa-spin');
+                        setTimeout(pollWorkChecker, 3000);
+                    }
+                )
+            })
+
+            // $('#next-step').on('click', function(e){
+            //     e.preventDefault();
+            //     var selected_geo = [];
+            //     if ($('.geography-check').is(':checked')){
+            //         $.each($('.geography-check'), function(i, check){
+            //             if ($(check).is(':checked')){
+            //                 selected_geo.push($(check).prev().data('hierarchy'));
+            //             }
+            //         });
+            //     }
+
+            // });
+
+        });
+
+        function pollWorkChecker(){
+            $.getJSON('/check-work/', function(data){
+                if(data.completed == true){
+                    $('#refresh-projects i').removeClass('fa-spin');
+                } else {
+                    setTimeout(pollWorkChecker, 3000);
+                }
+            })
+        }
+
+    </script>
+{% endblock %}

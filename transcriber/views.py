@@ -1,47 +1,30 @@
 import ast
-import re
 import json
-import os
-from uuid import uuid4
-from operator import attrgetter, itemgetter
-from itertools import groupby
+from operator import itemgetter
 from io import StringIO
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from flask import Blueprint, make_response, request, render_template, \
-    url_for, send_from_directory, session as flask_session, redirect, flash
+    url_for, send_from_directory, session as flask_session, redirect, flash, \
+    jsonify
 from flask_security.decorators import login_required, roles_required
 from flask_security.core import current_user
 from flask.ext.principal import Permission, RoleNeed
 
-from sqlalchemy import Table, Column, MetaData, String, Boolean, \
-        Integer, DateTime, Date, text, and_, or_
-from sqlalchemy.exc import NoSuchTableError
-from sqlalchemy.orm import aliased
+from sqlalchemy import Table, MetaData, text, or_
 
-from werkzeug import secure_filename
-
-from flask_wtf import Form
-
-from wtforms.validators import DataRequired
-
-import pytz
-
-from transcriber.app_config import UPLOAD_FOLDER, DOCUMENTCLOUD_USER, \
-    DOCUMENTCLOUD_PW, TIME_ZONE
+from transcriber.app_config import UPLOAD_FOLDER
 from transcriber.models import FormMeta, FormSection, FormField, \
-    DocumentCloudImage, ImageTaskAssignment, TaskGroup, User
+    Image, ImageTaskAssignment, TaskGroup
 from transcriber.database import db
-from transcriber.helpers import slugify, pretty_task_transcriptions, \
+from transcriber.helpers import pretty_task_transcriptions, \
     get_user_activity, getTranscriptionSelect
-from transcriber.auth import csrf
 
 from transcriber.transcription_helpers import TranscriptionManager, checkinImages
 from transcriber.form_creator_helpers import FormCreatorManager
-from transcriber.tasks import ImageUpdater, update_from_document_cloud
+from transcriber.tasks import ImageUpdater, update_from_s3
 
 from documentcloud import DocumentCloud
-
 
 views = Blueprint('views', __name__)
 
@@ -76,7 +59,7 @@ def index():
         task_id = task_dict['id']
 
         progress_dict = ImageTaskAssignment.get_task_progress(task_id)
-        
+
         if task.task_group_id not in groups and progress_dict['docs_done_ct'] < progress_dict['docs_total']:
             is_top_task = True
             groups.append(task.task_group_id)
@@ -89,7 +72,7 @@ def index():
             has_complete_tasks = True
 
         t.append([task, progress_dict, is_top_task])
-    
+
     return render_template('index.html',
                            tasks=t,
                            has_inprog_tasks=has_inprog_tasks,
@@ -99,80 +82,86 @@ def index():
 def about():
     return render_template('about.html')
 
-@views.route('/upload/',methods=['GET', 'POST'])
+@views.route('/create-task/', methods=['GET', 'POST'])
 @login_required
 @roles_required('admin')
-def upload():
+def create_task():
 
-    q = 'SELECT distinct dc_project from document_cloud_image'
     engine = db.session.bind
-    with engine.begin() as conn:
-        result = conn.execute(q).fetchall()
+    result = engine.execute('SELECT DISTINCT election_name FROM image')
 
-    project_list = [thing[0] for thing in result]
+    election_list = [thing[0] for thing in result]
 
     if request.method == 'POST':
+        flask_session['election_name'] = request.form['election_name']
+        hierarchy_filters = []
 
-        project_name = request.form.get('project_name')
-        hierarchy_filter = None
+        for key, value in request.form.items():
+            if key.startswith('hierarchy_'):
+                hierarchy_filters.append([h.replace('hierarchy_', '')
+                                          for h in key.split(',')])
 
-        if request.form.get('hierarchy_filter'):
-            json.dumps(request.form.get('hierarchy_filter'))
+        flask_session['hierarchy_filters'] = hierarchy_filters
 
-        doc_list = DocumentCloudImage.grab_relevant_images(project_name,hierarchy_filter)
+        return redirect(url_for('views.form_creator'))
 
-        h_str_list = [doc.hierarchy for doc in doc_list if doc.hierarchy]
-        h_obj = {}
-
-        if h_str_list:
-            h_obj = construct_hierarchy_object(h_str_list)
-
-
-        client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
-        sample_page_count = client.documents.get(doc_list[0].dc_id).pages
-
-        if doc_list:
-            if len(doc_list) > 0:
-                first_doc = doc_list[0]
-                flask_session['image_url'] = first_doc.fetch_url
-                flask_session['page_count'] = sample_page_count
-                flask_session['image_type'] = 'pdf'
-                flask_session['dc_project'] = project_name
-                flask_session['dc_filter'] = hierarchy_filter if hierarchy_filter else None
-                dc_filter_list = ast.literal_eval(json.loads(hierarchy_filter)) if hierarchy_filter else None
-                dc_filter_list = [thing for thing in dc_filter_list] if dc_filter_list else []
-                flask_session['dc_filter_list'] = dc_filter_list
-
-                return render_template('upload.html',
-                                       project_list=project_list,
-                                       project_name=project_name,
-                                       hierarchy_filter=hierarchy_filter,
-                                       h_obj=h_obj,
-                                       doc_count=len(doc_list))
-            else:
-                flash("No DocumentCloud images found")
-
-    return render_template('upload.html', project_list=project_list)
+    return render_template('create-task.html', election_list=election_list)
 
 
-def construct_hierarchy_object(str_list):
-    h_obj = {}
-    for string in str_list:
-        if string and string[0] == '/':
-            string = string[1:]
-        h = string.split('/')
+@views.route('/hierarchy/')
+@login_required
+@roles_required('admin')
+def hierarchy():
 
-        if len(h)>0 and h[0] not in h_obj:
-            h_obj[h[0]] = {}
-        if len(h)>1 and h[1] not in h_obj[h[0]]:
-            h_obj[h[0]][h[1]] = {}
-        if len(h)>2 and h[2] not in h_obj[h[0]][h[1]]:
-            h_obj[h[0]][h[1]][h[2]] = {}
-        if len(h)>3 and h[3] not in h_obj[h[0]][h[1]][h[2]]:
-            h_obj[h[0]][h[1]][h[2]] = {}
+    election_name = request.args['election_name']
+    hierarchy_elements = request.args.get('hierarchy')
+    engine = db.session.bind
 
-    io = StringIO()
-    return json.dumps(h_obj, io)
+    geographies = '''
+        SELECT DISTINCT hierarchy[1:1]
+        FROM image
+        WHERE election_name = :election_name
+    '''
+
+    params = {
+        'election_name': election_name
+    }
+
+    if hierarchy_elements:
+
+        hierarchy_length = '''
+            SELECT array_length(hierarchy, 1) AS length
+            FROM image
+        '''
+
+        next_index = engine.execute(hierarchy_length).first().length
+        elements = hierarchy_elements.split(',')
+
+        if next_index > len(elements):
+            next_index = len(elements) + 1
+
+            geographies = '''
+                SELECT DISTINCT hierarchy[1:{next}]
+                FROM image
+                WHERE 1=1
+            '''.format(next=next_index)
+
+            for index, element in enumerate(elements):
+                geographies = '''
+                    {geographies}
+                    AND hierarchy[{index}] = :element_{index}
+                '''.format(geographies=geographies, index=index + 1)
+
+                params['element_{}'.format(index + 1)] = element
+        else:
+            geographies = []
+
+
+    if geographies:
+        geographies = '{} ORDER BY hierarchy'.format(geographies)
+        geographies = [g[0] for g in engine.execute(text(geographies), **params)]
+
+    return jsonify(hierarchy=geographies)
 
 
 @views.route('/delete-part/', methods=['DELETE'])
@@ -229,6 +218,7 @@ def delete_part():
     response.headers['Content-Type'] = 'application/json'
     return response
 
+
 @views.route('/delete-transcription/', methods=['GET','POST'])
 @login_required
 @roles_required('admin')
@@ -261,30 +251,16 @@ def delete_transcription():
 @roles_required('admin')
 def form_creator():
 
-    dc_project = flask_session.get('dc_project')
-    dc_filter = flask_session.get('dc_filter')
+    election_name = flask_session.get('election_name')
+    hierarchy_filter = flask_session.get('hierarchy_filters')
 
-    creator_manager = FormCreatorManager(form_id=request.args.get('form_id'))
-
-    if creator_manager.existing_form:
-        image_url = creator_manager.form_meta.sample_image
-
-        dc_project = creator_manager.form_meta.dc_project
-        dc_filter = creator_manager.form_meta.dc_filter
-
+    if request.args.get('form_id'):
+        creator_manager = FormCreatorManager(form_id=request.args.get('form_id'))
     else:
-        # image info in session data from upload
-        image_url = flask_session['image_url']
-        creator_manager.dc_project = dc_project
-        creator_manager.dc_filter = dc_filter
+        creator_manager = FormCreatorManager(election_name=election_name,
+                                             hierarchy_filter=hierarchy_filter)
 
-    dc_filter_list = []
-    if dc_filter:
-        dc_filter_list = ast.literal_eval(json.loads(dc_filter))
-        dc_filter_list = [thing for thing in dc_filter_list]
-
-    if not image_url:
-        return redirect(url_for('views.upload'))
+    image_url = creator_manager.form_meta.sample_image
 
     engine = db.session.bind
 
@@ -309,14 +285,14 @@ def form_creator():
         for section in form_meta['sections']:
             section['fields'] = sorted(section['fields'], key=itemgetter('index'))
         form_meta['sections'] = sorted(form_meta['sections'], key=itemgetter('index'))
-    
+
     return render_template('form-creator.html',
                            form_meta=form_meta,
                            next_section_index=creator_manager.next_section_index,
                            next_field_index=creator_manager.next_field_indices,
                            image_url=image_url,
-                           dc_project=dc_project,
-                           dc_filter_list=dc_filter_list)
+                           election_name=election_name,
+                           hierarchy_filter=hierarchy_filter)
 
 
 @views.route('/get-task-group/')
@@ -412,7 +388,7 @@ def transcribe(task_id):
         edit_mode = True
 
     checkinImages()
-    
+
     if request.method == 'POST':
 
         if transcription_task.validateTranscription(request.form):
@@ -423,7 +399,7 @@ def transcribe(task_id):
             transcription_task.saveTranscription()
 
             transcription_task.checkComplete()
-            
+
             if not edit_mode:
                 flash("Saved! Let's do another!", "saved")
                 return redirect(url_for('views.transcribe', task_id=task_id))
@@ -483,8 +459,8 @@ def download_transcriptions():
               i.fetch_url as image_url,
               {dynamic}
             from "{table_name}" as t
-            join document_cloud_image as i
-            on t.image_id = i.dc_id
+            join image as i
+            on t.image_id = i.id
             order by t.image_id, transcription_status
         ) TO STDOUT WITH CSV HEADER DELIMITER ','
     '''.format(common=', '.join(['t.{}'.format(f) for f in common_fields]),
@@ -517,13 +493,9 @@ def transcriptions():
     transcriptions_final = None
     header = None
     task_id = request.args.get('task_id')
-    
+
     task = db.session.query(FormMeta).get(task_id)
     task_dict = task.as_dict()
-
-    if task_dict['dc_filter']:
-        task_dict['dc_filter'] = ast.literal_eval(json.loads(task_dict['dc_filter']))
-        task_dict['dc_filter'] = [thing for thing in task_dict['dc_filter']]
 
     task_dict['progress'] = ImageTaskAssignment.get_task_progress(task_id)
     task_dict['image_count'] = ImageTaskAssignment.count_images(task_id)
@@ -539,16 +511,16 @@ def transcriptions():
 
     t_header = [c.name for c in table.columns if c.name != 'image_id']
     columns = ', '.join(['t."{}"'.format(c) for c in t_header])
-    
+
     q = '''
         SELECT
-          i.dc_id AS dc_image_id,
+          i.id AS image_id,
           i.fetch_url,
           i.hierarchy,
           {columns}
-        FROM document_cloud_image AS i
+        FROM image AS i
         JOIN "{table_name}" AS t
-          ON i.dc_id = t.image_id
+          ON i.id = t.image_id
         WHERE t.transcription_status = 'raw'
         ORDER BY i.id, t.id
     '''.format(columns=columns,
@@ -669,7 +641,7 @@ def viewer():
 def refresh_project():
     project_title = request.args.get('project_title')
 
-    key = update_from_document_cloud.delay(project_title=project_title)
+    key = update_from_s3.delay(project_title=project_title)
 
     flask_session['refresh_key'] = key
 

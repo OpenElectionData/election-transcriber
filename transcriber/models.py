@@ -1,16 +1,19 @@
-from flask_bcrypt import Bcrypt
-from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
-    DateTime, text, Text, or_, LargeBinary, MetaData, BigInteger
-from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import synonym, backref, relationship
-from flask.ext.security import UserMixin, RoleMixin
-from flask.ext.security.utils import md5
-from werkzeug.local import LocalProxy
-from flask import current_app
 from datetime import datetime
-from transcriber.database import db
 import json
 import ast
+
+from flask_bcrypt import Bcrypt
+from flask.ext.security import UserMixin, RoleMixin
+from flask.ext.security.utils import md5
+from flask import current_app
+
+from sqlalchemy import Integer, String, Boolean, Column, Table, ForeignKey, \
+    DateTime, text, Text, or_, LargeBinary, MetaData, BigInteger
+from sqlalchemy.dialects.postgresql import JSONB, UUID, ARRAY
+from sqlalchemy.orm import synonym, backref, relationship
+
+from werkzeug.local import LocalProxy
+from transcriber.database import db
 
 _security = LocalProxy(lambda: current_app.extensions['security'])
 
@@ -31,55 +34,84 @@ class WorkTable(db.Model):
     def __repr__(self):
         return '<WorkTable {0}>'.format(str(self.key))
 
-class DocumentCloudImage(db.Model):
-    __tablename__ = 'document_cloud_image'
-    id = Column(BigInteger, primary_key=True)
+class Image(db.Model):
+    __tablename__ = 'image'
+    id = Column(UUID, primary_key=True)
     image_type = Column(String)
     fetch_url = Column(String)
-    dc_project = Column(String, index=True)
-    dc_id = Column(String, unique=True)
-    hierarchy = Column(String)
+    election_name = Column(String, index=True)
+    hierarchy = Column(ARRAY(Text))
     is_page_url = Column(Boolean)
     is_current = Column(Boolean)
 
     def __repr__(self):
-        return '<DocumentCloudImage %r>' % self.fetch_url
+        return '<Image %r>' % self.fetch_url
 
     @classmethod
     def get_id_by_url(cls, url):
         return db.session.query(cls).filter(cls.fetch_url == url).first().id
 
-    @classmethod
-    def grab_relevant_images(cls, project_name, hierarchy_filter=None):
+    def relevant_image_query(self, election_name, hierarchy_filter=None):
         # this only grabs image urls without page numbers
 
-        if hierarchy_filter:
-            hierarchy_filter = ast.literal_eval(json.loads(hierarchy_filter))
+        doc_list = '''
+            SELECT * FROM image
+            WHERE election_name = :election_name
+              AND is_page_url = FALSE
+        '''
 
-        doc_list = [row for row in db.session.query(cls)\
-                        .filter(cls.dc_project == project_name)\
-                        .filter(cls.is_page_url == False)
-                        .all()]
+        params = {
+            'election_name': election_name
+        }
+
         if hierarchy_filter:
-            doc_list = [row for row in doc_list if string_start_match(row.hierarchy, hierarchy_filter)]
+
+            filters = []
+            condition = "hierarchy[1:{0}] = :hierarchy_{1}"
+
+            for index, filter in enumerate(hierarchy_filter):
+                filter = [f for f in filter if f]
+                filters.append(condition.format(len(filter), (index + 1)))
+
+                params['hierarchy_{}'.format(index + 1)] = filter
+
+            doc_list = '''
+                {0} AND ({1})
+            '''.format(doc_list, ' OR '.join(filters))
+
+        return doc_list, params
+
+
+    @classmethod
+    def grab_relevant_images(cls, election_name, hierarchy_filter=None):
+
+        engine = db.session.bind
+
+        query, params = cls.relevant_image_query(cls,
+                                                 election_name,
+                                                 hierarchy_filter=hierarchy_filter)
+
+        doc_list = list(engine.execute(text(query), **params))
         return doc_list
 
     @classmethod
-    def grab_relevant_image_pages(cls, project_name, hierarchy_filter):
-        # this only grabs image urls with page numbers
+    def grab_sample_image(cls, election_name, hierarchy_filter=None):
+        engine = db.session.bind
 
-        hierarchy_filter = ast.literal_eval(json.loads(hierarchy_filter)) \
-                               if hierarchy_filter else None
+        query, params = cls.relevant_image_query(cls,
+                                                 election_name,
+                                                 hierarchy_filter=hierarchy_filter)
 
-        doc_list = [row for row in db.session.query(cls)\
-                        .filter(cls.dc_project == project_name)\
-                        .filter(cls.is_page_url == True)
-                        .all()]
-        if hierarchy_filter:
-            doc_list = [row for row in doc_list \
-                            if string_start_match(row.hierarchy, hierarchy_filter)]
+        query = '''
+            {}
+            ORDER BY RANDOM()
+            LIMIT 1
+        '''.format(query)
 
-        return doc_list
+        sample_image = engine.execute(text(query), **params).first().fetch_url
+
+        return sample_image
+
 
 def string_start_match(full_string, match_strings):
     for match_string in match_strings:
@@ -90,8 +122,8 @@ def string_start_match(full_string, match_strings):
 class ImageTaskAssignment(db.Model):
     __tablename__ = 'image_task_assignment'
     id = Column(BigInteger, primary_key=True)
-    image_id = Column(String, ForeignKey('document_cloud_image.dc_id'))
-    image = relationship('DocumentCloudImage', backref='taskassignments')
+    image_id = Column(UUID, ForeignKey('image.id'))
+    image = relationship('Image', backref='taskassignments')
     form_id = Column(Integer, ForeignKey('form_meta.id'))
     checkout_expire = Column(DateTime(timezone=True))
     view_count = Column(Integer, server_default=text('0'))
@@ -132,8 +164,8 @@ class ImageTaskAssignment(db.Model):
         select = '''
             SELECT image.*
             FROM image_task_assignment AS ita
-            JOIN document_cloud_image AS image
-              ON ita.image_id = image.dc_id
+            JOIN image
+              ON ita.image_id = image.id
             WHERE ita.form_id = :task_id
               AND ita.view_count = 0
             ORDER BY ita.id
@@ -149,8 +181,8 @@ class ImageTaskAssignment(db.Model):
         select = '''
             SELECT image.*
             FROM image_task_assignment AS ita
-            JOIN document_cloud_image AS image
-              ON ita.image_id = image.dc_id
+            JOIN image
+              ON ita.image_id = image.id
             WHERE ita.form_id = :task_id
               AND ita.view_count > 0
               AND ita.view_count < :reviewer_count
@@ -199,14 +231,14 @@ class ImageTaskAssignment(db.Model):
     @classmethod
     def get_conflict_images_by_task(cls, task_id):
         conflict = '''
-            SELECT dc.*
-            FROM document_cloud_image AS dc
+            SELECT image.*
+            FROM image
             JOIN (
                 {conflict_query}
             ) AS conflict
-              ON dc.dc_id = conflict.image_id
+              ON image.id = conflict.image_id
             JOIN image_task_assignment AS ita
-              ON dc.dc_id = ita.image_id
+              ON image.id = ita.image_id
             WHERE ita.form_id = :form_id
         '''.format(conflict_query=cls.conflict_query(task_id))
 
@@ -353,8 +385,8 @@ class FormMeta(db.Model):
                 cascade="all, delete-orphan"))
     reviewer_count = Column(Integer)
     deadline = Column(DateTime(timezone=True), onupdate=datetime.now)
-    dc_project = Column(String)
-    dc_filter = Column(Text)
+    election_name = Column(String)
+    hierarchy_filter = Column(ARRAY(Text()))
     split_image = Column(Boolean)
 
     def __repr__(self):

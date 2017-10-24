@@ -1,6 +1,8 @@
 import os
 from io import BytesIO
 import json
+import csv
+from uuid import uuid4
 
 import httplib2
 
@@ -9,14 +11,17 @@ from apiclient.discovery import build
 from apiclient.http import MediaIoBaseDownload
 from apiclient.errors import HttpError
 
-from documentcloud import DocumentCloud
+import boto3
 
-from transcriber.app_config import DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW
+import img2pdf
+
+from transcriber.app_config import S3_BUCKET
+from transcriber.helpers import slugify
 
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 
 class SyncGoogle(object):
-    def __init__(self, dc_project=None):
+    def __init__(self, election_name=None):
         self.this_dir = os.path.dirname(__file__)
         secrets_path = os.path.join(self.this_dir, 'credentials.json')
 
@@ -31,12 +36,33 @@ class SyncGoogle(object):
         self.folder_ids = [f['id'] for f in result['files']
                            if f['mimeType'] == 'application/vnd.google-apps.folder']
 
-        self.dc_project = dc_project
-        self.dc_client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
+        self.bucket = S3_BUCKET
+        self.election_name = election_name
+        self.election_slug = slugify(election_name)
 
-        self.project, _ = self.dc_client.projects.get_or_create_by_title(self.dc_project)
+        aws_key, aws_secret_key = self.awsCredentials()
+
+        self.s3_client = boto3.client('s3',
+                                      aws_access_key_id=aws_key,
+                                      aws_secret_access_key=aws_secret_key)
 
         self.synced_images = self.getSyncedImages()
+
+    def awsCredentials(self):
+        creds_path = os.path.join(self.this_dir, 'credentials.csv')
+
+        if not os.path.exists(creds_path):
+            raise Exception('Please decrypt s3credentials.csv.gpg into the root folder of the project')
+
+        with open(creds_path) as f:
+            reader = csv.reader(f)
+
+            next(reader)
+
+            _, _, aws_key, aws_secret_key, _ = next(reader)
+
+        return aws_key, aws_secret_key
+
 
     def getSyncedImages(self):
 
@@ -119,18 +145,35 @@ class SyncGoogle(object):
 
             with open(os.path.join(self.this_dir, title), 'rb') as fd:
 
-                hierarchy = '/{}'.format(title.rsplit('.')[0].replace('_', '/'))
+                hierarchy = self.constructHierarchy(title)
                 metadata = {
-                    'hierarchy': hierarchy,
+                    'hierarchy': json.dumps(hierarchy),
+                    'election_name': self.election_name,
+                    'election_slug': self.election_slug,
+                    'image_id': str(uuid4()),
                 }
 
-                self.dc_client.documents.upload(fd,
-                                                title,
-                                                access='public',
-                                                project=str(self.project.id),
-                                                data=metadata)
+                key = '{0}/{1}'.format(self.election_slug,
+                                       '{}.pdf'.format(title.rsplit('.', 1)[0]))
+
+                try:
+                    body = img2pdf.convert(fd)
+                except img2pdf.ImageOpenError:
+                    print("Couldn't convert: {}".format(title))
+                    continue
+
+                self.s3_client.put_object(ACL='public-read',
+                                          Body=body,
+                                          Bucket=self.bucket,
+                                          Key=key,
+                                          ContentType='application/pdf',
+                                          Metadata=metadata)
 
             os.remove(os.path.join(self.this_dir, title))
 
-syncer = SyncGoogle(dc_project="Kenya rerun -- TEST")
+    def constructHierarchy(self, title):
+        geographies = title.split('-', 1)[1].rsplit('.', 1)[0]
+        return  geographies.split('_')
+
+syncer = SyncGoogle(election_name="Kenya rerun -- TEST")
 thing = syncer.sync()

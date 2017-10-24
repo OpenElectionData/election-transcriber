@@ -1,63 +1,92 @@
 from datetime import datetime
 import json
 import os
+import csv
 
 import sqlalchemy as sa
 
-from documentcloud import DocumentCloud
+import boto3
 
-from transcriber.app_config import DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW, DB_CONN
-from transcriber.models import FormMeta, DocumentCloudImage, ImageTaskAssignment
+from transcriber.app_config import DB_CONN, S3_BUCKET
+from transcriber.models import FormMeta, Image, ImageTaskAssignment
 from transcriber.queue import queuefunc
 
 engine = sa.create_engine(DB_CONN)
 
 @queuefunc
-def update_from_document_cloud(project_title=None, overwrite=False):
+def update_from_s3(election_name=None, overwrite=False):
     updater = ImageUpdater(overwrite=overwrite)
 
-    if project_title == 'Emailed documents':
-        updater.updateEmailedDocuments()
-    elif project_title:
-        updater.updateDocumentCloudProject(project_title)
+    if election_name:
+        updater.updateElection(election_name)
     else:
-        updater.updateAllDocumentCloud()
+        updater.updateAllElections()
 
     print('complete!')
 
 
 class ImageUpdater(object):
     def __init__(self, overwrite=False):
-        self.client = DocumentCloud(DOCUMENTCLOUD_USER, DOCUMENTCLOUD_PW)
+
         self.this_folder = os.path.abspath(os.path.dirname(__file__))
+
+        self.download_folder = os.path.join(self.this_folder, 'downloads')
+
+        if not os.path.exists(self.download_folder):
+            os.mkdir(self.download_folder)
+
+        aws_key, aws_secret_key = self.awsCredentials()
+
+        self.client = boto3.client('s3',
+                                   aws_access_key_id=aws_key,
+                                   aws_secret_access_key=aws_secret_key)
+
+        self.bucket = S3_BUCKET
+
         self.download_folder = os.path.join(self.this_folder, 'downloads')
         self.overwrite = overwrite
         self.inserts = []
 
+    def awsCredentials(self):
+        creds_path = os.path.join(self.this_folder, '..', 'credentials.csv')
+
+        if not os.path.exists(creds_path):
+            raise Exception('Please decrypt s3credentials.csv.gpg into the root folder of the project')
+
+        with open(creds_path) as f:
+            reader = csv.reader(f)
+
+            next(reader)
+
+            _, _, aws_key, aws_secret_key, _ = next(reader)
+
+        return aws_key, aws_secret_key
+
     @property
-    def document_cloud_upsert(self):
+    def image_upsert(self):
+
         return '''
-            INSERT INTO document_cloud_image (
+            INSERT INTO image (
+              id,
               image_type,
               fetch_url,
-              dc_project,
-              dc_id,
+              election_name,
               hierarchy,
               is_page_url,
               is_current
             ) VALUES (
+              :id,
               :image_type,
               :fetch_url,
-              :dc_project,
-              :dc_id,
+              :election_name,
               :hierarchy,
               :is_page_url,
               :is_current
             )
-            ON CONFLICT (dc_id) DO UPDATE SET
+            ON CONFLICT (id) DO UPDATE SET
               image_type = :image_type,
               fetch_url = :fetch_url,
-              dc_project = :dc_project,
+              election_name = :election_name,
               hierarchy = :hierarchy,
               is_page_url = :is_page_url,
               is_current = :is_current
@@ -68,7 +97,7 @@ class ImageUpdater(object):
 
         forms = '''
             SELECT
-              dc_project,
+              election_name,
               id AS form_id
             FROM form_meta
         '''
@@ -82,110 +111,123 @@ class ImageUpdater(object):
                   is_complete
                 )
                 SELECT
-                  dc.dc_id AS image_id,
+                  image.id AS image_id,
                   :form_id AS form_id,
                   FALSE AS is_complete
-                FROM document_cloud_image AS dc
+                FROM image
                 LEFT JOIN image_task_assignment AS ita
-                  ON dc.dc_id = ita.image_id
-                WHERE dc.dc_project = :dc_project
+                  ON image.id = ita.image_id
+                WHERE image.election_name = :election_name
                 ON CONFLICT ON CONSTRAINT image_to_form
                 DO NOTHING
             '''
 
             with engine.begin() as conn:
-                conn.execute(sa.text(insert), 
+                conn.execute(sa.text(insert),
                              form_id=form.form_id,
-                             dc_project=form.dc_project)
+                             election_name=form.election_name)
 
-    def fetchOrWrite(self, project_dir, document_id):
+    def fetchOrWrite(self, key):
+        image_name = key.split('/', 1)[-1]
 
-        document_path = os.path.join(project_dir, '{}.json'.format(document_id))
+        image_name_json = '{}.json'.format(image_name.rsplit('.', 1)[0])
 
-        if not os.path.exists(document_path) or self.overwrite:
-            document = self.client.documents.get(document_id)
-            document = {
-                'pdf_url': document.pdf_url,
-                'id': document.id,
-                'data': document.data,
-                'pages': document.pages,
-            }
-            with open(document_path, 'w') as f:
-                f.write(json.dumps(document))
-        else:
-            document = json.load(open(document_path))
+        json_path = os.path.join(self.download_folder, image_name_json)
 
-        return document
+        if os.path.exists(json_path):
+            return json.load(open(json_path))
 
-    def updateAllDocumentCloud(self):
-        self.updateDocumentCloudProjects()
-        self.updateEmailedDocuments()
+        image = self.client.head_object(Bucket=self.bucket, Key=key)
 
-    def updateDocumentCloudProjects(self):
-        projects = self.client.projects.all()
+        with open(json_path, 'w') as f:
+            f.write(json.dumps(image['Metadata']))
 
-        for project in projects:
-            self.updateDocumentCloudProject(project.title)
+        return image['Metadata']
 
-        self.updateImages()
+    def updateAllElections(self):
 
-    def updateDocumentCloudProject(self, project_title):
+        elections = set()
 
-        print('getting images for project {}'.format(project_title))
+        params = {
+            'Bucket': self.bucket,
+        }
+
+        all_keys = self.client.list_objects_v2(Bucket=self.bucket)
+
+        while True:
+            for key in all_keys['Contents']:
+                elections.add(key['Key'].split('/', 1)[0])
+
+            if all_keys['IsTruncated']:
+                params['ContinuationToken'] = all_keys['NextContinuationToken']
+            else:
+                break
+
+            all_keys = self.client.list_objects_v2(**params)
+
+        for election in elections:
+            self.updateElection(election)
+
+    def updateElection(self, election_name):
+
+        print('getting images for election {}'.format(election_name))
 
         self.inserts = []
 
-        project = self.client.projects.get_by_title(project_title)
+        params = {
+            'Bucket': self.bucket,
+            'Prefix': election_name,
+        }
 
-        project_dir = os.path.join(self.download_folder, str(project.id))
-        os.makedirs(project_dir, exist_ok=True)
+        images = self.client.list_objects_v2(**params)
 
-        for document_id in project.document_ids:
+        updated = 0
 
-            document = self.fetchOrWrite(project_dir, document_id)
-            self.addToDCInserts(project.title, document)
+        while True:
+
+            for key in images['Contents']:
+
+                image = self.fetchOrWrite(key['Key'])
+
+                self.addToDCInserts(election_name, key['Key'], image)
+
+                updated += 1
+
+                if updated % 100 is 0:
+                    print('fetched {}'.format(updated))
+
+            if images['IsTruncated']:
+                params['ContinuationToken'] = images['NextContinuationToken']
+            else:
+                break
+
+            images = self.client.list_objects_v2(**params)
 
         if self.inserts:
             with engine.begin() as conn:
-                conn.execute(sa.text(self.document_cloud_upsert), *self.inserts)
+                conn.execute(sa.text(self.image_upsert), *self.inserts)
 
+    def addToDCInserts(self,
+                       election_name,
+                       image_key,
+                       image_metadata):
 
-    def addToDCInserts(self, project_title, document):
+        fetch_url_fmt = 'https://s3.amazonaws.com/{bucket}/{key}'
+
+        fetch_url = fetch_url_fmt.format(bucket=self.bucket,
+                                         key=image_key)
+
+        hierarchy = None
+
+        if image_metadata.get('hierarchy'):
+            hierarchy = json.loads(image_metadata['hierarchy'])
 
         values = dict(image_type='pdf',
-                      fetch_url=document['pdf_url'],
-                      dc_project = project_title,
-                      dc_id = document['id'],
-                      hierarchy = document['data'].get('hierarchy'),
-                      is_page_url = False,
-                      is_current = True)
+                      fetch_url=fetch_url,
+                      election_name=election_name,
+                      id=image_metadata['image_id'],
+                      hierarchy=hierarchy,
+                      is_page_url=False,
+                      is_current=True)
 
         self.inserts.append(values)
-
-        if document['pages'] > 1:
-            for p in range(2, (document['pages'] + 1)):
-                values['fetch_url'] = '%s#page=%s' % (document['pdf_url'], p)
-
-                self.inserts.append(values)
-
-    def updateEmailedDocuments(self):
-
-        self.inserts = []
-
-        project_dir = os.path.join(self.download_folder, 'emailed')
-        os.makedirs(project_dir, exist_ok=True)
-
-        emailed = self.client.documents.search('uploaded:email group:nationaldemocraticinstitute')
-
-        for document in emailed:
-            document = self.fetchOrWrite(project_dir, document.id)
-
-            self.addToDCInserts('Emailed documents', document)
-
-        if self.inserts:
-            with engine.begin() as conn:
-                conn.execute(sa.text(self.document_cloud_upsert), *self.inserts)
-
-        self.updateImages()
-
-

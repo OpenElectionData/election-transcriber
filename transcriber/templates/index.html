@@ -7,7 +7,7 @@
         {% if tasks %}
             {% if current_user.has_role('admin') %}
                 <p>
-                    <a href="{{ url_for('views.upload') }}" class="btn btn-info"><strong>New transcription task</strong> &raquo;</a>
+                    <a href="{{ url_for('views.create_task') }}" class="btn btn-info"><strong>New transcription task</strong> &raquo;</a>
                 </p>
                 <br>
             {% endif %}
@@ -155,7 +155,7 @@
         {% else %} {# no tasks #}
             {% if current_user.has_role('admin') %}
             <p>
-                <a href="{{ url_for('views.upload') }}" class="btn btn-info btn-lg"><i class='fa fa-plus'></i> Create your first transcription task</a>
+                <a href="{{ url_for('views.create_task') }}" class="btn btn-info btn-lg"><i class='fa fa-plus'></i> Create your first transcription task</a>
             </p>
             {% else %}
                 <p> No transcription tasks available </p>

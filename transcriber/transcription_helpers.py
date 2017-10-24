@@ -8,7 +8,7 @@ import sqlalchemy as sa
 
 from transcriber.database import db
 from transcriber.models import FormSection, FormField, FormMeta, \
-    ImageTaskAssignment, DocumentCloudImage
+    ImageTaskAssignment, Image
 from transcriber.dynamic_form import NullableIntegerField as IntegerField, \
     NullableDateTimeField as DateTimeField, \
     NullableDateField as DateField, validate_blank_not_legible
@@ -154,9 +154,9 @@ class TranscriptionManager(object):
         if self.image_task_assignment:
             self.image_id = self.image_task_assignment.image_id
             self.checkoutImage()
-            self.dc_image = db.session.query(DocumentCloudImage)\
-                                      .filter(DocumentCloudImage.dc_id == self.image_id)\
-                                      .first()
+            self.image = db.session.query(Image)\
+                                   .filter(Image.id == self.image_id)\
+                                   .first()
 
     def validateTranscription(self, post_data):
 
@@ -174,8 +174,8 @@ class TranscriptionManager(object):
             SELECT
               ita.*
             FROM image_task_assignment AS ita
-            JOIN document_cloud_image AS dc
-              ON ita.image_id = dc.dc_id
+            JOIN image
+              ON ita.image_id = image.id
             LEFT JOIN "{}" AS data
               USING(image_id)
             WHERE ita.form_id = :form_id
@@ -184,7 +184,7 @@ class TranscriptionManager(object):
               AND (data.transcriber != :user OR
                    data.image_id IS NULL)
               AND ita.view_count < :reviewer_count
-            ORDER BY dc.hierarchy
+            ORDER BY image.hierarchy
         '''.format(self.task.table_name)
 
         return db.session.bind.execute(sa.text(next_image),
@@ -288,7 +288,7 @@ class TranscriptionManager(object):
 
     def checkComplete(self):
 
-        conflicting_images = [i.dc_id for i in
+        conflicting_images = [i.id for i in
                               ImageTaskAssignment.get_conflict_images_by_task(self.task_id)]
 
         if not self.image_id in conflicting_images:

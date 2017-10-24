@@ -3,3 +3,5 @@
 app_config.py
 alembic.ini
 transcriber/uploads/*
+credentials.csv
+credentials.json

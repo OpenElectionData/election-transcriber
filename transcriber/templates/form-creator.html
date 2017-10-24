@@ -28,14 +28,14 @@
             </p>
             <div class="row">
                 <div class="col-xs-4 text-xs">
-                    <strong>Project</strong><br>
-                    {{ dc_project }}
+                    <strong>Election</strong><br>
+                    {{ election_name }}
                 </div>
-                {% if dc_filter_list %}
+                {% if hierarchy_list %}
                 <div class="col-xs-8 text-xs">
-                    <strong>Filters </strong>({{dc_filter_list|length}})<br>
+                    <strong>Filters </strong>({{hierarchy_list|length}})<br>
                     <ul class="bullet-list">
-                        {% for filter in dc_filter_list %}
+                        {% for filter in hierarchy_list %}
                         <li class="small">{{filter}}</li>
                         {% endfor %}
                     </ul>
@@ -123,18 +123,6 @@
                         </textarea>
                     </div>
                 </div>
-                {% if not form_meta.name and session.page_count > 10 %}
-                <hr>
-                <div class="form-group">
-                    <div class="col-sm-10 col-sm-offset-1">
-                        <p class="text-warning"><i class='fa fa-files-o'></i> It looks like each document has many pages</p>
-                        <div></div>
-                        <input type="radio" name="is_concat" value="keep_intact" checked> Don't split documents<br>
-                        <input type="radio" name="is_concat" value="split"> Split documents at page breaks
-                    </div>
-                </div>
-                {% endif %}
-
                 <!-- <div class="form-group">
                     <label for="id_task_description" class="col-sm-3 control-label">Instructions</label>
                     <div class="col-sm-9">
@@ -288,6 +276,7 @@
             var h = $(window).height(),
             offsetTop = 135; // Calculate the top offset
             $('#form-wrapper').css('height', (h - offsetTop));
+            $('#result-image').css('height', (h - offsetTop));
         }).resize();
 
         var task_id = {{ form_meta.id|tojson|safe }};
@@ -401,7 +390,7 @@
             };
 
             $('#refresh-images').on('click', function(e){
-                $.getJSON('/refresh-project/', {'project_title': '{{ dc_project }}'},
+                $.getJSON('/refresh-project/', {'election_name': '{{ election_name }}'},
                     function(data){
                         console.log(data);
                     }
