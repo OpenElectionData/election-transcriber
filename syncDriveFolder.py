@@ -6,6 +6,8 @@ from uuid import uuid4
 
 import httplib2
 
+import sqlalchemy
+
 from oauth2client.service_account import ServiceAccountCredentials
 from apiclient.discovery import build
 from apiclient.http import MediaIoBaseDownload
@@ -15,7 +17,7 @@ import boto3
 
 import img2pdf
 
-from transcriber.app_config import S3_BUCKET
+from transcriber.app_config import S3_BUCKET, DB_CONN
 from transcriber.helpers import slugify
 
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
@@ -104,6 +106,8 @@ class SyncGoogle(object):
 
                 page_token = folder_files.get('nextPageToken')
 
+                inserts = []
+
                 for folder_file in folder_files['files']:
 
                     title = folder_file['name']
@@ -129,10 +133,97 @@ class SyncGoogle(object):
                             yield title
                             self.addSyncedImage(title)
 
+                    else:
+                        key = '{slug}/{key}'.format(slug=self.election_slug,
+                                                    key=title.replace('jpeg', 'pdf'))
+                        image = self.s3_client.head_object(Bucket=self.bucket, Key=key)['Metadata']
+
+                        fetch_url_fmt = 'https://s3.amazonaws.com/{bucket}/{key}'
+
+                        fetch_url = fetch_url_fmt.format(bucket=self.bucket,
+                                                         key=key)
+
+                        values = dict(image_type='pdf',
+                                      fetch_url=fetch_url,
+                                      election_name=self.election_slug,
+                                      id=image['image_id'],
+                                      hierarchy=json.loads(image['hierarchy']),
+                                      is_page_url=False,
+                                      is_current=True)
+
+                        inserts.append(values)
+
+                        if len(inserts) % 100 is 0:
+
+                            engine = sa.create_engine(DB_CONN)
+
+                            with engine.begin() as conn:
+                                conn.execute(sa.text('''
+                                    INSERT INTO image (
+                                    id,
+                                    image_type,
+                                    fetch_url,
+                                    election_name,
+                                    hierarchy,
+                                    is_page_url,
+                                    is_current
+                                    ) VALUES (
+                                    :id,
+                                    :image_type,
+                                    :fetch_url,
+                                    :election_name,
+                                    :hierarchy,
+                                    :is_page_url,
+                                    :is_current
+                                    )
+                                    ON CONFLICT (id) DO UPDATE SET
+                                    image_type = :image_type,
+                                    fetch_url = :fetch_url,
+                                    election_name = :election_name,
+                                    hierarchy = :hierarchy,
+                                    is_page_url = :is_page_url,
+                                    is_current = :is_current
+                                '''), *inserts)
+
+                            del engine
+
+                            inserts = []
+
                     file_count += 1
 
                 if file_count % 100 == 0:
                     print('got {} files'.format(file_count))
+
+                if inserts:
+                    engine = sa.create_engine(DB_CONN)
+
+                    with engine.begin() as conn:
+                        conn.execute(sa.text('''
+                            INSERT INTO image (
+                            id,
+                            image_type,
+                            fetch_url,
+                            election_name,
+                            hierarchy,
+                            is_page_url,
+                            is_current
+                            ) VALUES (
+                            :id,
+                            :image_type,
+                            :fetch_url,
+                            :election_name,
+                            :hierarchy,
+                            :is_page_url,
+                            :is_current
+                            )
+                            ON CONFLICT (id) DO UPDATE SET
+                            image_type = :image_type,
+                            fetch_url = :fetch_url,
+                            election_name = :election_name,
+                            hierarchy = :hierarchy,
+                            is_page_url = :is_page_url,
+                            is_current = :is_current
+                        '''), *inserts)
 
                 if not page_token:
                     break
