@@ -184,7 +184,7 @@ class TranscriptionManager(object):
               AND (data.transcriber != :user OR
                    data.image_id IS NULL)
               AND ita.view_count < :reviewer_count
-            ORDER BY image.hierarchy
+            ORDER BY image.fetch_url
         '''.format(self.task.table_name)
 
         return db.session.bind.execute(sa.text(next_image),
