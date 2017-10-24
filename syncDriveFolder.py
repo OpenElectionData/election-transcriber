@@ -136,7 +136,11 @@ class SyncGoogle(object):
                     else:
                         key = '{slug}/{key}'.format(slug=self.election_slug,
                                                     key=title.replace('jpeg', 'pdf'))
-                        image = self.s3_client.head_object(Bucket=self.bucket, Key=key)['Metadata']
+
+                        try:
+                            image = self.s3_client.head_object(Bucket=self.bucket, Key=key)['Metadata']
+                        except boto3.exceptions.ClientError:
+                            continue
 
                         fetch_url_fmt = 'https://s3.amazonaws.com/{bucket}/{key}'
 
