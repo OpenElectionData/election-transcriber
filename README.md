@@ -1,12 +1,12 @@
 # Election Transcriber
 
-A tool for digitizing election results data in the form of handwritten digits. 
+A tool for digitizing election results data in the form of handwritten digits.
 
 ## Setup
 
-1. **Install OS level dependencies:** 
+1. **Install OS level dependencies:**
 
-  * [Python 2.7](https://www.python.org/download/releases/2.7/)
+  * [Python 3.4+](https://www.python.org/download/)
 
 2. **Clone this repo & install app requirements**
 
@@ -19,8 +19,8 @@ A tool for digitizing election results data in the form of handwritten digits.
   cd election-transcriber
   pip install -r requirements.txt
   ```
-3. **Create a PostgreSQL database for election_transcriber**  
-  If you aren't already running [PostgreSQL](http://www.postgresql.org/), we recommend installing version 9.3 or later.
+3. **Create a PostgreSQL database for election transcriber**
+  If you aren't already running [PostgreSQL](http://www.postgresql.org/), we recommend installing version 9.6 or later.
 
   ```
   createdb election_transcriber
@@ -34,10 +34,14 @@ A tool for digitizing election results data in the form of handwritten digits.
 
   You will need to change, at minimum:
   - `DB_USER` and `DB_PW` to reflect your PostgreSQL username/password (by default, the username is your computer name & the password is '')
-  - `DOCUMENTCLOUD_USER` and `DOCUMENTCLOUD_PW` to reflect your DocumentCloud credentials
+  - `S3_BUCKET` to tell the application where to look for your cache of images
+    to transcribe
+  - `AWS_CREDENTIALS_PATH` tells the application where to find the CSV file
+    with your AWS credentials in it. By default, the application looks for
+    a file called `credenitals.csv` in the root folder of the project.
 
   You can also change the username, email and password for the initial user roles, defined by `ADMIN_USER`, `MANAGER_USER`, and `CLERK_USER`
-  
+
 5. **Create your own `alembic.ini` file**
 
   ```
@@ -45,20 +49,27 @@ A tool for digitizing election results data in the form of handwritten digits.
   ```
   You will need to change, at minimum, `user` & `pass` (to reflect your PostgreSQL username/password) on line 6
 
-6. **Initialize the database**  
+6. **Initialize the database**
 
   ```bash
-  python init_db.py
+  alembic upgrade head
   ```
 
-7. **Import document cloud images**
+7. **Import images**
   ```bash
   python update_images.py
   ```
 
-8. **Finally, run the app**  
+8. **Run the app**
 
   ```bash
   python runserver.py
   ```
+
+9. **In another terminal, run the worker**
+
+  ```bash
+  python run_queue.py
+  ```
+
   Once the server is running, navigate to http://localhost:5000/

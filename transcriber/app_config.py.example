@@ -44,8 +44,8 @@ MAIL_USE_TLS = True
 MAIL_USERNAME = 'username'
 MAIL_PASSWORD = 'password'
 
-AWS_KEY = ''
-AWS_SECRET = ''
+S3_BUCKET = ''
+AWS_CREDENTIALS_PATH = None
 
 SECURITY_PASSWORD_HASH = 'bcrypt'
 SECURITY_PASSWORD_SALT = 'really-really-secret'
@@ -63,6 +63,3 @@ SECURITY_CONFIRM_SALT = 'also-really-secret'
 SECURITY_RESET_SALT = 'also-really-secret'
 SECURITY_LOGIN_SALT = 'also-really-secret'
 SECURITY_REMEMBER_SALT = 'also-really-really-secret'
-
-DOCUMENTCLOUD_USER = 'foo@bar.com'
-DOCUMENTCLOUD_PW = 'baz'

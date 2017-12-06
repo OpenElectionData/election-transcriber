@@ -18,7 +18,7 @@ import botocore
 
 import img2pdf
 
-from transcriber.app_config import S3_BUCKET, DB_CONN
+from transcriber.app_config import S3_BUCKET, DB_CONN, AWS_CREDENTIALS_PATH
 from transcriber.helpers import slugify
 
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
@@ -52,7 +52,11 @@ class SyncGoogle(object):
         self.synced_images = self.getSyncedImages()
 
     def awsCredentials(self):
-        creds_path = os.path.join(self.this_dir, 'credentials.csv')
+
+        if AWS_CREDENTIALS_PATH:
+            creds_path = AWS_CREDENTIALS_PATH
+        else:
+            creds_path = os.path.join(self.this_dir, 'credentials.csv')
 
         if not os.path.exists(creds_path):
             raise Exception('Please decrypt s3credentials.csv.gpg into the root folder of the project')
