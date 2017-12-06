@@ -4,6 +4,11 @@ A tool for digitizing election results data in the form of handwritten digits.
 
 ## Setup
 
+The instructions below should get you setup for a development environment. To
+get going in production, follow the instructions in
+[DEPLOYMENT.md](DEPLOYMENT.md).
+
+
 1. **Install OS level dependencies:**
 
   * [Python 3.4+](https://www.python.org/download/)

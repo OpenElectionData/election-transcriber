@@ -305,6 +305,38 @@ command=/home/datamade/.virtualenvs/transcriber/bin/python run_queue.py
 * We'll wait to restart Supervisor until we have the code in place and ready to
   go.
 
+### Configure PostgreSQL
+
+* Replace the contents of `/etc/postgresql/9.6/main/pg_hba.conf` with:
+
+```
+local all all trust
+host all all 127.0.0.1/32 trust
+```
+
+* Restart PostgreSQL for the changes to take effect:
+
+```
+sudo service postgresql restart
+```
+
+**Note** This will make connections to your database without a password
+possible as long as you are logged into the server. If you are not comfortable
+with this or if there is some reason that you need to open up the database to
+the world, please consult the [PostgreSQL docs](https://www.postgresql.org/docs/9.6/static/auth-pg-hba-conf.html).
+
+* Create a user for your application to use
+
+```
+createuser -U postgres datamade
+```
+
+* Create a database for your application to use
+
+```
+createdb -U postgres -O datamade transcriber
+```
+
 ### Setup a user on the operating system to use to run the application
 
 Because this application will be exposed to the internet and because,
@@ -398,6 +430,18 @@ cd election-transcriber
 
 ```
 pip install -r requirements.txt
+```
+
+* Initialize the tables in the database
+
+```
+alembic upgrade head
+```
+
+* Import any images that you might already be stored in your S3 Bucket.
+
+```
+python update_images.py
 ```
 
 ### Run the application
