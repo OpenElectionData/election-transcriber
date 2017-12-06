@@ -162,13 +162,148 @@ server {
 }
 ```
 
+* Restart nginx
+
+```
+sudo service nginx restart
+```
+
 * Install Certbot using the instructions for your setup found [here](https://certbot.eff.org/)
-* Install the certificate for your hostname
+* Install the certificate for your hostname. (Replace [hostname] with the
+  hostname you put into the configuration above)
 
 ```
-sudo certbot certonly --webroot -w /var/www/example -d example.com -d www.example.com -w /var/www/thing -d thing.is -d m.thing.is
+sudo certbot certonly --webroot -w /usr/share/nginx/html -d [hostname]
 ```
 
+Part of the cryptographic handshake that happens when a user loads your site
+over a TLS connection involves generating very large prime numbers. We'll want
+these numbers to be larger than the default settings so we'll generate
+a parameter file that allows for that to happen:
+
+```
+openssl dhparam -out dhparams.pem 2048
+sudo mv dhparams.pem /etc/ssl/private/
+sudo chown root.root /etc/ssl/private/dhparams.pem
+```
+
+* Next, replace the contents of the Nginx configuration you made above with
+  this (again replacing `[hostname]` with the actual host name you're using)
+
+```
+server {
+    listen 443;
+    server_name [hostname];
+    access_log /var/log/nginx/{{ appname }}-access.log;
+    error_log /var/log/nginx/{{ appname }}-error.log;
+
+    ssl on;
+    ssl_certificate /etc/letsencrypt/live/[hostname]/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/[hostname]/privkey.pem;
+
+    ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+    ssl_ciphers 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA';
+
+    ssl_prefer_server_ciphers on;
+
+    ssl_dhparam /etc/ssl/private/dhparams.pem;
+
+    gzip on;
+
+    gzip_http_version  1.1;
+
+    gzip_comp_level    5;
+
+    gzip_min_length    256;
+
+    gzip_proxied       any;
+
+    gzip_vary          on;
+
+    gzip_types
+      application/atom+xml
+      application/javascript
+      application/json
+      application/rss+xml
+      application/vnd.ms-fontobject
+      application/x-font-ttf
+      application/x-web-app-manifest+json
+      application/xhtml+xml
+      application/xml
+      font/opentype
+      image/svg+xml
+      image/x-icon
+      text/css
+      text/plain
+      text/x-component;
+
+    location / {
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_pass http://127.0.0.1:5000;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_buffer_size 128k;
+        proxy_buffers 4 256k;
+        proxy_busy_buffers_size 256k;
+	    proxy_read_timeout 300s;
+    }
+
+    location /static {
+        alias /home/datamade/election-transcriber/transcriber/static;
+    }
+
+}
+
+server {
+    listen 80;
+    server_name [hostname];
+
+    location ~ .well-known/acme-challenge {
+       root /usr/share/nginx/html;
+       default_type text/plain;
+    }
+
+    location / {
+        return 301 https://[hostname]$request_uri;
+    }
+}
+```
+
+* Restart Nginx again for the configuration to take effect:
+
+```
+sudo service nginx restart
+```
+
+### Configure Supervisor
+
+* Make a file in `/etc/supervisor/conf.d/` called `transcriber.conf` and put
+  the following into it:
+
+```
+[program:transcriber]
+stdout_logfile=/tmp/transcriber-gunicorn-out.log
+stdout_logfile_maxbytes=10MB
+stderr_logfile=/tmp/transcriber-gunicorn-err.log
+stderr_logfile_maxbytes=10MB
+directory=/home/datamade/election-transcriber
+process_name=transcriber
+user=datamade
+command=/home/datamade/.virtualenvs/transcriber/bin/gunicorn -t 301 --log-level info -b 127.0.0.1:5000 runserver:app
+
+[program:transcriber-worker]
+stdout_logfile=/tmp/transcriber-gunicorn-out.log
+stdout_logfile_maxbytes=10MB
+stderr_logfile=/tmp/transcriber-gunicorn-err.log
+stderr_logfile_maxbytes=10MB
+directory=/home/datamade/election-transcriber
+process_name=worker
+user=datamade
+command=/home/datamade/.virtualenvs/transcriber/bin/python run_queue.py
+```
+
+* We'll wait to restart Supervisor until we have the code in place and ready to
+  go.
 
 ### Setup a user on the operating system to use to run the application
 
@@ -187,8 +322,9 @@ sudo useradd -d /home/datamade -m -r datamade
 
 You can change `datamade` to whatever you want it to be but that's where that
 user's home directory will be (which is where we'll put the code) and that's
-what the user will be called. In the examples that follow, you'll need to
-switch out `datamade` for whatever you choose.
+what the user will be called. In the examples that follow as well as in the
+configuration files that are above, you'll need to switch out `datamade` for
+whatever you choose.
 
 ### Setup a Python Virtual Environment
 
@@ -264,4 +400,13 @@ cd election-transcriber
 pip install -r requirements.txt
 ```
 
+### Run the application
 
+As mentioned above, we waited to restart Supervisor. Now is the time:
+
+```
+sudo service supervisor restart
+```
+
+And with that, you should be able to visit your new application on the internet
+at your chosen host name. Enjoy!
