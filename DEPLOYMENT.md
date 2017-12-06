@@ -7,7 +7,7 @@ likely be swapped out for other similar parts and work just as well. In the
 end, we'll need to setup a web server ([Nginx](https://nginx.org)), something
 to daemonize the application and the process that handles delayed work
 ([Supervisor](http://supervisord.org/)), and
-[PostgreSQL](https://postgresql.org).\
+[PostgreSQL](https://postgresql.org).
 
 **Note** The instructions below will work on a modern Ubuntu variant
 (14.04+) or on Debian 8 (jessie) or better.
@@ -30,7 +30,7 @@ host.
 
 ### Install Nginx
 
-[Reference](http://nginx.org/en/linux_packages.html)_
+[Reference](http://nginx.org/en/linux_packages.html)
 
 * Make sure that you have `wget` installed:
 ```
@@ -431,6 +431,28 @@ cd election-transcriber
 ```
 pip install -r requirements.txt
 ```
+* Create your own `app_config.py` file
+
+```
+cp transcriber/app_config.py.example transcriber/app_config.py
+  ```
+
+You will need to change, at minimum:
+- `DB_USER` and `DB_PW` to reflect your PostgreSQL username/password (by default, the username is your computer name & the password is '')
+- `S3_BUCKET` to tell the application where to look for your cache of images
+  to transcribe
+- `AWS_CREDENTIALS_PATH` tells the application where to find the CSV file
+  with your AWS credentials in it. By default, the application looks for
+  a file called `credenitals.csv` in the root folder of the project.
+
+You can also change the username, email and password for the initial user roles, defined by `ADMIN_USER`, `MANAGER_USER`, and `CLERK_USER`
+
+* Create your own `alembic.ini` file
+
+  ```
+  cp alembic.ini.example alembic.ini
+  ```
+You will need to change, at minimum, `user` & `pass` (to reflect your PostgreSQL username/password) on line 6
 
 * Initialize the tables in the database
 
