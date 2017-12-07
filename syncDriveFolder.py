@@ -3,6 +3,7 @@ from io import BytesIO
 import json
 import csv
 from uuid import uuid4
+import itertools
 
 import httplib2
 
@@ -55,7 +56,7 @@ class SyncGoogle(object):
                                       aws_access_key_id=aws_key,
                                       aws_secret_access_key=aws_secret_key)
 
-        self.synced_images = self.getSyncedImages()
+        self.downloaded_images = self.downloadedImages()
 
     def awsCredentials(self, creds_path):
 
@@ -69,23 +70,23 @@ class SyncGoogle(object):
         return aws_key, aws_secret_key
 
 
-    def getSyncedImages(self):
+    def downloadedImages(self):
 
-        synced_path = os.path.join(self.this_dir, 'synced_images.json')
+        downloaded_path = os.path.join(self.this_dir, 'downloaded_images.json')
 
-        if not os.path.exists(synced_path):
-            with open(synced_path, 'w') as f:
+        if not os.path.exists(downloaded_path):
+            with open(downloaded_path, 'w') as f:
                 json.dump([], f)
 
-        with open(synced_path) as f:
+        with open(downloaded_path) as f:
             return json.load(f)
 
-    def addSyncedImage(self, title):
+    def addDownloadedImage(self, title):
 
-        self.synced_images.append(title)
+        self.downloaded_images.append(title)
 
-        with open(os.path.join(self.this_dir, 'synced_images.json'), 'w') as f:
-            json.dump(self.synced_images, f)
+        with open(os.path.join(self.this_dir, 'downloaded_images.json'), 'w') as f:
+            json.dump(self.downloaded_images, f)
 
     def iterFiles(self):
 
@@ -99,6 +100,8 @@ class SyncGoogle(object):
                 'q': "'{}' in parents".format(folder_id),
                 'orderBy': 'name',
             }
+
+            all_files = []
 
             while True:
 
@@ -116,7 +119,7 @@ class SyncGoogle(object):
                     title = folder_file['name']
                     file_id = folder_file['id']
 
-                    if title not in self.synced_images:
+                    if title not in self.downloaded_images:
 
                         contents = self.service.files().get_media(fileId=file_id)
 
@@ -133,149 +136,113 @@ class SyncGoogle(object):
                                     break
                         if done:
 
-                            yield title
-                            self.addSyncedImage(title)
+                            self.addDownloadedImage(title)
 
-                    else:
-                        key = '{slug}/{key}'.format(slug=self.election_slug,
-                                                    key=title.replace('jpeg', 'pdf'))
-
-                        try:
-                            image = self.s3_client.head_object(Bucket=self.bucket, Key=key)['Metadata']
-                        except botocore.exceptions.ClientError:
-                            continue
-
-                        fetch_url_fmt = 'https://s3.amazonaws.com/{bucket}/{key}'
-
-                        fetch_url = fetch_url_fmt.format(bucket=self.bucket,
-                                                         key=key)
-
-                        values = dict(image_type='pdf',
-                                      fetch_url=fetch_url,
-                                      election_name=self.election_slug,
-                                      id=image['image_id'],
-                                      hierarchy=json.loads(image['hierarchy']),
-                                      is_page_url=False,
-                                      is_current=True)
-
-                        inserts.append(values)
-
-                        if len(inserts) % 100 is 0:
-
-                            engine = sa.create_engine(DB_CONN)
-
-                            with engine.begin() as conn:
-                                conn.execute(sa.text('''
-                                    INSERT INTO image (
-                                    id,
-                                    image_type,
-                                    fetch_url,
-                                    election_name,
-                                    hierarchy,
-                                    is_page_url,
-                                    is_current
-                                    ) VALUES (
-                                    :id,
-                                    :image_type,
-                                    :fetch_url,
-                                    :election_name,
-                                    :hierarchy,
-                                    :is_page_url,
-                                    :is_current
-                                    )
-                                    ON CONFLICT (id) DO UPDATE SET
-                                    image_type = :image_type,
-                                    fetch_url = :fetch_url,
-                                    election_name = :election_name,
-                                    hierarchy = :hierarchy,
-                                    is_page_url = :is_page_url,
-                                    is_current = :is_current
-                                '''), *inserts)
-
-                            del engine
-
-                            inserts = []
-
-                    file_count += 1
-
-                if file_count % 100 == 0:
-                    print('got {} files'.format(file_count))
-
-                if inserts:
-                    engine = sa.create_engine(DB_CONN)
-
-                    with engine.begin() as conn:
-                        conn.execute(sa.text('''
-                            INSERT INTO image (
-                            id,
-                            image_type,
-                            fetch_url,
-                            election_name,
-                            hierarchy,
-                            is_page_url,
-                            is_current
-                            ) VALUES (
-                            :id,
-                            :image_type,
-                            :fetch_url,
-                            :election_name,
-                            :hierarchy,
-                            :is_page_url,
-                            :is_current
-                            )
-                            ON CONFLICT (id) DO UPDATE SET
-                            image_type = :image_type,
-                            fetch_url = :fetch_url,
-                            election_name = :election_name,
-                            hierarchy = :hierarchy,
-                            is_page_url = :is_page_url,
-                            is_current = :is_current
-                        '''), *inserts)
+                    all_files.append(title)
 
                 if not page_token:
                     break
 
-        print('got {} files in total'.format(file_count))
+            grouper = lambda x: x.rsplit('_', 1)[0]
+
+            all_files_sorted = sorted(all_files, key=grouper)
+
+            yield from itertools.groupby(all_files_sorted, key=grouper)
+
+    def saveImage(self, key):
+
+        try:
+            image = self.s3_client.head_object(Bucket=self.bucket, Key=key)['Metadata']
+        except botocore.exceptions.ClientError:
+            return
+
+        fetch_url_fmt = 'https://s3.amazonaws.com/{bucket}/{key}'
+
+        fetch_url = fetch_url_fmt.format(bucket=self.bucket,
+                                            key=key)
+
+        values = dict(image_type='pdf',
+                        fetch_url=fetch_url,
+                        election_name=self.election_slug,
+                        id=image['image_id'],
+                        hierarchy=json.loads(image['hierarchy']),
+                        is_page_url=False,
+                        is_current=True)
+
+        engine = sa.create_engine(DB_CONN)
+
+        with engine.begin() as conn:
+            conn.execute(sa.text('''
+                INSERT INTO image (
+                id,
+                image_type,
+                fetch_url,
+                election_name,
+                hierarchy,
+                is_page_url,
+                is_current
+                ) VALUES (
+                :id,
+                :image_type,
+                :fetch_url,
+                :election_name,
+                :hierarchy,
+                :is_page_url,
+                :is_current
+                )
+                ON CONFLICT (id) DO UPDATE SET
+                image_type = :image_type,
+                fetch_url = :fetch_url,
+                election_name = :election_name,
+                hierarchy = :hierarchy,
+                is_page_url = :is_page_url,
+                is_current = :is_current
+            '''), **values)
+
+        del engine
 
     def sync(self):
 
-        for title in self.iterFiles():
+        for group_name, file_group in self.iterFiles():
 
-            with open(os.path.join(self.this_dir, title), 'rb') as fd:
+            filenames = list(file_group)
 
-                if self.capture_hierarchy:
-                    hierarchy = self.constructHierarchy(title)
-                else:
-                    hierarchy = []
+            if self.capture_hierarchy:
+                hierarchy = self.constructHierarchy(group_name)
+            else:
+                hierarchy = []
 
-                metadata = {
-                    'hierarchy': json.dumps(hierarchy),
-                    'election_name': self.election_name,
-                    'election_slug': self.election_slug,
-                    'image_id': str(uuid4()),
-                }
+            metadata = {
+                'hierarchy': json.dumps(hierarchy),
+                'election_name': self.election_name,
+                'election_slug': self.election_slug,
+                'image_id': str(uuid4()),
+            }
 
-                key = '{0}/{1}'.format(self.election_slug,
-                                       '{}.pdf'.format(title.rsplit('.', 1)[0]))
+            key = '{0}/{1}'.format(self.election_slug,
+                                   '{}.pdf'.format(group_name))
 
-                try:
-                    body = img2pdf.convert(fd)
-                except img2pdf.ImageOpenError:
-                    print("Couldn't convert: {}".format(title))
-                    continue
+            try:
+                body = img2pdf.convert(filenames)
+            except img2pdf.ImageOpenError:
+                print("Couldn't convert: {}".format(group_name))
+                continue
 
-                self.s3_client.put_object(ACL='public-read',
-                                          Body=body,
-                                          Bucket=self.bucket,
-                                          Key=key,
-                                          ContentType='application/pdf',
-                                          Metadata=metadata)
+            self.s3_client.put_object(ACL='public-read',
+                                    Body=body,
+                                    Bucket=self.bucket,
+                                    Key=key,
+                                    ContentType='application/pdf',
+                                    Metadata=metadata)
 
-            os.remove(os.path.join(self.this_dir, title))
+            self.saveImage(key)
+
+            for title in filenames:
+                os.remove(os.path.join(self.this_dir, title))
 
     def constructHierarchy(self, title):
-        geographies = title.split('-', 1)[1].rsplit('.', 1)[0]
-        return  geographies.split('_')
+        # geographies = title.split('-', 1)[1].rsplit('.', 1)[0]
+        return  title.split('_')
 
 if __name__ == "__main__":
     import argparse
