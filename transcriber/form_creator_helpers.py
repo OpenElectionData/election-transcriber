@@ -47,16 +47,17 @@ class FormCreatorManager(object):
             self.hierarchy_filter = self.form_meta.hierarchy_filter
 
         else:
-
-
-            max_length_filter = max(len(f) for f in self.hierarchy_filter)
             padded_filters = []
 
-            for filter in hierarchy_filter:
-                if len(filter) < max_length_filter:
-                    filter += [None for i in range(max_length_filter - len(filter))]
+            if self.hierarchy_filter:
 
-                padded_filters.append(filter)
+                max_length_filter = max(len(f) for f in self.hierarchy_filter)
+
+                for filter in hierarchy_filter:
+                    if len(filter) < max_length_filter:
+                        filter += [None for i in range(max_length_filter - len(filter))]
+
+                    padded_filters.append(filter)
 
             self.hierarchy_filter = padded_filters
             existing = db.session.query(FormMeta)\
