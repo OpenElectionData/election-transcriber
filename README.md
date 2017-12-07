@@ -85,6 +85,8 @@ There is a script in the root folder of the project called
 `syncDriveFolder.py`. As you might guess, it's the script that is responsible
 for syncing files from a Google Drive folder to an AWS S3 bucket.
 
+**Setup Google Service Account**
+
 * Follow the instructions [here](https://developers.google.com/identity/protocols/OAuth2ServiceAccount#creatinganaccount) to get a Google Service Account setup.
 * You should end up with a JSON file that looks like this:
 
@@ -103,8 +105,8 @@ for syncing files from a Google Drive folder to an AWS S3 bucket.
 }
 ```
 
-**As was explained in the part where you download that, the contents of this file
-should be kept secret.**
+_As was explained in the part where you download that, the contents of this file
+should be kept secret._
 
 * Copy the `client_email` address from that JSON file.
 * In a browser, navigate to the Google Drive folder where your images are.
@@ -112,3 +114,82 @@ should be kept secret.**
   share the folder with that email address. You won't need to send
   a notification because it won't really go anywhere anyways. You'll also only
   need to give that account "View only" permissions.
+
+**Setup AWS User**
+
+* In your AWS console, navigate to [the S3 dashboard](https://s3.console.aws.amazon.com/s3/home).
+* Create a bucket.
+* Navigate to [the IAM dashboard](https://console.aws.amazon.com/iam/home).
+* Create a user and attach the following policy to it (substituting
+  [bucket_name] with the name of the bucket you created above). Make sure that
+  the user can have programmatic access (it does not, however, need console
+  access).
+
+```
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "Stmt1508430268000",
+            "Effect": "Allow",
+            "Action": [
+                "s3:*"
+            ],
+            "Resource": [
+                "arn:aws:s3:::[bucket_name]/*"
+            ]
+        },
+        {
+            "Effect": "Allow",
+            "Action": [
+                "s3:ListBucket"
+            ],
+            "Resource": [
+                "arn:aws:s3:::[bucket_name]"
+            ]
+        }
+    ]
+}
+```
+* Navigate back to the IAM dashboard and click on the name of the user you just
+  created.
+* On the "Summary" page, click the "Security Credentials".
+* Under the "Access Keys" header click "Create Access key" and download the CSV
+  file that you are given at the end of that process. _This is another piece of
+  information that should be kept secret_
+
+To run the `syncDriveFolder.py` script, just put the credentials file from
+Google and the credentials file from AWS in the root folder of the project run
+the script like
+
+```
+python syncDriveFolder.py -f [name_of_drive_folder] -n [name_of_election]
+```
+
+A full list of options for that script can be seen by running `python
+syncDriveFolder.py --help`.
+
+```
+usage: syncDriveFolder.py [-h] [--aws-creds AWS_CREDS]
+                          [--google-creds GOOGLE_CREDS] -n ELECTION_NAME -f
+                          DRIVE_FOLDER [--capture-hierarchy]
+
+Sync and convert images from a Google Drive Folder to an S3 Bucket
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --aws-creds AWS_CREDS
+                        Path to AWS credentials. (default:
+                        /home/eric/code/election-transcriber/credentials.csv)
+  --google-creds GOOGLE_CREDS
+                        Path to Google credentials. (default:
+                        /home/eric/code/election-transcriber/credentials.json)
+  -n ELECTION_NAME, --election-name ELECTION_NAME
+                        Short name to be used under the hood for the election
+                        (default: None)
+  -f DRIVE_FOLDER, --drive-folder DRIVE_FOLDER
+                        Name of the Google Drive folder to sync (default:
+                        None)
+  --capture-hierarchy   Capture a geographical hierarchy from the name of the
+                        file. (default: False)
+```
