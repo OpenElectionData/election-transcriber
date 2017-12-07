@@ -275,5 +275,7 @@ class SyncGoogle(object):
         geographies = title.split('-', 1)[1].rsplit('.', 1)[0]
         return  geographies.split('_')
 
-syncer = SyncGoogle(election_name="Kenya rerun -- TEST")
-thing = syncer.sync()
+if __name__ == "__main__":
+    import argparse
+    syncer = SyncGoogle(election_name="Kenya rerun -- TEST")
+    syncer.sync()
