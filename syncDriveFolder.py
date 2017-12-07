@@ -24,17 +24,23 @@ from transcriber.helpers import slugify
 SCOPES = ['https://www.googleapis.com/auth/drive.readonly']
 
 class SyncGoogle(object):
-    def __init__(self, election_name=None):
-        self.this_dir = os.path.dirname(__file__)
-        secrets_path = os.path.join(self.this_dir, 'credentials.json')
+    def __init__(self,
+                 election_name=None,
+                 drive_folder=None,
+                 aws_creds=None,
+                 google_creds=None,
+                 capture_hierarchy=False):
 
-        credentials = ServiceAccountCredentials.from_json_keyfile_name(secrets_path,
+        self.this_dir = os.path.abspath(os.path.dirname(__file__))
+        self.capture_hierarchy = capture_hierarchy
+
+        credentials = ServiceAccountCredentials.from_json_keyfile_name(google_creds,
                                                                        SCOPES)
         http = credentials.authorize(httplib2.Http())
 
         self.service = build('drive', 'v3', http=http)
 
-        result = self.service.files().list(q='sharedWithMe=true').execute()
+        result = self.service.files().list(q="name contains '{}'".format(drive_folder)).execute()
 
         self.folder_ids = [f['id'] for f in result['files']
                            if f['mimeType'] == 'application/vnd.google-apps.folder']
@@ -43,7 +49,7 @@ class SyncGoogle(object):
         self.election_name = election_name
         self.election_slug = slugify(election_name)
 
-        aws_key, aws_secret_key = self.awsCredentials()
+        aws_key, aws_secret_key = self.awsCredentials(aws_creds)
 
         self.s3_client = boto3.client('s3',
                                       aws_access_key_id=aws_key,
@@ -51,15 +57,7 @@ class SyncGoogle(object):
 
         self.synced_images = self.getSyncedImages()
 
-    def awsCredentials(self):
-
-        if AWS_CREDENTIALS_PATH:
-            creds_path = AWS_CREDENTIALS_PATH
-        else:
-            creds_path = os.path.join(self.this_dir, 'credentials.csv')
-
-        if not os.path.exists(creds_path):
-            raise Exception('Please decrypt s3credentials.csv.gpg into the root folder of the project')
+    def awsCredentials(self, creds_path):
 
         with open(creds_path) as f:
             reader = csv.reader(f)
@@ -245,7 +243,11 @@ class SyncGoogle(object):
 
             with open(os.path.join(self.this_dir, title), 'rb') as fd:
 
-                hierarchy = self.constructHierarchy(title)
+                if self.capture_hierarchy:
+                    hierarchy = self.constructHierarchy(title)
+                else:
+                    hierarchy = []
+
                 metadata = {
                     'hierarchy': json.dumps(hierarchy),
                     'election_name': self.election_name,
@@ -275,5 +277,27 @@ class SyncGoogle(object):
         geographies = title.split('-', 1)[1].rsplit('.', 1)[0]
         return  geographies.split('_')
 
-syncer = SyncGoogle(election_name="Kenya rerun -- TEST")
-thing = syncer.sync()
+if __name__ == "__main__":
+    import argparse
+
+    this_dir = os.path.abspath(os.path.dirname(__file__))
+    default_aws_credentials = os.path.join(this_dir, 'credentials.csv')
+    default_google_credentials = os.path.join(this_dir, 'credentials.json')
+
+    parser = argparse.ArgumentParser(description='Sync and convert images from a Google Drive Folder to an S3 Bucket',
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+
+    parser.add_argument('--aws-creds', type=str, help='Path to AWS credentials.', default=default_aws_credentials)
+    parser.add_argument('--google-creds', type=str, help='Path to Google credentials.', default=default_google_credentials)
+    parser.add_argument('-n', '--election-name', type=str, help='Short name to be used under the hood for the election', required=True)
+    parser.add_argument('-f', '--drive-folder', type=str, help='Name of the Google Drive folder to sync', required=True)
+    parser.add_argument('--capture-hierarchy', action='store_true', help='Capture a geographical hierarchy from the name of the file.')
+
+    args = parser.parse_args()
+
+    syncer = SyncGoogle(aws_creds=args.aws_creds,
+                        google_creds=args.google_creds,
+                        election_name=args.election_name,
+                        drive_folder=args.drive_folder,
+                        capture_hierarchy=args.capture_hierarchy)
+    syncer.sync()
