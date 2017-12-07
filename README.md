@@ -83,11 +83,32 @@ Once the server is running, navigate to http://localhost:5000/
 
 There is a script in the root folder of the project called
 `syncDriveFolder.py`. As you might guess, it's the script that is responsible
-for syncing files from a Google Drive folder to an AWS S3 bucket. In order for
-this to work, you'll need to take a couple steps:
+for syncing files from a Google Drive folder to an AWS S3 bucket.
 
-**Setup a Service Account in your Google Developer Console**
+* Follow the instructions [here](https://developers.google.com/identity/protocols/OAuth2ServiceAccount#creatinganaccount) to get a Google Service Account setup.
+* You should end up with a JSON file that looks like this:
 
-* Navigate to https://developers.google.com and login if you're not already
-  logged in.
-* Create a project
+```
+{
+  "type": "service_account",
+  "project_id": "[name of the project]",
+  "private_key_id": "[long hash]",
+  "private_key": "[very very long hash]",
+  "client_email": "some-user@project-name.iam.gserviceaccount.com",
+  "client_id": "[long number]",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://accounts.google.com/o/oauth2/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "[long URL]"
+}
+```
+
+**As was explained in the part where you download that, the contents of this file
+should be kept secret.**
+
+* Copy the `client_email` address from that JSON file.
+* In a browser, navigate to the Google Drive folder where your images are.
+* Click the icon next to the folder's name to open the sharing preferences and
+  share the folder with that email address. You won't need to send
+  a notification because it won't really go anywhere anyways. You'll also only
+  need to give that account "View only" permissions.
