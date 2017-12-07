@@ -77,4 +77,17 @@ get going in production, follow the instructions in
   python run_queue.py
   ```
 
-  Once the server is running, navigate to http://localhost:5000/
+Once the server is running, navigate to http://localhost:5000/
+
+## Syncing images between Google Drive and AWS
+
+There is a script in the root folder of the project called
+`syncDriveFolder.py`. As you might guess, it's the script that is responsible
+for syncing files from a Google Drive folder to an AWS S3 bucket. In order for
+this to work, you'll need to take a couple steps:
+
+**Setup a Service Account in your Google Developer Console**
+
+* Navigate to https://developers.google.com and login if you're not already
+  logged in.
+* Create a project

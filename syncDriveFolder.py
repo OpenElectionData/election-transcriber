@@ -28,7 +28,11 @@ class SyncGoogle(object):
                  election_name=None,
                  drive_folder=None,
                  aws_creds=None,
-                 google_creds=None):
+                 google_creds=None,
+                 capture_hierarchy=False):
+
+        self.this_dir = os.path.abspath(os.path.dirname(__file__))
+        self.capture_hierarchy = capture_hierarchy
 
         credentials = ServiceAccountCredentials.from_json_keyfile_name(google_creds,
                                                                        SCOPES)
@@ -239,7 +243,11 @@ class SyncGoogle(object):
 
             with open(os.path.join(self.this_dir, title), 'rb') as fd:
 
-                hierarchy = self.constructHierarchy(title)
+                if self.capture_hierarchy:
+                    hierarchy = self.constructHierarchy(title)
+                else:
+                    hierarchy = []
+
                 metadata = {
                     'hierarchy': json.dumps(hierarchy),
                     'election_name': self.election_name,
@@ -283,11 +291,13 @@ if __name__ == "__main__":
     parser.add_argument('--google-creds', type=str, help='Path to Google credentials.', default=default_google_credentials)
     parser.add_argument('-n', '--election-name', type=str, help='Short name to be used under the hood for the election', required=True)
     parser.add_argument('-f', '--drive-folder', type=str, help='Name of the Google Drive folder to sync', required=True)
+    parser.add_argument('--capture-hierarchy', action='store_true', help='Capture a geographical hierarchy from the name of the file.')
 
     args = parser.parse_args()
 
     syncer = SyncGoogle(aws_creds=args.aws_creds,
                         google_creds=args.google_creds,
                         election_name=args.election_name,
-                        drive_folder=args.drive_folder)
+                        drive_folder=args.drive_folder,
+                        capture_hierarchy=args.capture_hierarchy)
     syncer.sync()
