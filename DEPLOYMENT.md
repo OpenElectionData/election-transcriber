@@ -194,8 +194,8 @@ sudo chown root.root /etc/ssl/private/dhparams.pem
 server {
     listen 443;
     server_name [hostname];
-    access_log /var/log/nginx/{{ appname }}-access.log;
-    error_log /var/log/nginx/{{ appname }}-error.log;
+    access_log /var/log/nginx/[hostname]-access.log;
+    error_log /var/log/nginx/[hostname]-error.log;
 
     ssl on;
     ssl_certificate /etc/letsencrypt/live/[hostname]/fullchain.pem;
