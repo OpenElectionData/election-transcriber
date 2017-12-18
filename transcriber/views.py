@@ -24,8 +24,6 @@ from transcriber.transcription_helpers import TranscriptionManager, checkinImage
 from transcriber.form_creator_helpers import FormCreatorManager
 from transcriber.tasks import ImageUpdater, update_from_s3
 
-from documentcloud import DocumentCloud
-
 views = Blueprint('views', __name__)
 
 ALLOWED_EXTENSIONS = set(['pdf', 'png', 'jpg', 'jpeg'])
