@@ -1,6 +1,6 @@
 Flask==0.10.1
 SQLAlchemy==0.9.8
-psycopg2==2.5.4
+psycopg2==2.7.3.2
 Flask-Bcrypt==0.6.0
 Flask-Security==1.7.4
 Flask-WTF==0.11
