@@ -217,25 +217,26 @@ def get_user_activity(user_name):
         task_info = task.as_dict()
         table_name = task_info['table_name']
 
-        q = '''
-                SELECT * FROM image AS i
-                JOIN "{0}" AS t
-                  ON i.doc_id = t.image_id
-                WHERE transcriber = '{1}' and transcription_status = 'raw'
-            '''.format(table_name, user['name'])
-        h = '''
-            SELECT column_name
-            FROM information_schema.columns
-            WHERE table_name = '{0}'
-        '''.format(table_name)
+        if table_name:
+            q = '''
+                    SELECT * FROM image AS i
+                    JOIN "{0}" AS t
+                    ON i.id = t.image_id
+                    WHERE transcriber = '{1}' and transcription_status = 'raw'
+                '''.format(table_name, user['name'])
+            h = '''
+                SELECT column_name
+                FROM information_schema.columns
+                WHERE table_name = '{0}'
+            '''.format(table_name)
 
-        with engine.begin() as conn:
-            t_header = conn.execute(text(h)).fetchall()
-            rows_all = conn.execute(text(q)).fetchall()
+            with engine.begin() as conn:
+                t_header = conn.execute(text(h)).fetchall()
+                rows_all = conn.execute(text(q)).fetchall()
 
-        if len(rows_all) > 0:
-            transcriptions = pretty_user_transcriptions(t_header, rows_all, task_info["id"], user['name'])
-            user_transcriptions.append((task_info, transcriptions))
+            if len(rows_all) > 0:
+                transcriptions = pretty_user_transcriptions(t_header, rows_all, task_info["id"], user['name'])
+                user_transcriptions.append((task_info, transcriptions))
 
     return (user, user_transcriptions)
 

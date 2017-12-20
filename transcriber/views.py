@@ -23,6 +23,7 @@ from transcriber.helpers import pretty_task_transcriptions, \
 from transcriber.transcription_helpers import TranscriptionManager, checkinImages
 from transcriber.form_creator_helpers import FormCreatorManager
 from transcriber.tasks import ImageUpdater, update_from_s3
+from transcriber.models import User, Role
 
 views = Blueprint('views', __name__)
 
@@ -621,6 +622,35 @@ def user():
     user, user_transcriptions = get_user_activity(request.args.get('user'))
 
     return render_template('user.html', user=user, user_transcriptions = user_transcriptions)
+
+
+@views.route('/make-admin/')
+@login_required
+@roles_required('admin')
+def make_admin():
+
+    user_email = request.args.get('email')
+
+    if not user_email:
+        flash('Please provide an "email" query parameter')
+        return redirect(url_for('views.index'))
+
+    user = db.session.query(User).filter(User.email == user_email).first()
+
+    if not user:
+        flash('No user with email "{}"'.format(user_email))
+        return redirect(url_for('views.index'))
+
+    role = db.session.query(Role).filter(Role.name == 'admin').first()
+
+    user.roles = user.roles + [role]
+
+    db.session.add(user)
+    db.session.commit()
+
+    flash ('User "{}" updated to admin status'.format(user.email))
+
+    return redirect(url_for('views.index'))
 
 
 @views.route('/view-activity/', methods=['GET', 'POST'])
