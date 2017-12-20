@@ -46,33 +46,41 @@ def index():
             .all()
             # order by due date here
     t = []
+    uninitialized_tasks = []
     groups = []
     has_complete_tasks = False
     has_inprog_tasks = False
 
     for task in tasks:
         # make the progress bar depend on reviews (#docs * #reviewers) instead of documents?
-        task_dict = task.as_dict()
-        reviewer_count = task_dict['reviewer_count']
-        task_id = task_dict['id']
 
-        progress_dict = ImageTaskAssignment.get_task_progress(task_id)
+        if task.table_name:
 
-        if task.task_group_id not in groups and progress_dict['docs_done_ct'] < progress_dict['docs_total']:
-            is_top_task = True
-            groups.append(task.task_group_id)
+            task_dict = task.as_dict()
+            reviewer_count = task_dict['reviewer_count']
+            task_id = task_dict['id']
+
+            progress_dict = ImageTaskAssignment.get_task_progress(task_id)
+
+            if task.task_group_id not in groups and progress_dict['docs_done_ct'] < progress_dict['docs_total']:
+                is_top_task = True
+                groups.append(task.task_group_id)
+            else:
+                is_top_task = False
+
+            if progress_dict['docs_inprog_ct'] > 0:
+                has_inprog_tasks = True
+            else:
+                has_complete_tasks = True
+
+            t.append([task, progress_dict, is_top_task])
+
         else:
-            is_top_task = False
-
-        if progress_dict['docs_inprog_ct'] > 0:
-            has_inprog_tasks = True
-        else:
-            has_complete_tasks = True
-
-        t.append([task, progress_dict, is_top_task])
+            uninitialized_tasks.append(task)
 
     return render_template('index.html',
                            tasks=t,
+                           uninitialized_tasks=uninitialized_tasks,
                            has_inprog_tasks=has_inprog_tasks,
                            has_complete_tasks=has_complete_tasks)
 
@@ -257,6 +265,9 @@ def form_creator():
     else:
         creator_manager = FormCreatorManager(election_name=election_name,
                                              hierarchy_filter=hierarchy_filter)
+
+        if creator_manager.existing_form:
+            flash('You already created a transcription task just like this. Use this form to edit it.')
 
     image_url = creator_manager.form_meta.sample_image
 

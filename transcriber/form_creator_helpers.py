@@ -66,6 +66,7 @@ class FormCreatorManager(object):
 
             if existing:
                 self.form_meta = existing
+                self.existing_form = True
             else:
                 self.form_meta.election_name = self.election_name
                 self.form_meta.hierarchy_filter = self.hierarchy_filter
@@ -93,24 +94,26 @@ class FormCreatorManager(object):
             LIMIT 1
         '''
 
-        cursor = engine.execute(sa.text(sel),
-                                form_id=self.form_meta.id)
-        self.next_section_index = cursor.first().section_index
+        row = engine.execute(sa.text(sel),
+                             form_id=self.form_meta.id).first()
 
-        sel = '''
-            SELECT
-                s.index as section_index,
-                MAX(f.index) AS field_index
-            FROM form_meta as m
-            JOIN form_section as s
-                ON m.id = s.form_id
-            JOIN form_field as f
-                ON s.id = f.section_id
-            WHERE m.id = :form_id
-            GROUP BY s.id
-        '''
-        self.next_field_indices = {f.section_index: f.field_index for f in \
-                                        engine.execute(sa.text(sel), form_id=self.form_meta.id)}
+        if row:
+            self.next_section_index = cursor.first().section_index
+
+            sel = '''
+                SELECT
+                    s.index as section_index,
+                    MAX(f.index) AS field_index
+                FROM form_meta as m
+                JOIN form_section as s
+                    ON m.id = s.form_id
+                JOIN form_field as f
+                    ON s.id = f.section_id
+                WHERE m.id = :form_id
+                GROUP BY s.id
+            '''
+            self.next_field_indices = {f.section_index: f.field_index for f in \
+                                            engine.execute(sa.text(sel), form_id=self.form_meta.id)}
 
     def updateFormMeta(self, post_data, sample_image=None):
 

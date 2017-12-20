@@ -201,10 +201,13 @@ class ImageTaskAssignment(db.Model):
             WHERE id = :form_id
         '''), form_id=task_id).first().table_name
 
-        data_table = Table(table_name,
-                           MetaData(),
-                           autoload=True,
-                           autoload_with=db.session.bind)
+        try:
+            data_table = Table(table_name,
+                            MetaData(),
+                            autoload=True,
+                            autoload_with=db.session.bind)
+        except NoSuchTableError:
+            return None
 
         skip_cols = [
             'date_added',

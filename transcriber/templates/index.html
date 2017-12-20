@@ -11,6 +11,16 @@
                 </p>
                 <br>
             {% endif %}
+            {% if uninitialized_tasks %}
+                <h3>Tasks still needing definition</h3>
+                <ul>
+                    {% for task in uninitialized_tasks %}
+                        <li>
+                            <a href="{{ url_for('views.form_creator', form_id=task.id) }}">{{ task.election_name }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
 
             {% if current_user.has_role('admin') or current_user.has_role('manager') %}
                 <h3>In progress</h3>
@@ -109,6 +119,7 @@
                     {% endif %}
                 </tbody>
             </table>
+
 
             <br>
 
