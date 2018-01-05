@@ -62,7 +62,8 @@ class FormCreatorManager(object):
             self.hierarchy_filter = padded_filters
             existing = db.session.query(FormMeta)\
                                  .filter(FormMeta.election_name == self.election_name)\
-                                 .filter(FormMeta.hierarchy_filter == self.hierarchy_filter).first()
+                                 .filter(FormMeta.hierarchy_filter == self.hierarchy_filter)\
+                                 .filter(FormMeta.status != 'deleted').first()
 
             if existing:
                 self.form_meta = existing
