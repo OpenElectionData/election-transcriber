@@ -98,7 +98,7 @@ class FormCreatorManager(object):
                              form_id=self.form_meta.id).first()
 
         if row:
-            self.next_section_index = row.first().section_index
+            self.next_section_index = row.section_index
 
             sel = '''
                 SELECT
