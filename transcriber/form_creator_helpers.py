@@ -67,6 +67,7 @@ class FormCreatorManager(object):
             if existing:
                 self.form_meta = existing
                 self.existing_form = True
+                self.createDataTable()
             else:
                 self.form_meta.election_name = self.election_name
                 self.form_meta.hierarchy_filter = self.hierarchy_filter
@@ -317,7 +318,7 @@ class FormCreatorManager(object):
         table = sa.Table(table_name, sa.MetaData(), *cols)
 
         engine = db.session.bind
-        table.create(bind=engine)
+        table.create(bind=engine, checkfirst=True)
 
         self.form_meta.table_name = table_name
         db.session.add(self.form_meta)
