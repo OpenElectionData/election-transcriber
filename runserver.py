@@ -8,4 +8,10 @@ if __name__ == "__main__":
         port = int(sys.argv[1])
     except (IndexError, ValueError):
         port = 5000
+
+    app.config['DEBUG_TB_ENABLED'] = True
+
+    from flask_debugtoolbar import DebugToolbarExtension
+    toolbar = DebugToolbarExtension(app)
+
     app.run(debug=True, port=port)

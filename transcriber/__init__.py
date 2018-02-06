@@ -41,6 +41,7 @@ def create_app():
     csrf.init_app(app)
     flask_bcrypt.init_app(app)
 
+
     @app.template_filter('format_number')
     def format_number(s): # pragma: no cover
         if s:
@@ -66,5 +67,7 @@ def create_app():
     if sentry:
         sentry.init_app(app)
         app.config['sentry'] = sentry
+
+    app.jinja_env.filters['zip'] = zip
 
     return app

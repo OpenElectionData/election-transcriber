@@ -6,7 +6,7 @@ from wtforms.validators import DataRequired
 from transcriber.models import FormMeta, FormField, User
 from transcriber.database import db
 from flask import url_for
-from sqlalchemy import text, or_
+from sqlalchemy import Table, MetaData, text, or_
 
 
 def slugify(text, delim=u'_', truncate=False):
@@ -83,6 +83,7 @@ def pretty_user_transcriptions(t_header, rows_all, task_id, user_name):
 # this is used to display transcriptions on the 'review' transcriptions' page
 # colors rows based on transcription status & includes a delete link to delete a transcription
 def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_filter):
+
     num_cols = len(rows_all[0])
 
     # 4 cols per field: fieldname/fieldname_blank/fieldname_not_legible/fieldname_altered
@@ -93,9 +94,10 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
     meta_h = ['image id', 'date added', 'source','id', 'transcriber', ''] # include source hierarchy?
     field_h = []
 
+    slug_map = {f.slug: f.name for f in FormField.query.filter(FormField.form_id == task_id)}
+
     for f_slug in t_header[t_col_start::cpf]:
-        field = FormField.query.filter(FormField.form_id == task_id).filter(FormField.slug == f_slug).first().as_dict()
-        field_h.append(field["name"])
+        field_h.append(slug_map[f_slug])
     # meta fields + transcription fields + space for delete button
 
     header = meta_h + field_h
@@ -104,18 +106,10 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
     for row in rows_all:
         row = list(row)
 
-        image_id = row[0]
-        image_url = row[1]
-        image_link = "<a href='{0}' target='_blank'>{1}</a>".format(image_url, image_id)
-
         transcription_date = row[3].strftime("%Y-%m-%d %H:%M:%S")
-        dt_formatted = "<span class='text-xs'>{}</span>".format(transcription_date)
-        src_formatted = "<span class='text-xs'>{}</span>".format(row[2])
 
-        transcription_id = row[5]
-        user_name = row[4]
-        user_link = '<a href="/user/?user={0}" target="_blank">{0}</a>'.format(user_name)
-        row_pretty = [image_link, dt_formatted, src_formatted, transcription_id, user_link]
+        user_link = url_for('views.user', user=row[4])
+        row_pretty = [row[1], transcription_date, row[2], row[5], user_link]
 
         # adding a link to delete, link to transcribe
         delete_url = url_for('views.delete_transcription',
@@ -124,18 +118,12 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
                              task_id=task_id,
                              next='task')
 
-        delete_template = '<a title="Delete transcription {t_id}" href="{d_url}"><i class="fa fa-trash-o fa-fw"></i></a>'
-        delete_html = delete_template.format(t_id=transcription_id, d_url=delete_url)
-
         edit_url = url_for('views.transcribe',
                            task_id=task_id,
                            image_id=image_id,
                            supercede=transcription_id)
 
-        edit_template = '<a title="Edit transcription {t_id}" href="{e_url}"><i class="fa fa-pencil fa-fw"></i></a>'
-        transcribe_html = edit_template.format(t_id=transcription_id, e_url=edit_url)
-
-        row_pretty.append(delete_html + transcribe_html)
+        row_pretty += [delete_url, edit_url]
 
         row_transcribed = [row[i:i + cpf] for i in range(t_col_start + 3, num_cols, cpf)] # transcribed fields
 
@@ -173,6 +161,7 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
         for status, value in img_statuses.items():
             if image_id in [i.id for i in img_statuses[status]]:
                 cls = status
+                break
 
         if row_filter == 'conflict' and cls == 'conflict':
             include_row = True
@@ -278,3 +267,41 @@ def getTranscriptionSelect(transcribed_fields):
         cases.append(case)
 
     return ', '.join(cases)
+
+def getTranscribedImages(table_name, limit=None, offset=None):
+
+    engine = db.session.bind
+
+    table = Table(table_name,
+                  MetaData(),
+                  autoload=True,
+                  autoload_with=engine)
+
+    t_header = [c.name for c in table.columns if c.name != 'image_id']
+    columns = ', '.join(['t."{}"'.format(c) for c in t_header])
+
+    q = '''
+        SELECT
+          i.id AS image_id,
+          i.fetch_url,
+          i.hierarchy,
+          {columns}
+        FROM image AS i
+        JOIN "{table_name}" AS t
+          ON i.id = t.image_id
+        WHERE t.transcription_status = 'raw'
+        ORDER BY i.id, t.id
+    '''.format(columns=columns,
+               table_name=table_name,
+               limit=limit,
+               offset=offset)
+
+    if limit or offset:
+        q = '{q} LIMIT {limit} OFFSET {offset}'.format(q=q,
+                                                       limit=limit,
+                                                       offset=offset)
+
+    with engine.begin() as conn:
+        rows_all = conn.execute(text(q)).fetchall()
+
+    return t_header, rows_all

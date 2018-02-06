@@ -18,11 +18,12 @@ from transcriber.models import FormMeta, FormSection, FormField, \
     Image, ImageTaskAssignment, TaskGroup
 from transcriber.database import db
 from transcriber.helpers import pretty_task_transcriptions, \
-    get_user_activity, getTranscriptionSelect
+    get_user_activity, getTranscriptionSelect, getTranscribedImages
 
 from transcriber.transcription_helpers import TranscriptionManager, checkinImages
 from transcriber.form_creator_helpers import FormCreatorManager
 from transcriber.tasks import ImageUpdater, update_from_s3
+from transcriber.auth import csrf
 
 from documentcloud import DocumentCloud
 
@@ -490,6 +491,7 @@ def download_transcriptions():
 def transcriptions():
     if not request.args.get('task_id'):
         return redirect(url_for('views.index'))
+
     transcriptions_final = None
     header = None
     task_id = request.args.get('task_id')
@@ -502,32 +504,56 @@ def transcriptions():
 
     table_name = task_dict['table_name']
 
-    engine = db.session.bind
+    t_header, rows_all = getTranscribedImages(table_name)
 
-    table = Table(table_name,
-                  MetaData(),
-                  autoload=True,
-                  autoload_with=engine)
+    images_completed = ImageTaskAssignment.get_completed_images_by_task(task_id)
+    images_unseen = ImageTaskAssignment.get_unseen_images_by_task(task_id)
+    images_inprog = ImageTaskAssignment.get_inprog_images_by_task(task_id)
+    images_conflict = ImageTaskAssignment.get_conflict_images_by_task(task_id)
 
-    t_header = [c.name for c in table.columns if c.name != 'image_id']
-    columns = ', '.join(['t."{}"'.format(c) for c in t_header])
+    rows_all_len = len(rows_all)
 
-    q = '''
-        SELECT
-          i.id AS image_id,
-          i.fetch_url,
-          i.hierarchy,
-          {columns}
-        FROM image AS i
-        JOIN "{table_name}" AS t
-          ON i.id = t.image_id
-        WHERE t.transcription_status = 'raw'
-        ORDER BY i.id, t.id
-    '''.format(columns=columns,
-                   table_name=table_name)
+    img_statuses = {
+        'done': images_completed,
+        'inprog': images_inprog,
+        'unseen': images_unseen,
+        'conflict': images_conflict
+    }
 
-    with engine.begin() as conn:
-        rows_all = conn.execute(text(q)).fetchall()
+    row_filter = request.args.get('filter')
+
+    if len(rows_all) > 0:
+        transcription_tbl_header, transcriptions_tbl_rows = \
+                pretty_task_transcriptions(t_header,
+                                           rows_all[:26],
+                                           task_id,
+                                           img_statuses,
+                                           row_filter)
+    else:
+        transcription_tbl_header = []
+        transcriptions_tbl_rows = []
+
+    return render_template('transcriptions.html',
+                            task=task_dict,
+                            rows_all_len=rows_all_len,
+                            transcription_tbl_header=transcription_tbl_header,
+                            transcriptions_tbl_rows=transcriptions_tbl_rows,
+                            row_filter=row_filter)
+
+
+@views.route('/transcription-data/<task_id>/', methods=['POST'])
+@csrf.exempt
+def transcription_data(task_id):
+
+    limit = request.form['length']
+    offset = request.form['start']
+    total = request.args['total']
+
+    task = db.session.query(FormMeta).get(task_id)
+
+    t_header, transcribed_images = getTranscribedImages(task.table_name,
+                                                        limit=limit,
+                                                        offset=offset)
 
     images_completed = ImageTaskAssignment.get_completed_images_by_task(task_id)
     images_unseen = ImageTaskAssignment.get_unseen_images_by_task(task_id)
@@ -543,27 +569,31 @@ def transcriptions():
 
     row_filter = request.args.get('filter')
 
-    if len(rows_all) > 0:
-        transcription_tbl_header, transcriptions_tbl_rows = \
-                pretty_task_transcriptions(t_header,
-                                           rows_all,
-                                           task_id,
-                                           img_statuses,
-                                           row_filter)
+    if len(transcribed_images) > 0:
+        _, transcriptions_tbl_rows = pretty_task_transcriptions(t_header,
+                                                                transcribed_images,
+                                                                task_id,
+                                                                img_statuses,
+                                                                row_filter)
     else:
-        transcription_tbl_header = []
         transcriptions_tbl_rows = []
 
-    return render_template('transcriptions.html',
-                            task=task_dict,
-                            rows_all_len=len(rows_all),
-                            transcription_tbl_header=transcription_tbl_header,
-                            transcriptions_tbl_rows=transcriptions_tbl_rows,
-                            images_completed=images_completed,
-                            images_unseen=images_unseen,
-                            images_inprog=images_inprog,
-                            images_conflict=images_conflict,
-                            row_filter=row_filter)
+    rows = []
+
+    for _, row_data in transcriptions_tbl_rows:
+        rows.append(row_data)
+
+    resp = {
+        'draw': int(request.form['draw']),
+        'recordsTotal': total,
+        'recordsFiltered': total,
+        'data': rows,
+    }
+
+    response = make_response(json.dumps(resp))
+    response.headers['Content-Type'] = 'application/json'
+    return response
+
 
 @views.route('/all-users/', methods=['GET', 'POST'])
 @login_required

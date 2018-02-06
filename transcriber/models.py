@@ -153,11 +153,18 @@ class ImageTaskAssignment(db.Model):
 
     @classmethod
     def get_completed_images_by_task(cls, task_id):
-        return [row.image for row in db.session.query(cls)\
-                                    .filter(cls.form_id == task_id)\
-                                    .filter(cls.is_complete == True)\
-                                    .order_by(cls.id)\
-                                    .all()]
+
+        completed = '''
+            SELECT image.id
+            FROM image_task_assignment AS ita
+            JOIN image
+              ON ita.image_id = image.id
+            WHERE ita.form_id = :task_id
+            AND is_complete = TRUE
+            ORDER BY ita.id
+        '''
+
+        return [row for row in db.session.execute(text(completed), {'task_id': task_id})]
 
     @classmethod
     def get_unseen_images_by_task(cls, task_id):
@@ -252,8 +259,6 @@ class ImageTaskAssignment(db.Model):
         if reviewer_count == None: # clean this up
             reviewer_count = 1
 
-        engine = db.session.bind
-
         doc_counts = '''
             SELECT
               COUNT(*) AS count,
@@ -263,8 +268,8 @@ class ImageTaskAssignment(db.Model):
             GROUP BY is_complete
         '''
 
-        doc_counts = list(engine.execute(text(doc_counts),
-                                         task_id=task_id))
+        doc_counts = list(db.session.execute(text(doc_counts),
+                                             dict(task_id=task_id)))
 
         docs_total = 0
         docs_done = 0
@@ -309,10 +314,10 @@ class ImageTaskAssignment(db.Model):
             'reviewer_count': reviewer_count
         }
 
-        docs_inprog = engine.execute(text(in_prog), **q_args).first().count
-        docs_conflict = engine.execute(text(conflict), **q_args).first().count
-        docs_unseen = engine.execute(text(unseen), **q_args).first().count
-        reviews_complete = engine.execute(text(reviews_complete), **q_args).first().count
+        docs_inprog = db.session.execute(text(in_prog), q_args).first().count
+        docs_conflict = db.session.execute(text(conflict), q_args).first().count
+        docs_unseen = db.session.execute(text(unseen), q_args).first().count
+        reviews_complete = db.session.execute(text(reviews_complete), q_args).first().count
 
         # Total number of reviews that will need to happen
         reviews_total = (docs_total * reviewer_count)
