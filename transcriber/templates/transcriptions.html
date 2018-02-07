@@ -260,7 +260,7 @@
                 "processing": true,
                 "serverSide": true,
                 "ajax": {
-                    url: "{{ url_for('views.transcription_data', task_id=request.args.task_id, total=rows_all_len) }}",
+                    url: "{{ url_for('views.transcription_data', task_id=request.args.task_id, total=rows_all_len, filter=request.args.filter)|safe }}",
                     type: 'POST'
                 },
                 columns: dataTablesColumns

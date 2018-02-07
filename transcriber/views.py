@@ -529,10 +529,6 @@ def transcription_data(task_id):
 
     task = db.session.query(FormMeta).get(task_id)
 
-    t_header, transcribed_images = getTranscribedImages(task.table_name,
-                                                        limit=limit,
-                                                        offset=offset)
-
     img_statuses = {}
 
     completed = ImageTaskAssignment.get_completed_images_by_task(task_id)
@@ -551,14 +547,18 @@ def transcription_data(task_id):
 
     row_filter = request.args.get('filter')
 
+    t_header, transcribed_images = getTranscribedImages(task.table_name,
+                                                        limit=limit,
+                                                        offset=offset)
+
     if len(transcribed_images) > 0:
-        header, slug_header, transcriptions = pretty_task_transcriptions(t_header,
-                                                                         transcribed_images,
-                                                                         task_id,
-                                                                         img_statuses,
-                                                                         row_filter)
+        _, _, transcriptions = pretty_task_transcriptions(t_header,
+                                                          transcribed_images,
+                                                          task_id,
+                                                          img_statuses,
+                                                          row_filter)
     else:
-        transcriptions_tbl_rows = []
+        transcriptions = []
 
     rows = []
 

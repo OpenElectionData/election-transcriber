@@ -157,6 +157,11 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
                        .replace('_not_legible', '')\
                        .replace('_altered', '')
 
+        if not row_filter:
+            include_row = True
+        else:
+            include_row = False
+
         for field_name, field_group in itertools.groupby(row.items(), key=grouper):
 
             if field_name in skip_cols:
@@ -164,15 +169,14 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
 
             field_group = OrderedDict(field_group)
 
-            if not row_filter:
-                include_row = True
-            else:
-                include_row = False
 
             value = field_group[field_name]
             blank = field_group[field_name + '_blank']
             not_legible = field_group[field_name + '_not_legible']
             altered = field_group[field_name + '_altered']
+
+            if blank or not_legible or altered:
+                print(row['image_id'], field_name)
 
             if blank:
                 if row_filter == 'blank':
