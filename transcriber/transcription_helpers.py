@@ -363,7 +363,7 @@ class TranscriptionManager(object):
     def checkoutImage(self):
         checkout = '''
             UPDATE image_task_assignment SET
-              checkout_expire = NOW() + INTERVAL '1 minutes'
+              checkout_expire = NOW() + INTERVAL '10 minutes'
             WHERE image_id = :image_id
         '''
 
