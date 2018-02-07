@@ -1,5 +1,8 @@
 import re
 from unicodedata import normalize
+from collections import OrderedDict
+import itertools
+
 from wtforms.form import Form
 from wtforms.fields import StringField
 from wtforms.validators import DataRequired
@@ -102,77 +105,103 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
 
     header = meta_h + field_h
 
+    slug_header = {}
+
+    for slug, name in slug_map.items():
+        slug_header[name] = slug
+
     transcriptions = []
+
+    skip_cols = [
+        'date_added',
+        'image_id',
+        'transcriber',
+        'id',
+        'fetch_url',
+        'hierarchy',
+        'transcription_status',
+        'flag_irrelevant'
+    ]
+
     for row in rows_all:
-        row = list(row)
+        transcription_date = row['date_added'].strftime("%Y-%m-%d %H:%M:%S")
 
-        transcription_date = row[3].strftime("%Y-%m-%d %H:%M:%S")
+        user_link = url_for('views.user', user=row['transcriber'])
 
-        user_link = url_for('views.user', user=row[4])
-        row_pretty = [row[1], transcription_date, row[2], row[5], user_link]
-
-        # adding a link to delete, link to transcribe
         delete_url = url_for('views.delete_transcription',
-                             user=user_name,
-                             transcription_id=transcription_id,
+                             user=row['transcriber'],
+                             transcription_id=row['id'],
                              task_id=task_id,
                              next='task')
 
         edit_url = url_for('views.transcribe',
                            task_id=task_id,
-                           image_id=image_id,
-                           supercede=transcription_id)
+                           image_id=row['image_id'],
+                           supercede=row['id'])
 
-        row_pretty += [delete_url, edit_url]
+        row_pretty = {
+            'image_id': row['image_id'],
+            'date_added': transcription_date,
+            'source': row['fetch_url'],
+            'transcription_id': row['id'],
+            'user_link': user_link,
+            'user_name': row['transcriber'],
+            'delete_url': delete_url,
+            'edit_url': edit_url,
+            'status': img_statuses.get(row['image_id'], 'unseen'),
+            'flag_irrelevant': row['flag_irrelevant'],
+        }
 
-        row_transcribed = [row[i:i + cpf] for i in range(t_col_start + 3, num_cols, cpf)] # transcribed fields
+        def grouper(x):
+            return x[0].replace('_blank', '')\
+                       .replace('_not_legible', '')\
+                       .replace('_altered', '')
 
-        if not row_filter:
-            include_row = True
-        else:
-            include_row = False
+        for field_name, field_group in itertools.groupby(row.items(), key=grouper):
 
+            if field_name in skip_cols:
+                continue
 
-        for field_group in row_transcribed:
-            value, blank, not_legible, altered = field_group
+            field_group = OrderedDict(field_group)
+
+            if not row_filter:
+                include_row = True
+            else:
+                include_row = False
+
+            value = field_group[field_name]
+            blank = field_group[field_name + '_blank']
+            not_legible = field_group[field_name + '_not_legible']
+            altered = field_group[field_name + '_altered']
 
             if blank:
                 if row_filter == 'blank':
                     include_row = True
                 value = 'Blank <i class="fa fa-times fa-fw"></i>'
 
-            if not_legible:
+            elif not_legible:
                 if row_filter == 'illegible':
                     include_row = True
                 value = 'Not Legible <i class="fa fa-question fa-fw"></i>'
 
-            if altered:
+            elif altered:
                 if row_filter == 'altered':
                     include_row = True
                 value = 'Altered <i class="fa fa-exclamation-triangle fa-fw"></i>'
 
-            if row[7]:
-                value = 'Irrelevant <i class="fa fa-ban"></i>'
+            row_pretty[field_name] = value
 
-            row_pretty.append(value)
-
-        # TODO: a less hacky & more elegant way to get image task assignment status
-        cls = ''
-        for status, value in img_statuses.items():
-            if image_id in [i.id for i in img_statuses[status]]:
-                cls = status
-                break
-
-        if row_filter == 'conflict' and cls == 'conflict':
+        if row_filter == 'conflict' and row_pretty['status'] == 'conflict':
             include_row = True
 
-        if row_filter == 'irrelevant' and row[7]:
+        if row['flag_irrelevant']:
             include_row = True
+            value = 'Irrelevant <i class="fa fa-ban"></i>'
 
         if include_row:
-            transcriptions.append((cls, row_pretty))
+            transcriptions.append(row_pretty)
 
-    return (header, transcriptions)
+    return (header, slug_header, transcriptions)
 
 
 # given a username, returns user info & user activity
@@ -207,9 +236,9 @@ def get_user_activity(user_name):
         table_name = task_info['table_name']
 
         q = '''
-                SELECT * FROM document_cloud_image AS i
+                SELECT * FROM image AS i
                 JOIN "{0}" AS t
-                  ON i.doc_id = t.image_id
+                  ON i.id = t.image_id
                 WHERE transcriber = '{1}' and transcription_status = 'raw'
             '''.format(table_name, user['name'])
         h = '''
@@ -302,6 +331,6 @@ def getTranscribedImages(table_name, limit=None, offset=None):
                                                        offset=offset)
 
     with engine.begin() as conn:
-        rows_all = conn.execute(text(q)).fetchall()
+        rows_all = [OrderedDict(r) for r in conn.execute(text(q))]
 
     return t_header, rows_all

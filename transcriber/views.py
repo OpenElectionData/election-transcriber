@@ -504,40 +504,18 @@ def transcriptions():
 
     table_name = task_dict['table_name']
 
-    t_header, rows_all = getTranscribedImages(table_name)
+    header_map = {f.slug: f.name for f in FormField.query.filter(FormField.form_id == task_id)}
 
-    images_completed = ImageTaskAssignment.get_completed_images_by_task(task_id)
-    images_unseen = ImageTaskAssignment.get_unseen_images_by_task(task_id)
-    images_inprog = ImageTaskAssignment.get_inprog_images_by_task(task_id)
-    images_conflict = ImageTaskAssignment.get_conflict_images_by_task(task_id)
+    _, rows_all = getTranscribedImages(table_name)
 
     rows_all_len = len(rows_all)
 
-    img_statuses = {
-        'done': images_completed,
-        'inprog': images_inprog,
-        'unseen': images_unseen,
-        'conflict': images_conflict
-    }
-
     row_filter = request.args.get('filter')
-
-    if len(rows_all) > 0:
-        transcription_tbl_header, transcriptions_tbl_rows = \
-                pretty_task_transcriptions(t_header,
-                                           rows_all[:26],
-                                           task_id,
-                                           img_statuses,
-                                           row_filter)
-    else:
-        transcription_tbl_header = []
-        transcriptions_tbl_rows = []
 
     return render_template('transcriptions.html',
                             task=task_dict,
                             rows_all_len=rows_all_len,
-                            transcription_tbl_header=transcription_tbl_header,
-                            transcriptions_tbl_rows=transcriptions_tbl_rows,
+                            header_map=header_map,
                             row_filter=row_filter)
 
 
@@ -555,39 +533,40 @@ def transcription_data(task_id):
                                                         limit=limit,
                                                         offset=offset)
 
-    images_completed = ImageTaskAssignment.get_completed_images_by_task(task_id)
-    images_unseen = ImageTaskAssignment.get_unseen_images_by_task(task_id)
-    images_inprog = ImageTaskAssignment.get_inprog_images_by_task(task_id)
-    images_conflict = ImageTaskAssignment.get_conflict_images_by_task(task_id)
+    img_statuses = {}
 
-    img_statuses = {
-        'done': images_completed,
-        'inprog': images_inprog,
-        'unseen': images_unseen,
-        'conflict': images_conflict
-    }
+    completed = ImageTaskAssignment.get_completed_images_by_task(task_id)
+    unseen = ImageTaskAssignment.get_unseen_images_by_task(task_id)
+    inprog = ImageTaskAssignment.get_inprog_images_by_task(task_id)
+    conflict = ImageTaskAssignment.get_conflict_images_by_task(task_id)
+
+    if completed:
+        img_statuses.update(completed)
+    if unseen:
+        img_statuses.update(unseen)
+    if inprog:
+        img_statuses.update(inprog)
+    if conflict:
+        img_statuses.update(conflict)
 
     row_filter = request.args.get('filter')
 
     if len(transcribed_images) > 0:
-        _, transcriptions_tbl_rows = pretty_task_transcriptions(t_header,
-                                                                transcribed_images,
-                                                                task_id,
-                                                                img_statuses,
-                                                                row_filter)
+        header, slug_header, transcriptions = pretty_task_transcriptions(t_header,
+                                                                         transcribed_images,
+                                                                         task_id,
+                                                                         img_statuses,
+                                                                         row_filter)
     else:
         transcriptions_tbl_rows = []
 
     rows = []
 
-    for _, row_data in transcriptions_tbl_rows:
-        rows.append(row_data)
-
     resp = {
         'draw': int(request.form['draw']),
         'recordsTotal': total,
         'recordsFiltered': total,
-        'data': rows,
+        'data': transcriptions,
     }
 
     response = make_response(json.dumps(resp))

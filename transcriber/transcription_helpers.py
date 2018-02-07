@@ -298,10 +298,9 @@ class TranscriptionManager(object):
 
     def checkComplete(self):
 
-        conflicting_images = [i.id for i in
-                              ImageTaskAssignment.get_conflict_images_by_task(self.task_id)]
+        conflicting_images = ImageTaskAssignment.get_conflict_images_by_task(self.task_id)
 
-        if not self.image_id in conflicting_images:
+        if not conflicting_images.get(self.image_id):
 
             current_view_count = '''
                 SELECT view_count FROM image_task_assignment

@@ -162,36 +162,7 @@
 
             </div>
 
-
-
-
             <table class="table table-sm" id="all_transcriptions">
-                <thead>
-                    <tr>
-                        <th></th>
-                        {% for h in transcription_tbl_header[:6] %}
-                            <th> {{h}} </th>
-                        {% endfor %}
-                        {% for h in transcription_tbl_header[6:] %}
-                            <th class="transcription-cell"> {{h}} </th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody>
-                {% for cls, transcription in transcriptions_tbl_rows %}
-                    <tr>
-                        <td>
-                            <span class="{{cls}} t_status small"><i class="fa fa-circle fa-fw" aria-hidden="true"></i></span>
-                        </td>
-                        {% for col in transcription[:6] %}
-                            <td class="small">{{col|safe}}</td>
-                        {% endfor %}
-                        {% for col in transcription[6:] %}
-                            <td class="small transcription-cell">{{col|safe}}</td>
-                        {% endfor %}
-                    </tr>
-                {% endfor %}
-                </tbody>
             </table>
         {% else %}
             <p class="status-heading"><strong>No transcriptions yet</strong></p>
@@ -220,57 +191,62 @@
                     'data': 'status',
                     'render': function(data, type, full, meta){
                         return '<span class="' + full['status'] + ' t_status small"><i class="fa fa-circle fa-fw" aria-hidden="true"></i></span>'
-                    }
+                    },
+                    'title': ''
                 },
                 {
-                    'data': 'image_url',
+                    'data': 'source',
                     'render': function(data, type, full, meta){
-                        return '<a href='" + full['image_url'] + "' target='_blank'>" + full['image_id'] + "</a>'
-                    }
+                        return '<a href="' + full['source'] + '" target="_blank">' + full['image_id'] + '</a>'
+                    },
+                    'title': 'source'
                 },
                 {
                     'data': 'date_added',
                     'render': function(data, type, full, meta){
-                        return '<span class='text-xs'>" + full['date_added'] +"</span>'
-                    }
-                },
-                {
-                    'data': 'source',
-                    'render': function(data, type, full, meta){
-                        return '<span class='text-xs'>" + full['source'] +"</span>'
-                    }
-                },
-                {
-                    'data': 'source',
-                    'render': function(data, type, full, meta){
-                        return '<span class='text-xs'>" + full['source'] +"</span>'
-                    }
+                        return "<span class='text-xs'>" + full['date_added'] + "</span>"
+                    },
+                    'title': 'date added'
                 },
                 {
                     'data': 'user',
                     'render': function(data, type, full, meta){
-                        return '<a href="' + full['user_link']' + " target="_blank">' + full['user_name'] + '</a>'
-                    }
+                        return '<a href="' + full['user_link'] + '" target="_blank">' + full['user_name'] + '</a>'
+                    },
+                    'title': 'user'
                 },
                 {
                     'data': 'edit',
                     'render': function(data, type, full, meta){
-                        var delete = '<a title="Delete transcription ' + full['transcription_id'] + '" href="' + full['delete_url'] + '"><i class="fa fa-trash-o fa-fw"></i></a>';
-                        var edit = '<a title="Edit transcription ' + full['transcription_id'] + '" href="' + full['edit_url'] + '"><i class="fa fa-pencil fa-fw"></i></a>';
-                        return delete + edit
-                    }
+                        var delete_link = '<a title="Delete transcription ' + full['transcription_id'] + '" href="' + full['delete_url'] + '"><i class="fa fa-trash-o fa-fw"></i></a>';
+                        var edit_link = '<a title="Edit transcription ' + full['transcription_id'] + '" href="' + full['edit_url'] + '"><i class="fa fa-pencil fa-fw"></i></a>';
+                        return delete_link + edit_link
+                    },
+                    'title': ''
+                },
+                {
+                    'data': 'flag_irrelevant',
+                    'render': function(data, type, full, meta){
+                        if (data){
+                            return '<i class="fa fa-check"> </i>'
+                        } else {
+                            return ''
+                        }
+                    },
+                    'title': 'irrelevant?'
                 }
             ]
 
             // TODO: Get status and add the right stuff to the cell in the render function
-            {% for header, col in transcription_tbl_header[6:]|zip(transcription[6:]) %}
-                columns.push({
-                    'data': "{{ header }}",
+            {% for slug, name in header_map.items() %}
+                dataTablesColumns.push({
+                    'data': "{{ slug }}",
                     'render': function(data, type, full, meta){
-                        <td class="small transcription-cell">{{col}}</td>
-                    }
+                        return '<td class="small transcription-cell">' + full['{{ slug }}'] + '</td>'
+                    },
+                    'title': "{{ name }}",
+                    'className': 'transcription-cell'
                 })
-
             {% endfor %}
 
 
@@ -280,18 +256,18 @@
                 "lengthMenu": [ 25, 100, 200 ],
                 "info": false,
                 "sDom": '<"top"i>rt<"bottom"lp><"clear">',
-                "deferLoading": {{ rows_all_len }},
+                //"deferLoading": {{ rows_all_len }},
                 "processing": true,
                 "serverSide": true,
                 "ajax": {
                     url: "{{ url_for('views.transcription_data', task_id=request.args.task_id, total=rows_all_len) }}",
                     type: 'POST'
                 },
-                columns:
-            } );
+                columns: dataTablesColumns
+            });
 
-            my_table.on('preDraw', function(e, settings){
-                console.log(settings);
+            my_table.on('draw', function(e, settings){
+                $('.transcription-cell').hide();
             })
 
             $('#src-search').on( 'keyup', function () {
@@ -303,7 +279,6 @@
 
 
             // hide transcription fields by default
-            $('.transcription-cell').hide();
             $('#toggle-transcription-fields input:checkbox').change(
                 function(){
                     if ($(this).is(':checked')) {

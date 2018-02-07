@@ -154,7 +154,7 @@ class ImageTaskAssignment(db.Model):
     @classmethod
     def get_completed_images_by_task(cls, task_id):
 
-        completed = '''
+        select = '''
             SELECT image.id
             FROM image_task_assignment AS ita
             JOIN image
@@ -164,12 +164,17 @@ class ImageTaskAssignment(db.Model):
             ORDER BY ita.id
         '''
 
-        return [row for row in db.session.execute(text(completed), {'task_id': task_id})]
+        completed = {}
+
+        for row in db.session.execute(text(select), {'task_id': task_id}):
+            completed[row.id] = 'completed'
+
+        return completed
 
     @classmethod
     def get_unseen_images_by_task(cls, task_id):
         select = '''
-            SELECT image.*
+            SELECT image.id
             FROM image_task_assignment AS ita
             JOIN image
               ON ita.image_id = image.id
@@ -178,15 +183,19 @@ class ImageTaskAssignment(db.Model):
             ORDER BY ita.id
         '''
 
-        return [image for image in db.session.bind.execute(text(select),
-                                                           task_id=task_id)]
+        unseen = {}
+
+        for row in db.session.execute(text(select), {'task_id': task_id}):
+            unseen[row.id] = 'unseen'
+
+        return unseen
 
     @classmethod
     def get_inprog_images_by_task(cls, task_id):
         reviewer_count = db.session.query(FormMeta).get(task_id).reviewer_count
 
         select = '''
-            SELECT image.*
+            SELECT image.id
             FROM image_task_assignment AS ita
             JOIN image
               ON ita.image_id = image.id
@@ -196,9 +205,17 @@ class ImageTaskAssignment(db.Model):
             ORDER BY ita.id
         '''
 
-        return [image for image in db.session.bind.execute(text(select),
-                                                           task_id=task_id,
-                                                           reviewer_count=reviewer_count)]
+        inprog = {}
+
+        q_args = {
+            'task_id': task_id,
+            'reviewer_count': reviewer_count
+        }
+
+        for row in db.session.execute(text(select), q_args):
+            inprog[row.id] = 'inprog'
+
+        return inprog
 
     @classmethod
     def conflict_query(cls, task_id):
@@ -238,7 +255,7 @@ class ImageTaskAssignment(db.Model):
     @classmethod
     def get_conflict_images_by_task(cls, task_id):
         conflict = '''
-            SELECT image.*
+            SELECT image.id
             FROM image
             JOIN (
                 {conflict_query}
@@ -249,8 +266,8 @@ class ImageTaskAssignment(db.Model):
             WHERE ita.form_id = :form_id
         '''.format(conflict_query=cls.conflict_query(task_id))
 
-        return [i for i in db.session.bind.execute(text(conflict),
-                                                   form_id=task_id)]
+        return {i.id: 'conflict' for i in
+                db.session.execute(text(conflict), {'form_id': task_id})}
 
     @classmethod
     def get_task_progress(cls, task_id):
