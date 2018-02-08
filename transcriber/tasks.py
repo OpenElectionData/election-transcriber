@@ -185,7 +185,7 @@ class ImageUpdater(object):
 
         while True:
 
-            for key['Key'] in images['Contents']:
+            for key in images['Contents']:
 
                 if key['Size'] > 0:
 
