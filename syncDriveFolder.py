@@ -19,6 +19,10 @@ import botocore
 
 import img2pdf
 
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
+
+
 from transcriber.app_config import S3_BUCKET, DB_CONN, AWS_CREDENTIALS_PATH
 from transcriber.helpers import slugify
 
@@ -88,6 +92,24 @@ class SyncGoogle(object):
         with open(os.path.join(self.this_dir, 'downloaded_images.json'), 'w') as f:
             json.dump(self.downloaded_images, f)
 
+    def downloadImage(self, file_id, title):
+        contents = self.service.files().get_media(fileId=file_id)
+
+        with open(os.path.join(self.this_dir, title), 'wb') as fd:
+            media = MediaIoBaseDownload(fd, contents)
+            done = False
+
+            while done is False:
+
+                try:
+                    status, done = media.next_chunk()
+                except HttpError:
+                    print('Could not get file {1} ({0})'.format(file_id, title))
+                    break
+        if done:
+
+            self.addDownloadedImage(title)
+
     def iterFiles(self):
 
         file_count = 0
@@ -121,22 +143,7 @@ class SyncGoogle(object):
 
                     if title not in self.downloaded_images:
 
-                        contents = self.service.files().get_media(fileId=file_id)
-
-                        with open(os.path.join(self.this_dir, title), 'wb') as fd:
-                            media = MediaIoBaseDownload(fd, contents)
-                            done = False
-
-                            while done is False:
-
-                                try:
-                                    status, done = media.next_chunk()
-                                except HttpError:
-                                    print('Could not get file {}'.format(file_id))
-                                    break
-                        if done:
-
-                            self.addDownloadedImage(title)
+                        self.downloadImage(file_id, title)
 
                     all_files.append(title)
 
@@ -224,16 +231,29 @@ class SyncGoogle(object):
 
             try:
                 body = img2pdf.convert(filenames)
-            except img2pdf.ImageOpenError:
-                print("Couldn't convert: {}".format(group_name))
+            except (img2pdf.ImageOpenError, OSError, ZeroDivisionError) as e:
+                print("Couldn't convert: {0} ({1})".format(group_name, e))
                 continue
+            except TypeError:
+                for filename in filenames:
+                    file_blob = self.service.files().list(q="name = '{}'".format(filename)).execute()
+
+                    if file_blob['files']:
+                        file_id = file_blob['files'][0]['id']
+                        self.downloadImage(file_id, filename)
+
+                try:
+                    body = img2pdf.convert(filenames)
+                except (img2pdf.ImageOpenError, OSError, ZeroDivisionError) as e:
+                    print("Couldn't convert: {0} ({1})".format(group_name, e))
+                    continue
 
             self.s3_client.put_object(ACL='public-read',
-                                    Body=body,
-                                    Bucket=self.bucket,
-                                    Key=key,
-                                    ContentType='application/pdf',
-                                    Metadata=metadata)
+                                      Body=body,
+                                      Bucket=self.bucket,
+                                      Key=key,
+                                      ContentType='application/pdf',
+                                      Metadata=metadata)
 
             self.saveImage(key)
 
