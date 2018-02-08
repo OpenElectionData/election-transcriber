@@ -185,9 +185,9 @@ class ImageUpdater(object):
 
         while True:
 
-            for key in images['Contents']:
+            for key['Key'] in images['Contents']:
 
-                if key != '{}/'.format(election_name):
+                if key['Size'] > 0:
 
                     image = self.fetchOrWrite(key['Key'])
 
