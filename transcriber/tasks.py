@@ -187,14 +187,16 @@ class ImageUpdater(object):
 
             for key in images['Contents']:
 
-                image = self.fetchOrWrite(key['Key'])
+                if key != '{}/'.format(election_name):
 
-                self.addToDCInserts(election_name, key['Key'], image)
+                    image = self.fetchOrWrite(key['Key'])
 
-                updated += 1
+                    self.addToDCInserts(election_name, key['Key'], image)
 
-                if updated % 100 is 0:
-                    print('fetched {}'.format(updated))
+                    updated += 1
+
+                    if updated % 100 is 0:
+                        print('fetched {}'.format(updated))
 
             if images['IsTruncated']:
                 params['ContinuationToken'] = images['NextContinuationToken']
