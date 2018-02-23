@@ -175,9 +175,6 @@ def pretty_task_transcriptions(t_header, rows_all, task_id, img_statuses, row_fi
             not_legible = field_group[field_name + '_not_legible']
             altered = field_group[field_name + '_altered']
 
-            if blank or not_legible or altered:
-                print(row['image_id'], field_name)
-
             if blank:
                 if row_filter == 'blank':
                     include_row = True
