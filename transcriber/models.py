@@ -235,11 +235,14 @@ class ImageTaskAssignment(db.Model):
             'transcriber',
             'id',
             'image_id',
-            'transription_status'
+            'transcription_status'
         ]
 
         select_cols = [c.name for c in data_table.columns
-                       if c.name not in skip_cols]
+                       if c.name not in skip_cols
+                       and not c.name.endswith('_blank')
+                       and not c.name.endswith('_not_legible')
+                       and not c.name.endswith('_altered')]
 
         having = ' OR '.join(['array_length(array_agg(DISTINCT "{}"), 1) > 1'.format(c)
                               for c in select_cols])
@@ -268,6 +271,7 @@ class ImageTaskAssignment(db.Model):
 
         return {i.id: 'conflict' for i in
                 db.session.execute(text(conflict), {'form_id': task_id})}
+
 
     @classmethod
     def get_task_progress(cls, task_id):
@@ -312,6 +316,8 @@ class ImageTaskAssignment(db.Model):
               {conflict_query}
             ) As conflict
         '''.format(conflict_query=cls.conflict_query(task_id))
+
+        print(conflict)
 
         unseen = '''
             SELECT COUNT(*) AS count
