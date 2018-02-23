@@ -244,6 +244,15 @@ class ImageTaskAssignment(db.Model):
                        and not c.name.endswith('_not_legible')
                        and not c.name.endswith('_altered')]
 
+        # KENYA ONLY CHANGE !!!!!
+        select_cols += [
+            'ward_code_4_digits',
+            'constituency_code_3_digits',
+            'polling_center_code_3_digits',
+            'polling_station_number_1_or_2_digits',
+            'county_code_3_digits',
+        ]
+
         having = ' OR '.join(['array_length(array_agg(DISTINCT "{}"), 1) > 1'.format(c)
                               for c in select_cols])
 
@@ -316,8 +325,6 @@ class ImageTaskAssignment(db.Model):
               {conflict_query}
             ) As conflict
         '''.format(conflict_query=cls.conflict_query(task_id))
-
-        print(conflict)
 
         unseen = '''
             SELECT COUNT(*) AS count
